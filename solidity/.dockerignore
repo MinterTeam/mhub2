@@ -1,0 +1,9 @@
+node_modules/
+typechain/
+artifacts/
+cache/
+
+.git
+.gitignore
+.dockerignore
+Dockerfile

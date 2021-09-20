@@ -1,0 +1,90 @@
+on:
+  push:
+    # Sequence of patterns matched against refs/tags
+    tags:
+      - "v*" # Push events to matching v*, i.e. v1.0, v20.15.10
+
+name: Automated Release
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  release:
+    name: build-release-assets
+    runs-on: ubuntu-latest
+    steps:
+      # Setup Golang Environemnt
+      - name: setup-go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ^1.16
+      # Setup Rust Environment
+      - name: setup-rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+      # Setup Node Environment
+      - name: setup-node
+        uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+      # Checkout repository code
+      - name: checkout-code
+        uses: actions/checkout@v2
+      # Golang Cache
+      - name: go-cache
+        uses: actions/cache@v2
+        with: 
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('module/go.sum') }}
+      # Rust Cache
+      - name: rust-cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            orchestrator/target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('orchestrator/Cargo.lock') }}
+      # Node Cache
+      - name: node-cache
+        uses: actions/cache@v2
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('solidity/package-lock.json') }}
+      # Build Go Artifacts
+      - name: build-go
+        run: cd module && make build
+      # Build Node and Solidity Artifacts
+      - name: build-node-solidity
+        run: cd solidity && npm ci && npm run typechain && npm run compile-deployer
+      # Build Rust Artifacts
+      - name: build-rust
+        run: cd orchestrator && cargo install cross &&  cross build --target x86_64-unknown-linux-musl --release --all
+      # Create Release and Upload artifacts
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            orchestrator/target/x86_64-unknown-linux-musl/release/client
+            orchestrator/target/x86_64-unknown-linux-musl/release/gorc
+            orchestrator/target/x86_64-unknown-linux-musl/release/orchestrator
+            orchestrator/target/x86_64-unknown-linux-musl/release/register-delegate-keys
+            orchestrator/target/x86_64-unknown-linux-musl/release/relayer
+            orchestrator/target/x86_64-unknown-linux-musl/release/test-runner
+            module/build/gravity
+            solidity/artifacts/contracts/Gravity.sol/Gravity.json
+            solidity/artifacts/contracts/TestERC20A.sol/TestERC20A.json
+            solidity/artifacts/contracts/TestERC20B.sol/TestERC20B.json
+            solidity/artifacts/contracts/TestERC20C.sol/TestERC20C.json
+            solidity/contract-deployer
+            LICENSE
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
