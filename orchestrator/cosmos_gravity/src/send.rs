@@ -8,9 +8,9 @@ use deep_space::private_key::PrivateKey as CosmosPrivateKey;
 use deep_space::Contact;
 use deep_space::Fee;
 use deep_space::Msg;
-use gravity_proto::cosmos_sdk_proto::cosmos::base::abci::v1beta1::TxResponse;
-use gravity_proto::cosmos_sdk_proto::cosmos::tx::v1beta1::BroadcastMode;
-use gravity_proto::gravity as proto;
+use mhub2_proto::cosmos_sdk_proto::cosmos::base::abci::v1beta1::TxResponse;
+use mhub2_proto::cosmos_sdk_proto::cosmos::tx::v1beta1::BroadcastMode;
+use mhub2_proto::mhub2 as proto;
 use prost::Message;
 use std::time::Duration;
 
@@ -24,7 +24,7 @@ pub async fn update_gravity_delegate_addresses(
     delegate_eth_address: EthAddress,
     delegate_cosmos_address: Address,
     cosmos_key: CosmosPrivateKey,
-    etheruem_key: EthPrivateKey,
+    ethereum_key: EthPrivateKey,
     fee: Coin,
 ) -> Result<TxResponse, CosmosGrpcError> {
     let our_valoper_address = cosmos_key
@@ -50,14 +50,14 @@ pub async fn update_gravity_delegate_addresses(
     let mut data = BytesMut::with_capacity(eth_sign_msg.encoded_len());
     Message::encode(&eth_sign_msg, &mut data).expect("encoding failed");
 
-    let eth_signature = etheruem_key.sign_ethereum_msg(&data).to_bytes().to_vec();
+    let eth_signature = ethereum_key.sign_ethereum_msg(&data).to_bytes().to_vec();
     let msg = proto::MsgDelegateKeys {
         validator_address: our_valoper_address.to_string(),
         orchestrator_address: delegate_cosmos_address.to_string(),
-        ethereum_address: delegate_eth_address.to_string(),
+        external_address: delegate_eth_address.to_string(),
         eth_signature,
     };
-    let msg = Msg::new("/gravity.v1.MsgDelegateKeys", msg);
+    let msg = Msg::new("/mhub2.v1.MsgDelegateKeys", msg);
     __send_messages(contact, cosmos_key, fee, vec![msg]).await
 }
 
@@ -69,16 +69,18 @@ pub async fn send_to_eth(
     amount: Coin,
     fee: Coin,
     contact: &Contact,
+    chain_id: String,
 ) -> Result<TxResponse, CosmosGrpcError> {
     let cosmos_address = cosmos_key.to_address(&contact.get_prefix()).unwrap();
 
-    let msg = proto::MsgSendToEthereum {
+    let msg = proto::MsgSendToExternal {
         sender: cosmos_address.to_string(),
-        ethereum_recipient: destination.to_string(),
+        external_recipient: destination.to_string(),
         amount: Some(amount.into()),
         bridge_fee: Some(fee.clone().into()),
+        chain_id: chain_id.clone(),
     };
-    let msg = Msg::new("/gravity.v1.MsgSendToEthereum", msg);
+    let msg = Msg::new("/mhub2.v1.MsgSendToExternal", msg);
     __send_messages(contact, cosmos_key, fee, vec![msg]).await
 }
 
@@ -87,13 +89,15 @@ pub async fn send_request_batch_tx(
     denom: String,
     fee: Coin,
     contact: &Contact,
+    chain_id: String,
 ) -> Result<TxResponse, CosmosGrpcError> {
     let cosmos_address = cosmos_key.to_address(&contact.get_prefix()).unwrap();
     let msg_request_batch = proto::MsgRequestBatchTx {
         signer: cosmos_address.to_string(),
         denom,
+        chain_id: chain_id.clone(),
     };
-    let msg = Msg::new("/gravity.v1.MsgRequestBatchTx", msg_request_batch);
+    let msg = Msg::new("/mhub2.v1.MsgRequestBatchTx", msg_request_batch);
     __send_messages(contact, cosmos_key, fee, vec![msg]).await
 }
 

@@ -1,8 +1,8 @@
 use clarity::{Address, Uint256};
 use ethereum_gravity::utils::downcast_uint256;
-use gravity_proto::gravity::query_client::QueryClient as GravityQueryClient;
-use gravity_utils::types::ValsetUpdatedEvent;
-use gravity_utils::{error::GravityError, types::Valset};
+use mhub2_proto::mhub2::query_client::QueryClient as GravityQueryClient;
+use mhub2_utils::types::ValsetUpdatedEvent;
+use mhub2_utils::{error::GravityError, types::Valset};
 use tonic::transport::Channel;
 use web30::client::Web3;
 
@@ -15,6 +15,7 @@ pub async fn find_latest_valset(
     grpc_client: &mut GravityQueryClient<Channel>,
     gravity_contract_address: Address,
     web3: &Web3,
+    chain_id: String,
 ) -> Result<Valset, GravityError> {
     const BLOCKS_TO_SEARCH: u128 = 5_000u128;
     let latest_block = web3.eth_block_number().await?;
@@ -52,9 +53,12 @@ pub async fn find_latest_valset(
                         nonce: downcast_uint256(event.valset_nonce.clone()).unwrap(),
                         members: event.members,
                     };
-                    let cosmos_chain_valset =
-                        cosmos_gravity::query::get_valset(grpc_client, latest_eth_valset.nonce)
-                            .await?;
+                    let cosmos_chain_valset = cosmos_gravity::query::get_valset(
+                        grpc_client,
+                        latest_eth_valset.nonce,
+                        chain_id.clone(),
+                    )
+                    .await?;
                     check_if_valsets_differ(cosmos_chain_valset, &&latest_eth_valset);
                     return Ok(latest_eth_valset);
                 }

@@ -11,7 +11,7 @@ nonce=$(date +%s)  # use unix timestamp as fake nonce
 # erc20 token contract address: 0x7c2c195cd6d34b8f845992d380aadb2730bb9c6f
 # erc20 symbol: ALX
 # amount: 100
-# gravitycli tx gravity observed deposit [eth chain id] [eth contract address] [nonce] [cosmos receiver] [amount] [eth erc20 symbol] [eth erc20 contract addr] [eth sender address] [flags]
+# gravitycli tx mhub2 observed deposit [eth chain id] [eth contract address] [nonce] [cosmos receiver] [amount] [eth erc20 symbol] [eth erc20 contract addr] [eth sender address] [flags]
 gravitycli tx gravity observed deposit 1 0x8858eeb3dfffa017d4bce9801d340d36cf895ccf  "$nonce" $(gravitycli keys show validator -a)  1000 ALX 0xc783df8a850f42e7f7e57013759c285caa701eb6 0x7c2c195cd6d34b8f845992d380aadb2730bb9c6f --from validator --chain-id=testing -b block -y
 
 echo "## Query balance"

@@ -9,8 +9,8 @@ use clarity::PrivateKey as EthPrivateKey;
 use cosmos_gravity::query::get_latest_valset;
 use cosmos_gravity::query::{get_all_valset_confirms, get_valset};
 use ethereum_gravity::{one_eth, utils::downcast_to_u128, valset_update::send_eth_valset_update};
-use gravity_proto::gravity::query_client::QueryClient as GravityQueryClient;
-use gravity_utils::{message_signatures::encode_valset_confirm_hashed, types::Valset};
+use mhub2_proto::mhub2::query_client::QueryClient as GravityQueryClient;
+use mhub2_utils::{message_signatures::encode_valset_confirm_hashed, types::Valset};
 use tonic::transport::Channel;
 use web30::client::Web3;
 
@@ -25,6 +25,7 @@ pub async fn relay_valsets(
     gravity_contract_address: EthAddress,
     gravity_id: String,
     timeout: Duration,
+    chain_id: String,
 ) {
     // we have to start with the current ethereum valset, we need to know what's currently
     // in the contract in order to determine if a new validator set is valid.
@@ -35,7 +36,7 @@ pub async fn relay_valsets(
 
     // we should determine if we need to relay one
     // to Ethereum for that we will find the latest confirmed valset and compare it to the ethereum chain
-    let latest_valset = get_latest_valset(grpc_client).await;
+    let latest_valset = get_latest_valset(grpc_client, chain_id.clone()).await;
     if latest_valset.is_err() {
         error!("Failed to get latest valset! {:?}", latest_valset);
         return;
@@ -57,10 +58,11 @@ pub async fn relay_valsets(
     // this is used to display the state of the last validator set to fail signature checks
     let mut last_error = None;
     while latest_nonce > 0 {
-        let cosmos_valset = get_valset(grpc_client, latest_nonce).await;
+        let cosmos_valset = get_valset(grpc_client, latest_nonce, chain_id.clone()).await;
         if let Ok(Some(cosmos_valset)) = cosmos_valset {
             assert_eq!(cosmos_valset.nonce, latest_nonce);
-            let confirms = get_all_valset_confirms(grpc_client, latest_nonce).await;
+            let confirms =
+                get_all_valset_confirms(grpc_client, latest_nonce, chain_id.clone()).await;
             if let Ok(confirms) = confirms {
                 info!(
                     "Considering cosmos_valset {:?} confirms {:?}",

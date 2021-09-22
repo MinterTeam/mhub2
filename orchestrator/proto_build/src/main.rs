@@ -1,8 +1,8 @@
-//! Protobuf files in the gravity repo, copying the result to the gravity_proto crate for import
-//! and use. While this builder generates about a dozen files only one contains all the gravity
+//! Protobuf files in the mhub2 repo, copying the result to the mhub2_proto crate for import
+//! and use. While this builder generates about a dozen files only one contains all the mhub2
 //! proto info and the rest are discarded in favor of upstream cosmos-sdk-proto
 
-// Building new Gravity rust proto definitions
+// Building new mhub2 rust proto definitions
 // run 'cargo run'
 
 use regex::Regex;
@@ -21,9 +21,9 @@ const EXCLUDED_PROTO_PACKAGES: &[&str] = &["gogoproto", "google", "tendermint", 
 const COSMOS_SDK_PROTO_REGEX: &str = "(super::)+cosmos";
 
 /// A temporary directory for proto building
-const TMP_PATH: &str = "/tmp/gravity/";
+const TMP_PATH: &str = "/tmp/mhub2/";
 /// the output directory
-const OUT_PATH: &str = "../gravity_proto/src/prost/";
+const OUT_PATH: &str = "../mhub2_proto/src/prost/";
 
 // All paths must end with a / and either be absolute or include a ./ to reference the current
 // working directory.
@@ -45,18 +45,18 @@ fn compile_protos(out_dir: &Path, tmp_dir: &Path) {
     // this gives us the repo root by going up two levels from the module root
     let root = root.parent().unwrap().parent().unwrap().to_path_buf();
 
-    let mut gravity_proto_dir = root.clone();
-    gravity_proto_dir.push("module/proto/gravity/v1");
-    let mut gravity_proto_include_dir = root.clone();
-    gravity_proto_include_dir.push("module/proto");
+    let mut mhub2_proto_dir = root.clone();
+    mhub2_proto_dir.push("module/proto/mhub2/v1");
+    let mut mhub2_proto_include_dir = root.clone();
+    mhub2_proto_include_dir.push("module/proto");
     let mut third_party_proto_include_dir = root;
     third_party_proto_include_dir.push("module/third_party/proto");
 
     // Paths
-    let proto_paths = [gravity_proto_dir];
+    let proto_paths = [mhub2_proto_dir];
     // we need to have an include which is just the folder of our protos to satisfy protoc
     // which insists that any passed file be included in a directory passed as an include
-    let proto_include_paths = [gravity_proto_include_dir, third_party_proto_include_dir];
+    let proto_include_paths = [mhub2_proto_include_dir, third_party_proto_include_dir];
 
     // List available proto files
     let mut protos: Vec<PathBuf> = vec![];

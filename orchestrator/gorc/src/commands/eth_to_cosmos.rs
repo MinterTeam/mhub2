@@ -4,7 +4,7 @@ use clarity::Address as EthAddress;
 use clarity::Uint256;
 use deep_space::address::Address as CosmosAddress;
 use ethereum_gravity::send_to_cosmos::send_to_cosmos;
-use gravity_utils::connection_prep::{check_for_eth, create_rpc_connections};
+use mhub2_utils::connection_prep::{check_for_eth, create_rpc_connections};
 use std::time::Duration;
 
 const TIMEOUT: Duration = Duration::from_secs(60);

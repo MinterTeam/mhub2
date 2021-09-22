@@ -1,0 +1,329 @@
+syntax = "proto3";
+package mhub2.v1;
+
+import "cosmos/base/query/v1beta1/pagination.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "mhub2/v1/genesis.proto";
+import "mhub2/v1/mhub2.proto";
+import "mhub2/v1/msgs.proto";
+
+option go_package = "github.com/MinterTeam/mhub2/module/x/mhub2/types";
+
+// Query defines the gRPC querier service
+service Query {
+
+  // Module parameters query
+  rpc Params(ParamsRequest) returns (ParamsResponse) {
+    // option (google.api.http).get = "/gravity/v1/params";
+  }
+
+  // get info on individual outgoing data
+  rpc SignerSetTx(SignerSetTxRequest) returns (SignerSetTxResponse) {
+    // option (google.api.http).get = "/gravity/v1/signer_set";
+  }
+  rpc LatestSignerSetTx(LatestSignerSetTxRequest)
+      returns (SignerSetTxResponse) {
+    // option (google.api.http).get = "/gravity/v1/signer_set/latest";
+  }
+  rpc BatchTx(BatchTxRequest) returns (BatchTxResponse) {
+    // option (google.api.http).get =
+    // "/gravity/v1/batch_txs/{token_contract}/{nonce}";
+  }
+  rpc ContractCallTx(ContractCallTxRequest) returns (ContractCallTxResponse) {
+    // option (google.api.http).get =
+    // "/gravity/v1/contract_call_txs/{invalidation_id}/{invalidation_nonce}";
+  }
+
+  // get collections of outgoing traffic from the bridge
+  rpc SignerSetTxs(SignerSetTxsRequest) returns (SignerSetTxsResponse) {
+    // option (google.api.http).get = "/gravity/v1/signer_sets";
+  }
+  rpc BatchTxs(BatchTxsRequest) returns (BatchTxsResponse) {
+    // option (google.api.http).get = "/gravity/v1/batch/batch_txs";
+  }
+  rpc ContractCallTxs(ContractCallTxsRequest)
+      returns (ContractCallTxsResponse) {
+    // option (google.api.http).get = "/gravity/v1/batch/contract_call_txs";
+  }
+
+  // external signature queries so validators can construct valid etherum
+  // transactions
+
+  // TODO: can/should we group these into one endpoint?
+  rpc SignerSetTxConfirmations(SignerSetTxConfirmationsRequest)
+      returns (SignerSetTxConfirmationsResponse) {
+    // option (google.api.http).get =
+    // "/gravity/v1/signer_sets/external_signatures";
+  }
+  rpc BatchTxConfirmations(BatchTxConfirmationsRequest)
+      returns (BatchTxConfirmationsResponse) {
+    // option (google.api.http).get =
+    // "/gravity/v1/batch_txs/external_signatures";
+  }
+  rpc ContractCallTxConfirmations(ContractCallTxConfirmationsRequest)
+      returns (ContractCallTxConfirmationsResponse) {
+    // option (google.api.http).get =
+    // "/gravity/v1/logic_calls/external_signatures";
+  }
+
+  // ^^^^^^^^^^^^ seem okay for now ^^^^^^
+
+  // pending external signature queries for orchestrators to figure out which
+  // signatures they are missing
+  // TODO: can/should we group this into one endpoint?
+  rpc UnsignedSignerSetTxs(UnsignedSignerSetTxsRequest)
+      returns (UnsignedSignerSetTxsResponse) {
+    // option (google.api.http).get =
+    // "/gravity/v1/SignerSetTxs/{address}/pending";
+  }
+  rpc UnsignedBatchTxs(UnsignedBatchTxsRequest)
+      returns (UnsignedBatchTxsResponse) {
+    // option (google.api.http).get = "/gravity/v1/batches/{address}/pending";
+  }
+  rpc UnsignedContractCallTxs(UnsignedContractCallTxsRequest)
+      returns (UnsignedContractCallTxsResponse) {
+    // option (google.api.http).get =
+    // "/gravity/v1/ContractCallTxs/{address}/pending";
+  }
+
+  rpc LastSubmittedExternalEvent(LastSubmittedExternalEventRequest)
+      returns (LastSubmittedExternalEventResponse) {
+    // option (google.api.http).get =
+    // "/gravity/v1/oracle/event_nonce/{address}";
+  }
+
+  // Queries the fees for all pending batches, results are returned in sdk.Coin
+  // (fee_amount_int)(contract_address) style
+  rpc BatchTxFees(BatchTxFeesRequest) returns (BatchTxFeesResponse) {
+    // option (google.api.http).get = "/gravity/v1/batches/fees";
+  }
+
+  // Query for info about denoms tracked by gravity
+  rpc ExternalIdToDenom(ExternalIdToDenomRequest) returns (ExternalIdToDenomResponse) {
+    // option (google.api.http).get =
+    // "/gravity/v1/cosmos_originated/external_id_to_denom";
+  }
+
+  // Query for info about denoms tracked by gravity
+  rpc DenomToExternalId(DenomToExternalIdRequest) returns (DenomToExternalIdResponse) {
+    // option (google.api.http).get =
+    // "/gravity/v1/cosmos_originated/denom_to_external_id";
+  }
+  // Query for batch send to externals
+  rpc BatchedSendToExternals(BatchedSendToExternalsRequest)
+      returns (BatchedSendToExternalsResponse) {
+    // option (google.api.http).get = "/gravity/v1/query_batched_send_to_ext";
+  }
+  // Query for unbatched send to externals
+  rpc UnbatchedSendToExternals(UnbatchedSendToExternalsRequest)
+      returns (UnbatchedSendToExternalsResponse) {
+    // option (google.api.http).get = "/gravity/v1/query_unbatched_send_to_ext";
+  }
+
+  // delegate keys
+  rpc DelegateKeysByValidator(DelegateKeysByValidatorRequest)
+      returns (DelegateKeysByValidatorResponse) {
+    // option (google.api.http).get =
+    // "/gravity/v1/delegate_keys/validator/{validator}";
+  }
+  rpc DelegateKeysByExternalSigner(DelegateKeysByExternalSignerRequest)
+      returns (DelegateKeysByExternalSignerResponse) {
+    // option (google.api.http).get =
+    // "/gravity/v1/delegate_keys/external/{external_signer}";
+  }
+  rpc DelegateKeysByOrchestrator(DelegateKeysByOrchestratorRequest)
+      returns (DelegateKeysByOrchestratorResponse) {
+    // option (google.api.http).get =
+    // "/gravity/v1/delegate_keys/orchestrator/{orchestrator}";
+  }
+
+  rpc DelegateKeys(DelegateKeysRequest) returns (DelegateKeysResponse) {
+    // option (google.api.http).get =
+    // "/gravity/v1/delegate_keys";
+  }
+
+  rpc TokenInfos(TokenInfosRequest) returns (TokenInfosResponse) {
+    // option (google.api.http).get =
+    // "/gravity/v1/delegate_keys";
+  }
+}
+
+message TokenInfosRequest {}
+message TokenInfosResponse { TokenInfos list = 1 [ (gogoproto.nullable) = false ]; }
+
+//  rpc Params
+message ParamsRequest {}
+message ParamsResponse { Params params = 1 [ (gogoproto.nullable) = false ]; }
+
+//  rpc SignerSetTx
+message SignerSetTxRequest { uint64 signer_set_nonce = 1; string chain_id = 2; }
+message LatestSignerSetTxRequest { string chain_id = 1; }
+message SignerSetTxResponse { SignerSetTx signer_set = 1; }
+
+//  rpc BatchTx
+message BatchTxRequest {
+  string external_token_id = 1;
+  uint64 batch_nonce = 2;
+  string chain_id = 3;
+}
+message BatchTxResponse { BatchTx batch = 1; }
+
+//  rpc ContractCallTx
+message ContractCallTxRequest {
+  bytes invalidation_scope = 1;
+  uint64 invalidation_nonce = 2;
+  string chain_id = 3;
+}
+message ContractCallTxResponse { ContractCallTx logic_call = 1; }
+
+// rpc SignerSetTxConfirmations
+message SignerSetTxConfirmationsRequest { uint64 signer_set_nonce = 1; string chain_id = 2; }
+message SignerSetTxConfirmationsResponse {
+  repeated SignerSetTxConfirmation signatures = 1;
+}
+
+//  rpc SignerSetTxs
+message SignerSetTxsRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+  string chain_id = 2;
+}
+message SignerSetTxsResponse {
+  repeated SignerSetTx signer_sets = 1;
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+//  rpc BatchTxs
+message BatchTxsRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+  string chain_id = 2;
+}
+message BatchTxsResponse {
+  repeated BatchTx batches = 1;
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+//  rpc ContractCallTxs
+message ContractCallTxsRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+  string chain_id = 2;
+}
+message ContractCallTxsResponse {
+  repeated ContractCallTx calls = 1;
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// NOTE(levi) pending queries: this is my address; what do I need to sign??
+// why orchestrator key? hot, signing thing all the time so validator key can be
+// safer
+
+// rpc UnsignedSignerSetTxs
+message UnsignedSignerSetTxsRequest {
+  // NOTE: this is an sdk.AccAddress and can represent either the
+  // orchestartor address or the cooresponding validator address
+  string address = 1;
+  string chain_id = 2;
+}
+message UnsignedSignerSetTxsResponse { repeated SignerSetTx signer_sets = 1; }
+
+message UnsignedBatchTxsRequest {
+  // NOTE: this is an sdk.AccAddress and can represent either the
+  // orchestrator address or the cooresponding validator address
+  string address = 1;
+  string chain_id = 2;
+}
+message UnsignedBatchTxsResponse {
+  // Note these are returned with the signature empty
+  repeated BatchTx batches = 1;
+}
+
+//  rpc UnsignedContractCallTxs
+message UnsignedContractCallTxsRequest { string address = 1; string chain_id = 2; }
+message UnsignedContractCallTxsResponse { repeated ContractCallTx calls = 1; }
+
+message BatchTxFeesRequest {
+  string chain_id = 1;
+}
+message BatchTxFeesResponse {
+  repeated cosmos.base.v1beta1.Coin fees = 1 [
+    (gogoproto.nullable) = false,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"
+  ];
+}
+
+message ContractCallTxConfirmationsRequest {
+  bytes invalidation_scope = 1;
+  uint64 invalidation_nonce = 2;
+  string chain_id = 3;
+}
+message ContractCallTxConfirmationsResponse {
+  repeated ContractCallTxConfirmation signatures = 1;
+}
+
+message BatchTxConfirmationsRequest {
+  uint64 batch_nonce = 1;
+  string external_token_id = 2;
+  string chain_id = 3;
+}
+message BatchTxConfirmationsResponse {
+  repeated BatchTxConfirmation signatures = 1;
+}
+
+message LastSubmittedExternalEventRequest { string address = 1;  string chain_id = 2; }
+message LastSubmittedExternalEventResponse { uint64 event_nonce = 1; }
+
+message ExternalIdToDenomRequest { string external_id = 1; string chain_id = 2; }
+message ExternalIdToDenomResponse {
+  string denom = 1;
+}
+
+message DenomToExternalIdRequest { string denom = 1; string chain_id = 2; }
+message DenomToExternalIdResponse {
+  string external_id = 1;
+}
+
+message DelegateKeysByValidatorRequest { string validator_address = 1; string chain_id = 2; }
+message DelegateKeysByValidatorResponse {
+  string eth_address = 1;
+  string orchestrator_address = 2;
+}
+
+message DelegateKeysByExternalSignerRequest { string external_signer = 1; string chain_id = 2; }
+message DelegateKeysByExternalSignerResponse {
+  string validator_address = 1;
+  string orchestrator_address = 2;
+}
+
+message DelegateKeysByOrchestratorRequest { string orchestrator_address = 1; string chain_id = 2; }
+message DelegateKeysByOrchestratorResponse {
+  string validator_address = 1;
+  string external_signer = 2;
+}
+
+message DelegateKeysRequest { string chain_id = 1; }
+message DelegateKeysResponse { repeated MsgDelegateKeys delegate_keys = 1; }
+
+// NOTE: if there is no sender address, return all
+message BatchedSendToExternalsRequest {
+  string sender_address = 1;
+  string chain_id = 2;
+  // todo: figure out how to paginate given n Batches with m Send To Externals
+  //  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+message BatchedSendToExternalsResponse {
+  repeated SendToExternal send_to_externals = 1;
+  string chain_id = 2;
+  //  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+message UnbatchedSendToExternalsRequest {
+  string sender_address = 1;
+  string chain_id = 2;
+  cosmos.base.query.v1beta1.PageRequest pagination = 3;
+}
+message UnbatchedSendToExternalsResponse {
+  repeated SendToExternal send_to_externals = 1;
+  string chain_id = 2;
+  cosmos.base.query.v1beta1.PageResponse pagination = 3;
+}

@@ -11,8 +11,8 @@ use clarity::PrivateKey as EthPrivateKey;
 use cosmos_gravity::send::update_gravity_delegate_addresses;
 use deep_space::{coin::Coin, mnemonic::Mnemonic, private_key::PrivateKey as CosmosPrivateKey};
 use docopt::Docopt;
-use gravity_utils::connection_prep::check_for_fee_denom;
-use gravity_utils::connection_prep::{create_rpc_connections, wait_for_cosmos_node_ready};
+use mhub2_utils::connection_prep::check_for_fee_denom;
+use mhub2_utils::connection_prep::{create_rpc_connections, wait_for_cosmos_node_ready};
 use rand::{thread_rng, Rng};
 use std::time::Duration;
 
@@ -112,7 +112,7 @@ async fn main() {
 
     let ethereum_address = ethereum_key.to_public_key().unwrap();
     let cosmos_address = cosmos_key.to_address(&contact.get_prefix()).unwrap();
-    let res =update_gravity_delegate_addresses(
+    let res = update_gravity_delegate_addresses(
         &contact,
         ethereum_address,
         cosmos_address,

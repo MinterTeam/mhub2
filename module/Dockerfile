@@ -2,13 +2,13 @@
 # > docker build -t simapp .
 #
 # Server:
-# > docker run -it -p 26657:26657 -p 26656:26656 -v ~/.simapp:/root/.simapp simapp gravity init test-chain
+# > docker run -it -p 26657:26657 -p 26656:26656 -v ~/.simapp:/root/.simapp simapp mhub2 init test-chain
 # TODO: need to set validator in genesis so start runs
-# > docker run -it -p 26657:26657 -p 26656:26656 -v ~/.simapp:/root/.simapp simapp gravity start
+# > docker run -it -p 26657:26657 -p 26656:26656 -v ~/.simapp:/root/.simapp simapp mhub2 start
 #
 # Client: (Note the simapp binary always looks at ~/.simapp we can bind to different local storage)
-# > docker run -it -p 26657:26657 -p 26656:26656 -v ~/.simappcli:/root/.simapp simapp gravity keys add foo
-# > docker run -it -p 26657:26657 -p 26656:26656 -v ~/.simappcli:/root/.simapp simapp gravity keys list
+# > docker run -it -p 26657:26657 -p 26656:26656 -v ~/.simappcli:/root/.simapp simapp mhub2 keys add foo
+# > docker run -it -p 26657:26657 -p 26656:26656 -v ~/.simappcli:/root/.simapp simapp mhub2 keys list
 # TODO: demo connecting rest-server (or is this in server now?)
 FROM golang:alpine AS build-env
 
@@ -28,7 +28,7 @@ RUN go mod download
 COPY . .
 
 # install simapp, remove packages
-RUN go build -o build/gravity ./cmd/gravity/main.go
+RUN go build -o build/mhub2 ./cmd/mhub2/main.go
 
 # Final image
 FROM alpine:edge
@@ -43,5 +43,5 @@ COPY --from=build-env /go/src/github.com/althea-net/cosmos-gravity-bridge/module
 
 EXPOSE 26656 26657 1317 9090
 
-# Run gravity by default
+# Run mhub2 by default
 CMD ["gravity", "--home", "home", "start", "--pruning=nothing"]

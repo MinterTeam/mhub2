@@ -5,7 +5,7 @@ use crate::{
 use clarity::address::Address as EthAddress;
 use clarity::PrivateKey as EthPrivateKey;
 use ethereum_gravity::utils::get_gravity_id;
-use gravity_proto::gravity::query_client::QueryClient as GravityQueryClient;
+use mhub2_proto::mhub2::query_client::QueryClient as GravityQueryClient;
 use std::time::{Duration, Instant};
 use tokio::time::sleep as delay_for;
 use tonic::transport::Channel;
@@ -20,14 +20,20 @@ pub async fn relayer_main_loop(
     web3: Web3,
     grpc_client: GravityQueryClient<Channel>,
     gravity_contract_address: EthAddress,
+    chain_id: String,
 ) {
     let mut grpc_client = grpc_client;
     loop {
         let loop_start = Instant::now();
 
         let our_ethereum_address = ethereum_key.to_public_key().unwrap();
-        let current_eth_valset =
-            find_latest_valset(&mut grpc_client, gravity_contract_address, &web3).await;
+        let current_eth_valset = find_latest_valset(
+            &mut grpc_client,
+            gravity_contract_address,
+            &web3,
+            chain_id.clone(),
+        )
+        .await;
         if current_eth_valset.is_err() {
             error!("Could not get current valset! {:?}", current_eth_valset);
             continue;
@@ -51,6 +57,7 @@ pub async fn relayer_main_loop(
             gravity_contract_address,
             gravity_id.clone(),
             LOOP_SPEED,
+            chain_id.clone(),
         )
         .await;
 
@@ -62,6 +69,7 @@ pub async fn relayer_main_loop(
             gravity_contract_address,
             gravity_id.clone(),
             LOOP_SPEED,
+            chain_id.clone(),
         )
         .await;
 
@@ -73,6 +81,7 @@ pub async fn relayer_main_loop(
             gravity_contract_address,
             gravity_id.clone(),
             LOOP_SPEED,
+            chain_id.clone(),
         )
         .await;
 

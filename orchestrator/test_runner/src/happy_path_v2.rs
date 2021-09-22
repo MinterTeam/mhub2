@@ -12,9 +12,7 @@ use cosmos_gravity::send::{send_request_batch_tx, send_to_eth};
 use deep_space::coin::Coin;
 use deep_space::Contact;
 use ethereum_gravity::{deploy_erc20::deploy_erc20, utils::get_event_nonce};
-use gravity_proto::gravity::{
-    query_client::QueryClient as GravityQueryClient, DenomToErc20Request,
-};
+use mhub2_proto::mhub2::{query_client::QueryClient as GravityQueryClient, DenomToErc20Request};
 use tokio::time::sleep as delay_for;
 use tonic::transport::Channel;
 use web30::client::Web3;

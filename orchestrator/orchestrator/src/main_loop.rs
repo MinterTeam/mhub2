@@ -22,7 +22,7 @@ use deep_space::error::CosmosGrpcError;
 use deep_space::private_key::PrivateKey as CosmosPrivateKey;
 use deep_space::{Contact, Msg};
 use ethereum_gravity::utils::get_gravity_id;
-use gravity_proto::gravity::query_client::QueryClient as GravityQueryClient;
+use mhub2_proto::mhub2::query_client::QueryClient as Mhub2QueryClient;
 use relayer::main_loop::relayer_main_loop;
 use std::{
     net,
@@ -48,9 +48,10 @@ pub async fn orchestrator_main_loop(
     ethereum_key: EthPrivateKey,
     web3: Web3,
     contact: Contact,
-    grpc_client: GravityQueryClient<Channel>,
+    grpc_client: Mhub2QueryClient<Channel>,
     gravity_contract_address: EthAddress,
     gas_price: (f64, String),
+    chain_id: String,
     metrics_listen: &net::SocketAddr,
 ) {
     let (tx, rx) = tokio::sync::mpsc::channel(1);
@@ -64,6 +65,7 @@ pub async fn orchestrator_main_loop(
         grpc_client.clone(),
         gravity_contract_address,
         tx.clone(),
+        chain_id.clone(),
     );
 
     let c = eth_signer_main_loop(
@@ -74,6 +76,7 @@ pub async fn orchestrator_main_loop(
         grpc_client.clone(),
         gravity_contract_address,
         tx.clone(),
+        chain_id.clone(),
     );
 
     let d = relayer_main_loop(
@@ -81,6 +84,7 @@ pub async fn orchestrator_main_loop(
         web3,
         grpc_client.clone(),
         gravity_contract_address,
+        chain_id.clone(),
     );
 
     let e = metrics_main_loop(metrics_listen);
@@ -96,9 +100,10 @@ pub async fn eth_oracle_main_loop(
     cosmos_key: CosmosPrivateKey,
     web3: Web3,
     contact: Contact,
-    grpc_client: GravityQueryClient<Channel>,
+    grpc_client: Mhub2QueryClient<Channel>,
     gravity_contract_address: EthAddress,
     msg_sender: tokio::sync::mpsc::Sender<Vec<Msg>>,
+    chain_id: String,
 ) {
     let our_cosmos_address = cosmos_key.to_address(&contact.get_prefix()).unwrap();
     let long_timeout_web30 = Web3::new(&web3.get_url(), Duration::from_secs(120));
@@ -107,6 +112,7 @@ pub async fn eth_oracle_main_loop(
         our_cosmos_address,
         gravity_contract_address,
         &long_timeout_web30,
+        chain_id.clone(),
     )
     .await;
     info!("Oracle resync complete, Oracle now operational");
@@ -167,6 +173,7 @@ pub async fn eth_oracle_main_loop(
             cosmos_key,
             last_checked_block.clone(),
             msg_sender.clone(),
+            chain_id.clone(),
         )
         .await
         {
@@ -174,7 +181,7 @@ pub async fn eth_oracle_main_loop(
             Err(e) => {
                 metrics::ETHEREUM_EVENT_CHECK_FAILURES.inc();
                 error!("Failed to get events for block range, Check your Eth node and Cosmos gRPC {:?}", e);
-                if let gravity_utils::error::GravityError::CosmosGrpcError(err) = e {
+                if let mhub2_utils::error::GravityError::CosmosGrpcError(err) = e {
                     if let CosmosGrpcError::TransactionFailed { tx: _, time: _ } = err {
                         delay_for(Duration::from_secs(10)).await;
                     }
@@ -200,9 +207,10 @@ pub async fn eth_signer_main_loop(
     ethereum_key: EthPrivateKey,
     web3: Web3,
     contact: Contact,
-    grpc_client: GravityQueryClient<Channel>,
+    grpc_client: Mhub2QueryClient<Channel>,
     contract_address: EthAddress,
     msg_sender: tokio::sync::mpsc::Sender<Vec<Msg>>,
+    chain_id: String,
 ) {
     let our_cosmos_address = cosmos_key.to_address(&contact.get_prefix()).unwrap();
     let our_ethereum_address = ethereum_key.to_public_key().unwrap();
@@ -263,7 +271,9 @@ pub async fn eth_signer_main_loop(
         }
 
         // sign the last unsigned valsets
-        match get_oldest_unsigned_valsets(&mut grpc_client, our_cosmos_address).await {
+        match get_oldest_unsigned_valsets(&mut grpc_client, our_cosmos_address, chain_id.clone())
+            .await
+        {
             Ok(valsets) => {
                 if valsets.is_empty() {
                     trace!("No validator sets to sign, node is caught up!")
@@ -279,6 +289,7 @@ pub async fn eth_signer_main_loop(
                         valsets,
                         cosmos_key,
                         gravity_id.clone(),
+                        chain_id.clone(),
                     );
                     msg_sender
                         .send(messages)
@@ -296,7 +307,13 @@ pub async fn eth_signer_main_loop(
         }
 
         // sign the last unsigned batch, TODO check if we already have signed this
-        match get_oldest_unsigned_transaction_batch(&mut grpc_client, our_cosmos_address).await {
+        match get_oldest_unsigned_transaction_batch(
+            &mut grpc_client,
+            our_cosmos_address,
+            chain_id.clone(),
+        )
+        .await
+        {
             Ok(Some(last_unsigned_batch)) => {
                 info!(
                     "Sending batch confirm for {}:{} fees {} timeout {}",
@@ -312,6 +329,7 @@ pub async fn eth_signer_main_loop(
                     transaction_batches,
                     cosmos_key,
                     gravity_id.clone(),
+                    chain_id.clone(),
                 );
                 msg_sender
                     .send(messages)
@@ -329,7 +347,8 @@ pub async fn eth_signer_main_loop(
         }
 
         let logic_calls =
-            get_oldest_unsigned_logic_call(&mut grpc_client, our_cosmos_address).await;
+            get_oldest_unsigned_logic_call(&mut grpc_client, our_cosmos_address, chain_id.clone())
+                .await;
         if let Ok(logic_calls) = logic_calls {
             for logic_call in logic_calls {
                 info!(
@@ -344,6 +363,7 @@ pub async fn eth_signer_main_loop(
                     logic_calls,
                     cosmos_key,
                     gravity_id.clone(),
+                    chain_id.clone(),
                 );
                 msg_sender
                     .send(messages)

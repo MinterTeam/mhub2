@@ -6,10 +6,10 @@ use cosmos_gravity::query::get_latest_transaction_batches;
 use cosmos_gravity::query::get_transaction_batch_signatures;
 use ethereum_gravity::utils::{downcast_to_u128, get_tx_batch_nonce};
 use ethereum_gravity::{one_eth, submit_batch::send_eth_transaction_batch};
-use gravity_proto::gravity::query_client::QueryClient as GravityQueryClient;
-use gravity_utils::message_signatures::encode_tx_batch_confirm_hashed;
-use gravity_utils::types::Valset;
-use gravity_utils::types::{BatchConfirmResponse, TransactionBatch};
+use mhub2_proto::mhub2::query_client::QueryClient as GravityQueryClient;
+use mhub2_utils::message_signatures::encode_tx_batch_confirm_hashed;
+use mhub2_utils::types::Valset;
+use mhub2_utils::types::{BatchConfirmResponse, TransactionBatch};
 use std::collections::HashMap;
 use std::time::Duration;
 use tonic::transport::Channel;
@@ -37,9 +37,15 @@ pub async fn relay_batches(
     gravity_contract_address: EthAddress,
     gravity_id: String,
     timeout: Duration,
+    chain_id: String,
 ) {
-    let possible_batches =
-        get_batches_and_signatures(current_valset.clone(), grpc_client, gravity_id.clone()).await;
+    let possible_batches = get_batches_and_signatures(
+        current_valset.clone(),
+        grpc_client,
+        gravity_id.clone(),
+        chain_id.clone(),
+    )
+    .await;
 
     trace!("possible batches {:?}", possible_batches);
 
@@ -55,7 +61,6 @@ pub async fn relay_batches(
     .await;
 }
 
-
 /// This function retrieves the latest batches from the Cosmos module and then
 /// iterates through the signatures for each batch, determining if they are ready
 /// to submit. It is possible for a batch to not have valid signatures for two reasons
@@ -68,18 +73,25 @@ async fn get_batches_and_signatures(
     current_valset: Valset,
     grpc_client: &mut GravityQueryClient<Channel>,
     gravity_id: String,
+    chain_id: String,
 ) -> HashMap<EthAddress, Vec<SubmittableBatch>> {
-    let latest_batches = if let Ok(lb) = get_latest_transaction_batches(grpc_client).await {
-        lb
-    } else {
-        return HashMap::new();
-    };
+    let latest_batches =
+        if let Ok(lb) = get_latest_transaction_batches(grpc_client, chain_id.clone()).await {
+            lb
+        } else {
+            return HashMap::new();
+        };
     trace!("Latest batches {:?}", latest_batches);
 
     let mut possible_batches = HashMap::new();
     for batch in latest_batches {
-        let sigs =
-            get_transaction_batch_signatures(grpc_client, batch.nonce, batch.token_contract).await;
+        let sigs = get_transaction_batch_signatures(
+            grpc_client,
+            batch.nonce,
+            batch.token_contract,
+            chain_id.clone(),
+        )
+        .await;
         trace!("Got sigs {:?}", sigs);
         if let Ok(sigs) = sigs {
             // this checks that the signatures for the batch are actually possible to submit to the chain
@@ -112,7 +124,6 @@ async fn get_batches_and_signatures(
     }
     return possible_batches;
 }
-
 
 /// Attempts to submit batches with valid signatures, checking the state
 /// of the Ethereum chain to ensure that it is valid to submit a given batch

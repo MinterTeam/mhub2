@@ -21,8 +21,8 @@ use deep_space::{coin::Coin, private_key::PrivateKey as CosmosPrivateKey};
 use docopt::Docopt;
 use env_logger::Env;
 use ethereum_gravity::send_to_cosmos::send_to_cosmos;
-use gravity_proto::gravity::DenomToErc20Request;
-use gravity_utils::connection_prep::{check_for_eth, check_for_fee_denom, create_rpc_connections};
+use mhub2_proto::mhub2::DenomToErc20Request;
+use mhub2_utils::connection_prep::{check_for_eth, check_for_fee_denom, create_rpc_connections};
 use std::{process::exit, time::Duration};
 
 const TIMEOUT: Duration = Duration::from_secs(60);

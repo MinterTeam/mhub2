@@ -28,11 +28,11 @@ use clarity::PrivateKey as EthPrivateKey;
 use deep_space::private_key::PrivateKey as CosmosPrivateKey;
 use docopt::Docopt;
 use env_logger::Env;
-use gravity_utils::connection_prep::{
+use main_loop::{ETH_ORACLE_LOOP_SPEED, ETH_SIGNER_LOOP_SPEED};
+use mhub2_utils::connection_prep::{
     check_delegate_addresses, check_for_eth, wait_for_cosmos_node_ready,
 };
-use gravity_utils::connection_prep::{check_for_fee_denom, create_rpc_connections};
-use main_loop::{ETH_ORACLE_LOOP_SPEED, ETH_SIGNER_LOOP_SPEED};
+use mhub2_utils::connection_prep::{check_for_fee_denom, create_rpc_connections};
 use relayer::main_loop::LOOP_SPEED as RELAYER_LOOP_SPEED;
 use std::cmp::min;
 
@@ -45,12 +45,13 @@ struct Args {
     flag_ethereum_rpc: String,
     flag_contract_address: String,
     flag_fees: String,
+    flag_chain_id: String,
     flag_metrics_listen: String,
 }
 
 lazy_static! {
     pub static ref USAGE: String = format!(
-    "Usage: {} --cosmos-phrase=<key> --ethereum-key=<key> --cosmos-grpc=<url> --address-prefix=<prefix> --ethereum-rpc=<url> --fees=<denom> --contract-address=<addr> --metrics-listen=<addr>
+    "Usage: {} --chain-id=<id> --cosmos-phrase=<key> --ethereum-key=<key> --cosmos-grpc=<url> --address-prefix=<prefix> --ethereum-rpc=<url> --fees=<denom> --contract-address=<addr> --metrics-listen=<addr>
         Options:
             -h --help                    Show this screen.
             --cosmos-phrase=<ckey>       The mnenmonic of the Cosmos account key of the validator
@@ -62,8 +63,8 @@ lazy_static! {
             --contract-address=<addr>    The Ethereum contract address for Gravity, this is temporary
             --metrics-listen=<addr>      The address metrics server listens on [default: 127.0.0.1:3000].
         About:
-            The Validator companion binary for Gravity. This must be run by all Gravity chain validators
-            and is a mix of a relayer + oracle + ethereum signing infrastructure
+            The Validator companion binary for Minter Hub 2. This must be run by all Minter Hub 2 chain validators
+            and is a mix of a relayer + oracle + external signing infrastructure
             Written By: {}
             Version {}",
             env!("CARGO_PKG_NAME"),
@@ -98,6 +99,8 @@ async fn main() {
         .expect("Invalid metrics listen address!");
 
     let fee_denom = args.flag_fees;
+
+    let chain_id = args.flag_chain_id;
 
     let timeout = min(
         min(ETH_SIGNER_LOOP_SPEED, ETH_ORACLE_LOOP_SPEED),
@@ -139,6 +142,7 @@ async fn main() {
         public_eth_key,
         public_cosmos_key,
         &contact.get_prefix(),
+        chain_id.clone(),
     )
     .await;
 
@@ -154,6 +158,7 @@ async fn main() {
         connections.grpc.unwrap(),
         contract_address,
         (1f64, fee_denom.to_owned()),
+        chain_id.clone(),
         &metrics_listen,
     )
     .await;

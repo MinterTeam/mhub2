@@ -1,0 +1,128 @@
+syntax = "proto3";
+package mhub2.v1;
+
+import "cosmos_proto/cosmos.proto";
+import "google/protobuf/timestamp.proto";
+import "gogoproto/gogo.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "google/protobuf/any.proto";
+
+option go_package = "github.com/MinterTeam/mhub2/module/x/mhub2/types";
+
+// ExternalEventVoteRecord is an event that is pending of confirmation by 2/3 of
+// the signer set. The event is then attested and executed in the state machine
+// once the required threshold is met.
+message ExternalEventVoteRecord {
+  google.protobuf.Any event = 1
+      [ (cosmos_proto.accepts_interface) = "ExternalEvent" ];
+  repeated string votes = 2;
+  bool accepted = 3;
+}
+
+// LatestBlockHeight defines the latest observed external block height
+// and the corresponding timestamp value in nanoseconds.
+message LatestBlockHeight {
+  uint64 external_height = 1;
+  uint64 cosmos_height = 2;
+}
+
+// ExternalSigner represents a cosmos validator with its corresponding bridge
+// operator address and its staking consensus power.
+message ExternalSigner {
+  uint64 power = 1;
+  string external_address = 2;
+}
+
+// SignerSetTx is the Bridge multisig set that relays
+// transactions the two chains. The staking validators keep external keys which
+// are used to check signatures in order to get significant gas
+// savings.
+message SignerSetTx {
+  uint64 nonce = 1;
+  uint64 height = 2;
+  repeated ExternalSigner signers = 3
+      [ (gogoproto.castrepeated) = "ExternalSigners" ];
+  uint64 sequence = 4;
+}
+
+// BatchTx represents a batch of transactions going from Cosmos to External Chain.
+// Batch txs are are identified by a unique hash and the token contract that is
+// shared by all the SendToExternal
+message BatchTx {
+  uint64 batch_nonce = 1;
+  uint64 timeout = 2;
+  repeated SendToExternal transactions = 3;
+  string external_token_id = 4;
+  uint64 height = 5;
+  uint64 sequence = 6;
+}
+
+// SendToExternal represents an individual SendToExternal from Cosmos to
+// External chain
+message SendToExternal {
+  uint64 id = 1;
+  string sender = 2;
+  string external_recipient = 3;
+  string chain_id = 4;
+  ExternalToken token = 5 [ (gogoproto.nullable) = false ];
+  ExternalToken fee = 6 [ (gogoproto.nullable) = false ];
+  string tx_hash = 7;
+  ExternalToken val_commission = 8 [ (gogoproto.nullable) = false ];
+}
+
+// ContractCallTx represents an individual arbitrary logic call transaction
+// from Cosmos to External.
+message ContractCallTx {
+  uint64 invalidation_nonce = 1;
+  bytes invalidation_scope = 2
+      [ (gogoproto.casttype) =
+            "github.com/tendermint/tendermint/libs/bytes.HexBytes" ];
+  string address = 3;
+  bytes payload = 4;
+  uint64 timeout = 5;
+  repeated ExternalToken tokens = 6 [ (gogoproto.nullable) = false ];
+  repeated ExternalToken fees = 7 [ (gogoproto.nullable) = false ];
+  uint64 height = 8;
+  uint64 sequence = 9;
+}
+
+message ExternalToken {
+  uint64 token_id = 1;
+  string external_token_id = 2;
+  string amount = 3 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+}
+
+message TokenInfo {
+  uint64 id = 1;
+  string denom = 2;
+  string chain_id = 3;
+  string external_token_id = 4;
+  uint64 external_decimals = 5;
+  bytes commission = 6 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable) = false
+  ];
+}
+
+message TokenInfos {repeated TokenInfo token_infos = 1;}
+
+message IDSet { repeated uint64 ids = 1; }
+
+message TxStatus {
+  string in_tx_hash = 1 [(gogoproto.jsontag) = "in_tx_hash"];
+  string out_tx_hash = 2 [(gogoproto.jsontag) = "out_tx_hash"];
+  TxStatusType status = 3 [(gogoproto.jsontag) = "status"];
+}
+
+enum TxStatusType {
+  option (gogoproto.goproto_enum_prefix) = false;
+
+  TX_STATUS_NOT_FOUND  = 0 [(gogoproto.enumvalue_customname) = "TX_STATUS_NOT_FOUND" ];
+  TX_STATUS_DEPOSIT_RECEIVED  = 1 [(gogoproto.enumvalue_customname) = "TX_STATUS_DEPOSIT_RECEIVED" ];
+  TX_STATUS_BATCH_CREATED = 2 [(gogoproto.enumvalue_customname) = "TX_STATUS_BATCH_CREATED"];
+  TX_STATUS_BATCH_EXECUTED   = 3 [(gogoproto.enumvalue_customname) = "TX_STATUS_BATCH_EXECUTED"];
+  TX_STATUS_REFUNDED   = 4 [(gogoproto.enumvalue_customname) = "TX_STATUS_REFUNDED"];
+}

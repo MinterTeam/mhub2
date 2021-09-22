@@ -2,7 +2,7 @@
 use clarity::Uint256;
 use cosmos_gravity::query::get_last_event_nonce;
 use deep_space::address::Address as CosmosAddress;
-use gravity_proto::gravity::query_client::QueryClient as GravityQueryClient;
+use mhub2_proto::mhub2::query_client::QueryClient as GravityQueryClient;
 use std::time::Duration;
 use tokio::time::sleep as delay_for;
 use tonic::transport::Channel;
@@ -25,15 +25,16 @@ pub async fn get_block_number_with_retry(web3: &Web3) -> Uint256 {
 pub async fn get_last_event_nonce_with_retry(
     client: &mut GravityQueryClient<Channel>,
     our_cosmos_address: CosmosAddress,
+    chain_id: String,
 ) -> u64 {
-    let mut res = get_last_event_nonce(client, our_cosmos_address).await;
+    let mut res = get_last_event_nonce(client, our_cosmos_address, chain_id.clone()).await;
     while res.is_err() {
         error!(
             "Failed to get last event nonce, is the Cosmos GRPC working? {:?}",
             res
         );
         delay_for(RETRY_TIME).await;
-        res = get_last_event_nonce(client, our_cosmos_address).await;
+        res = get_last_event_nonce(client, our_cosmos_address, chain_id.clone()).await;
     }
     res.unwrap()
 }

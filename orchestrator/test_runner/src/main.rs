@@ -1,7 +1,7 @@
 //! this crate, namely runs all up integration tests of the Gravity code against
 //! several scenarios, happy path and non happy path. This is essentially meant
 //! to be executed in our specific CI docker container and nowhere else. If you
-//! find some function useful pull it up into the more general gravity_utils or the like
+//! find some function useful pull it up into the more general mhub2_utils or the like
 
 #[macro_use]
 extern crate log;
@@ -17,9 +17,9 @@ use cosmos_gravity::utils::wait_for_cosmos_online;
 use deep_space::coin::Coin;
 use deep_space::Address as CosmosAddress;
 use deep_space::Contact;
-use gravity_proto::gravity::query_client::QueryClient as GravityQueryClient;
 use happy_path::happy_path_test;
 use happy_path_v2::happy_path_test_v2;
+use mhub2_proto::mhub2::query_client::QueryClient as GravityQueryClient;
 use orch_keys_update::orch_keys_update;
 use std::{env, time::Duration};
 use transaction_stress_test::transaction_stress_test;

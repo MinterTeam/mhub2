@@ -12,10 +12,11 @@ regex = "1.5.4"
 
 cosmos_gravity = { path = "../cosmos_gravity" }
 ethereum_gravity = { path = "../ethereum_gravity" }
-gravity_proto = { path = "../gravity_proto" }
-gravity_utils = { path = "../gravity_utils" }
+mhub2_proto = { path = "../mhub2_proto" }
+mhub2_utils = { path = "../mhub2_utils" }
 orchestrator = { path = "../orchestrator" }
 relayer = { path = "../relayer" }
+web30 = {path = "../web30" }
 
 deep_space ={git="https://github.com/iqlusioninc/deep_space/", branch="zaki/tendermint_0_21"}
 clarity = "0.4.12"
@@ -28,7 +29,6 @@ signatory = "0.23.0-pre"
 rand_core = { version = "0.6", features = ["std"] }
 
 abscissa_tokio = { version = "0.6.0-pre.2", features = ["actix"] }
-web30 = "0.14"
 tokio = "1"
 tonic = "0.4"
 toml = "0.5"

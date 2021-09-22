@@ -4,12 +4,13 @@ members = [
 	"orchestrator",
 	"cosmos_gravity",
 	"ethereum_gravity",
-	"gravity_utils",
+	"mhub2_utils",
 	"proto_build",
 	"test_runner",
-	"gravity_proto",
+	"mhub2_proto",
 	"relayer",
 	"client",
 	"register_delegate_keys",
 	"gorc",
+	"web30"
 ]

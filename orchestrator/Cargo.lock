@@ -885,9 +885,9 @@ dependencies = [
  "docopt",
  "env_logger",
  "ethereum_gravity",
- "gravity_proto",
- "gravity_utils",
  "lazy_static",
+ "mhub2_proto",
+ "mhub2_utils",
  "openssl-probe",
  "serde",
  "serde_derive",
@@ -982,9 +982,9 @@ dependencies = [
  "deep_space 2.4.3",
  "env_logger",
  "ethereum_gravity",
- "gravity_proto",
- "gravity_utils",
  "log",
+ "mhub2_proto",
+ "mhub2_utils",
  "num256",
  "prost",
  "prost-types",
@@ -1285,8 +1285,8 @@ version = "0.1.0"
 dependencies = [
  "clarity",
  "deep_space 2.4.3",
- "gravity_utils",
  "log",
+ "mhub2_utils",
  "num256",
  "sha3",
  "web30",
@@ -1541,10 +1541,10 @@ dependencies = [
  "cosmos_gravity",
  "deep_space 2.4.3",
  "ethereum_gravity",
- "gravity_proto",
- "gravity_utils",
  "gumdrop",
  "k256",
+ "mhub2_proto",
+ "mhub2_utils",
  "once_cell",
  "orchestrator",
  "pkcs8",
@@ -1559,39 +1559,6 @@ dependencies = [
  "tokio 1.5.0",
  "toml",
  "tonic",
- "web30",
-]
-
-[[package]]
-name = "gravity_proto"
-version = "0.1.0"
-dependencies = [
- "bytes 1.0.1",
- "cosmos-sdk-proto",
- "prost",
- "prost-types",
- "tonic",
-]
-
-[[package]]
-name = "gravity_utils"
-version = "0.1.0"
-dependencies = [
- "actix",
- "clarity",
- "cosmos-sdk-proto",
- "deep_space 2.4.3",
- "gravity_proto",
- "log",
- "num-bigint 0.4.0",
- "num256",
- "rand 0.8.3",
- "serde",
- "serde_derive",
- "sha3",
- "tokio 1.5.0",
- "tonic",
- "url",
  "web30",
 ]
 
@@ -1747,9 +1714,9 @@ dependencies = [
 
 [[package]]
 name = "http-body"
-version = "0.4.1"
+version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5dfb77c123b4e2f72a2069aeae0b4b4949cc7e966df277813fc16347e7549737"
+checksum = "399c583b2979440c60be0821a6199eca73bc3c8dcd9d070d75ac726e2c6186e5"
 dependencies = [
  "bytes 1.0.1",
  "http",
@@ -2015,6 +1982,39 @@ name = "memchr"
 version = "2.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b16bd47d9e329435e309c58469fe0791c2d0d1ba96ec0954152a5ae2b04387dc"
+
+[[package]]
+name = "mhub2_proto"
+version = "0.1.0"
+dependencies = [
+ "bytes 1.0.1",
+ "cosmos-sdk-proto",
+ "prost",
+ "prost-types",
+ "tonic",
+]
+
+[[package]]
+name = "mhub2_utils"
+version = "0.1.0"
+dependencies = [
+ "actix",
+ "clarity",
+ "cosmos-sdk-proto",
+ "deep_space 2.4.3",
+ "log",
+ "mhub2_proto",
+ "num-bigint 0.4.0",
+ "num256",
+ "rand 0.8.3",
+ "serde",
+ "serde_derive",
+ "sha3",
+ "tokio 1.5.0",
+ "tonic",
+ "url",
+ "web30",
+]
 
 [[package]]
 name = "mime"
@@ -2366,11 +2366,11 @@ dependencies = [
  "env_logger",
  "ethereum_gravity",
  "futures",
- "gravity_proto",
- "gravity_utils",
  "hyper",
  "lazy_static",
  "log",
+ "mhub2_proto",
+ "mhub2_utils",
  "num256",
  "openssl",
  "openssl-probe",
@@ -2846,10 +2846,10 @@ dependencies = [
  "docopt",
  "env_logger",
  "ethereum_gravity",
- "gravity_proto",
- "gravity_utils",
  "lazy_static",
  "log",
+ "mhub2_proto",
+ "mhub2_utils",
  "openssl-probe",
  "rand 0.8.3",
  "relayer",
@@ -2870,10 +2870,10 @@ dependencies = [
  "docopt",
  "env_logger",
  "ethereum_gravity",
- "gravity_proto",
- "gravity_utils",
  "lazy_static",
  "log",
+ "mhub2_proto",
+ "mhub2_utils",
  "num256",
  "openssl-probe",
  "serde",
@@ -3405,10 +3405,10 @@ dependencies = [
  "env_logger",
  "ethereum_gravity",
  "futures",
- "gravity_proto",
- "gravity_utils",
  "lazy_static",
  "log",
+ "mhub2_proto",
+ "mhub2_utils",
  "num256",
  "orchestrator",
  "rand 0.8.3",
@@ -3685,9 +3685,9 @@ dependencies = [
 
 [[package]]
 name = "tower"
-version = "0.4.6"
+version = "0.4.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f715efe02c0862926eb463e49368d38ddb119383475686178e32e26d15d06a66"
+checksum = "f60422bc7fefa2f3ec70359b8ff1caff59d785877eb70595904605bcc412470f"
 dependencies = [
  "futures-core",
  "futures-util",
@@ -4019,12 +4019,11 @@ checksum = "d9a543ae66aa233d14bb765ed9af4a33e81b8b58d1584cf1b47ff8cd0b9e4489"
 [[package]]
 name = "web30"
 version = "0.14.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4268b83b39379f4f8ff24dca0a9001afa637d68f08120a92bc09da042e5a7fda"
 dependencies = [
  "actix",
  "awc 3.0.0-beta.6",
  "clarity",
+ "env_logger",
  "futures",
  "lazy_static",
  "log",

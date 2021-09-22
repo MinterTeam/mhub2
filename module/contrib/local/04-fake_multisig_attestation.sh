@@ -17,6 +17,6 @@ gravitycli q gravity attestation orchestrator_signed_multisig_update $nonce -o j
 echo "## Submit observation"
 # chain id: 1
 # bridge contract address: 0x8858eeb3dfffa017d4bce9801d340d36cf895ccf
-#gravitycli tx gravity observed  multisig-update 1 0x8858eeb3dfffa017d4bce9801d340d36cf895ccf  "$nonce" --from validator --chain-id=testing -b block -y
+#gravitycli tx mhub2 observed  multisig-update 1 0x8858eeb3dfffa017d4bce9801d340d36cf895ccf  "$nonce" --from validator --chain-id=testing -b block -y
 echo "## Query last observed state"
 gravitycli q gravity observed nonces -o json

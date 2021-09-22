@@ -1,0 +1,33 @@
+syntax = "proto3";
+package oracle.v1;
+
+import "google/api/annotations.proto";
+import "oracle/v1/types.proto";
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/MinterTeam/mhub2/module/x/oracle/types";
+
+// Query defines the gRPC querier service
+service Query {
+  rpc CurrentEpoch(QueryCurrentEpochRequest) returns(QueryCurrentEpochResponse) {
+    option (google.api.http).get = "/oracle/v1beta/epoch/current";
+  }
+  rpc EthFee(QueryEthFeeRequest) returns(QueryEthFeeResponse) {
+      option (google.api.http).get = "/oracle/v1beta/eth_fee";
+  }
+}
+
+message QueryCurrentEpochRequest {}
+message QueryCurrentEpochResponse { Epoch epoch = 1; }
+
+message QueryEthFeeRequest {}
+message QueryEthFeeResponse {
+    string min = 1 [
+                      (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+                      (gogoproto.nullable) = false
+                     ];
+    string fast = 2 [
+                   (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+                   (gogoproto.nullable) = false
+                   ];
+}

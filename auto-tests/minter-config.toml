@@ -1,0 +1,182 @@
+# This is a TOML config file.
+# For more information, see https://github.com/toml-lang/toml
+
+##### main base config options #####
+
+# A custom human readable name for this node
+moniker = "MBP-Daniil"
+
+# Address to listen for gRPC connections
+grpc_listen_addr = "tcp://0.0.0.0:8842"
+
+# Address to listen for API V2 connections
+api_v2_listen_addr = "tcp://0.0.0.0:8843"
+
+# API v2 Timeout
+api_v2_timeout_duration = "10s"
+
+# WebSocket connection duration
+ws_connection_duration = "1m0s"
+
+# Sets node to be in validator mode. Disables API, events, history of blocks, indexes, etc. 
+validator_mode = false
+
+# Sets number of last stated to be saved on disk.
+keep_last_states = 120
+
+# State cache size 
+state_cache_size = 1000000
+
+# State memory in MB
+state_mem_available = 1024
+
+# Limit for simultaneous requests to API
+api_simultaneous_requests = 100
+
+# If this node is many blocks behind the tip of the chain, FastSync
+# allows them to catchup quickly by downloading blocks in parallel
+# and verifying their commits
+fast_sync = true
+
+# Database backend: leveldb | memdb
+db_backend = "goleveldb"
+
+# Database directory
+db_path = "tmdata"
+
+# Output level for logging, including package level options
+log_level = "consensus:info,main:info,state:info,*:error"
+
+# Output format: 'plain' (colored text) or 'json'
+log_format = "plain"
+
+# Path to file for logs, "stdout" by default
+log_path = "stdout"
+
+##### additional base config options #####
+
+# Path to the JSON file containing the private key to use as a validator in the consensus protocol
+priv_validator_key_file = "config/priv_validator.json"
+priv_validator_state_file = "config/priv_validator_state.json"
+
+# Path to the JSON file containing the private key to use for node authentication in the p2p protocol
+node_key_file = "config/node_key.json"
+
+# TCP or UNIX socket address for the profiling server to listen on
+prof_laddr = ""
+
+##### advanced configuration options #####
+
+##### rpc server configuration options #####
+[rpc]
+
+# TCP or UNIX socket address for the RPC server to listen on
+laddr = "tcp://127.0.0.1:36657"
+
+# TCP or UNIX socket address for the gRPC server to listen on
+# NOTE: This server only supports /broadcast_tx_commit
+grpc_laddr = ""
+
+# Maximum number of simultaneous connections.
+# Does not include RPC (HTTP&WebSocket) connections. See max_open_connections
+# If you want to accept more significant number than the default, make sure
+# you increase your OS limits.
+# 0 - unlimited.
+grpc_max_open_connections = 900
+
+# Activate unsafe RPC commands like /dial_seeds and /unsafe_flush_mempool
+unsafe = false
+
+# Maximum number of simultaneous connections (including WebSocket).
+# Does not include gRPC connections. See grpc_max_open_connections
+# If you want to accept more significant number than the default, make sure
+# you increase your OS limits.
+# 0 - unlimited.
+max_open_connections = 900
+
+##### peer to peer configuration options #####
+[p2p]
+
+# Address to listen for incoming connections
+laddr = "tcp://0.0.0.0:26656"
+
+# Address to advertise to peers for them to dial
+# If empty, will use the same port as the laddr,
+# and will introspect on the listener or use UPnP
+# to figure out the address.
+external_address = ""
+
+# Comma separated list of seed nodes to connect to
+seeds = "25104d4b173d1047e9d1a70cdefde9e30707beb1@84.201.143.192:26656,1e1c6149451d2a7c1072523e49cab658080d9bd2@minter-nodes-1.mainnet.btcsecure.io:26656,c578fba1bdb5265be75dd412f8cf1bbeb7399620@seed.minter.stakeholder.space:26656,bab220855eb9625ea547f1ef1d11692c60a7a406@138.201.28.219:26656"
+
+# Comma separated list of nodes to keep persistent connections to
+persistent_peers = ""
+
+# UPNP port forwarding
+upnp = false
+
+# Set true for strict address routability rules
+addr_book_strict = true
+
+# Time to wait before flushing messages out on the connection, in ms
+flush_throttle_timeout = "10ms"
+
+# Maximum number of inbound peers
+max_num_inbound_peers = 40
+
+# Maximum number of outbound peers to connect to, excluding persistent peers
+max_num_outbound_peers = 10
+
+# Maximum size of a message packet payload, in bytes
+max_packet_msg_payload_size = 1024
+
+# Rate at which packets can be sent, in bytes/second
+send_rate = 15360000
+
+# Rate at which packets can be received, in bytes/second
+recv_rate = 15360000
+
+# Set true to enable the peer-exchange reactor
+pex = true
+
+# Seed mode, in which node constantly crawls the network and looks for
+# peers. If another node asks it for addresses, it responds and disconnects.
+#
+# Does not work if the peer-exchange reactor is disabled.
+seed_mode = false
+
+# Comma separated list of peer IDs to keep private (will not be gossiped to other peers)
+private_peer_ids = ""
+
+##### mempool configuration options #####
+[mempool]
+
+recheck = false
+broadcast = true
+wal_dir = ""
+
+# size of the mempool
+size = 10000
+
+# size of the cache (used to filter transactions we saw earlier)
+cache_size = 100000
+
+##### instrumentation configuration options #####
+[instrumentation]
+
+# When true, Prometheus metrics are served under /metrics on
+# PrometheusListenAddr.
+# Check out the documentation for the list of available metrics.
+prometheus = false
+
+# Address to listen for Prometheus collector(s) connections
+prometheus_listen_addr = ":26660"
+
+# Maximum number of simultaneous connections.
+# If you want to accept more significant number than the default, make sure
+# you increase your OS limits.
+# 0 - unlimited.
+max_open_connections = 3
+
+# Instrumentation namespace
+namespace = "minter"

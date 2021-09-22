@@ -119,18 +119,6 @@ lazy_static! {
         labels! {"chain" => "ethereum"}
     ))
     .unwrap();
-    static ref ETHEREUM_LAST_ERC20_BLOCK: IntGauge = register_int_gauge!(opts!(
-        "ethereum_last_erc20_block",
-        "last block height for an erc20 event",
-        labels! {"chain" => "ethereum"}
-    ))
-    .unwrap();
-    static ref ETHEREUM_LAST_ERC20_EVENT: IntGauge = register_int_gauge!(opts!(
-        "ethereum_last_erc20_event",
-        "last event_nonce for a erc20 event",
-        labels! {"chain" => "ethereum"}
-    ))
-    .unwrap();
     static ref ETHEREUM_LAST_EVENT_NONCE: IntGauge = register_int_gauge!(opts!(
         "ethereum_last_event_nonce",
         "last event nonce on the gravity contract",
@@ -198,15 +186,6 @@ pub fn set_ethereum_last_deposit_block(v: clarity::Uint256) {
 
 pub fn set_ethereum_last_deposit_event(v: clarity::Uint256) {
     set_uint256(&ETHEREUM_LAST_DEPOSIT_EVENT, v.clone());
-    set_uint256(&ETHEREUM_LAST_EVENT_NONCE, v);
-}
-
-pub fn set_ethereum_last_erc20_block(v: clarity::Uint256) {
-    set_uint256(&ETHEREUM_LAST_ERC20_BLOCK, v);
-}
-
-pub fn set_ethereum_last_erc20_event(v: clarity::Uint256) {
-    set_uint256(&ETHEREUM_LAST_ERC20_EVENT, v.clone());
     set_uint256(&ETHEREUM_LAST_EVENT_NONCE, v);
 }
 

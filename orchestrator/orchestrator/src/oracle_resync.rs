@@ -1,9 +1,8 @@
 use clarity::{Address, Uint256};
 use deep_space::address::Address as CosmosAddress;
-use gravity_proto::gravity::query_client::QueryClient as GravityQueryClient;
-use gravity_utils::types::{
-    Erc20DeployedEvent, LogicCallExecutedEvent, SendToCosmosEvent, TransactionBatchExecutedEvent,
-    ValsetUpdatedEvent,
+use mhub2_proto::mhub2::query_client::QueryClient as Mhub2QueryClient;
+use mhub2_utils::types::{
+    LogicCallExecutedEvent, SendToHubEvent, TransactionBatchExecutedEvent, ValsetUpdatedEvent,
 };
 use tokio::time::sleep as delay_for;
 use tonic::transport::Channel;
@@ -16,17 +15,18 @@ use crate::get_with_retry::RETRY_TIME;
 /// This function retrieves the last event nonce that we have relayed to Cosmos
 /// it then uses the Ethereum indexes to find what block the last event we relayed is in
 pub async fn get_last_checked_block(
-    grpc_client: GravityQueryClient<Channel>,
+    grpc_client: Mhub2QueryClient<Channel>,
     our_cosmos_address: CosmosAddress,
     gravity_contract_address: Address,
     web3: &Web3,
+    chain_id: String,
 ) -> Uint256 {
     let mut grpc_client = grpc_client;
     const BLOCKS_TO_SEARCH: u128 = 5_000u128;
 
     let latest_block = get_block_number_with_retry(web3).await;
     let mut last_event_nonce: Uint256 =
-        get_last_event_nonce_with_retry(&mut grpc_client, our_cosmos_address)
+        get_last_event_nonce_with_retry(&mut grpc_client, our_cosmos_address, chain_id.clone())
             .await
             .into();
 
@@ -62,15 +62,7 @@ pub async fn get_last_checked_block(
                 end_search.clone(),
                 Some(current_block.clone()),
                 vec![gravity_contract_address],
-                vec!["SendToCosmosEvent(address,address,bytes32,uint256,uint256)"],
-            )
-            .await;
-        let erc20_deployed_events = web3
-            .check_for_events(
-                end_search.clone(),
-                Some(current_block.clone()),
-                vec![gravity_contract_address],
-                vec!["ERC20DeployedEvent(string,address,string,string,uint8,uint256)"],
+                vec!["SendToHubEvent(address,address,bytes32,uint256,uint256)"],
             )
             .await;
         let logic_call_executed_events = web3
@@ -98,7 +90,6 @@ pub async fn get_last_checked_block(
         if batch_events.is_err()
             || send_to_cosmos_events.is_err()
             || valset_events.is_err()
-            || erc20_deployed_events.is_err()
             || logic_call_executed_events.is_err()
         {
             error!("Failed to get blockchain events while resyncing, is your Eth node working? If you see only one of these it's fine",);
@@ -108,7 +99,6 @@ pub async fn get_last_checked_block(
         let batch_events = batch_events.unwrap();
         let send_to_cosmos_events = send_to_cosmos_events.unwrap();
         let mut valset_events = valset_events.unwrap();
-        let erc20_deployed_events = erc20_deployed_events.unwrap();
         let logic_call_executed_events = logic_call_executed_events.unwrap();
 
         // look for and return the block number of the event last seen on the Cosmos chain
@@ -116,7 +106,7 @@ pub async fn get_last_checked_block(
         // there is more than one event there) onwards. We use valset nonce 0 as an indicator
         // of what block the contract was deployed on.
         for event in batch_events {
-            match TransactionBatchExecutedEvent::from_log(&event) {
+            match TransactionBatchExecutedEvent::from_log(&event, web3).await {
                 Ok(batch) => {
                     trace!(
                         "{} batch event nonce {} last event nonce",
@@ -132,7 +122,7 @@ pub async fn get_last_checked_block(
         }
         for event in send_to_cosmos_events {
             let prefix = our_cosmos_address.get_prefix();
-            match SendToCosmosEvent::from_log(&event, &prefix) {
+            match SendToHubEvent::from_log(&event, &prefix) {
                 Ok(send) => {
                     trace!(
                         "{} send event nonce {} last event nonce",
@@ -146,21 +136,7 @@ pub async fn get_last_checked_block(
                 Err(e) => error!("Got SendToCosmos event that we can't parse {}", e),
             }
         }
-        for event in erc20_deployed_events {
-            match Erc20DeployedEvent::from_log(&event) {
-                Ok(deploy) => {
-                    trace!(
-                        "{} deploy event nonce {} last event nonce",
-                        deploy.event_nonce,
-                        last_event_nonce
-                    );
-                    if deploy.event_nonce == last_event_nonce && event.block_number.is_some() {
-                        return event.block_number.unwrap();
-                    }
-                }
-                Err(e) => error!("Got ERC20Deployed event that we can't parse {}", e),
-            }
-        }
+
         for event in logic_call_executed_events {
             match LogicCallExecutedEvent::from_log(&event) {
                 Ok(call) => {

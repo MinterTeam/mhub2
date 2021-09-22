@@ -1,11 +1,11 @@
 package app
 
 import (
+	gravityparams "github.com/MinterTeam/mhub2/module/app/params"
 	"github.com/cosmos/cosmos-sdk/std"
-	gravityparams "github.com/cosmos/gravity-bridge/module/app/params"
 )
 
-// MakeEncodingConfig creates an EncodingConfig for gravity.
+// MakeEncodingConfig creates an EncodingConfig for mhub2.
 func MakeEncodingConfig() gravityparams.EncodingConfig {
 	encodingConfig := gravityparams.MakeEncodingConfig()
 	std.RegisterLegacyAminoCodec(encodingConfig.Amino)

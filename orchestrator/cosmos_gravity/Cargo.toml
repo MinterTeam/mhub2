@@ -7,9 +7,10 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-gravity_utils = {path = "../gravity_utils"}
+mhub2_utils = {path = "../mhub2_utils" }
 ethereum_gravity = {path = "../ethereum_gravity"}
-gravity_proto = {path = "../gravity_proto/"}
+mhub2_proto = {path = "../mhub2_proto"}
+web30 = {path = "../web30" }
 
 deep_space ={git="https://github.com/iqlusioninc/deep_space/", branch="zaki/tendermint_0_21"}
 clarity = "0.4.11"
@@ -18,7 +19,6 @@ num256 = "0.3"
 log = "0.4"
 sha3 = "0.9"
 tokio = "1.4"
-web30 = "0.14.4"
 tonic = "0.4"
 cosmos-sdk-proto = {git="http://github.com/cosmos/cosmos-rust", branch="main"}
 prost = "0.7"

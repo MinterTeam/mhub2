@@ -6,9 +6,9 @@ use ethereum_gravity::{
     logic_call::send_eth_logic_call,
     utils::{downcast_to_u128, get_logic_call_nonce},
 };
-use gravity_proto::gravity::query_client::QueryClient as GravityQueryClient;
-use gravity_utils::types::{LogicCallConfirmResponse, Valset};
-use gravity_utils::{message_signatures::encode_logic_call_confirm_hashed, types::LogicCall};
+use mhub2_proto::mhub2::query_client::QueryClient as GravityQueryClient;
+use mhub2_utils::types::{LogicCallConfirmResponse, Valset};
+use mhub2_utils::{message_signatures::encode_logic_call_confirm_hashed, types::LogicCall};
 use std::time::Duration;
 use tonic::transport::Channel;
 use web30::client::Web3;
@@ -22,10 +22,11 @@ pub async fn relay_logic_calls(
     gravity_contract_address: EthAddress,
     gravity_id: String,
     timeout: Duration,
+    chain_id: String,
 ) {
     let our_ethereum_address = ethereum_key.to_public_key().unwrap();
 
-    let latest_calls = get_latest_logic_calls(grpc_client).await;
+    let latest_calls = get_latest_logic_calls(grpc_client, chain_id.clone()).await;
     trace!("Latest Logic calls {:?}", latest_calls);
     if latest_calls.is_err() {
         return;
@@ -38,6 +39,7 @@ pub async fn relay_logic_calls(
             grpc_client,
             call.invalidation_id.clone(),
             call.invalidation_nonce,
+            chain_id.clone(),
         )
         .await;
         trace!("Got sigs {:?}", sigs);

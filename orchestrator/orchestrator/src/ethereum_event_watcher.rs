@@ -9,12 +9,11 @@ use cosmos_gravity::build;
 use cosmos_gravity::query::get_last_event_nonce;
 use deep_space::private_key::PrivateKey as CosmosPrivateKey;
 use deep_space::{Contact, Msg};
-use gravity_proto::gravity::query_client::QueryClient as GravityQueryClient;
-use gravity_utils::{
+use mhub2_proto::mhub2::query_client::QueryClient as Mhub2QueryClient;
+use mhub2_utils::{
     error::GravityError,
     types::{
-        Erc20DeployedEvent, LogicCallExecutedEvent, SendToCosmosEvent,
-        TransactionBatchExecutedEvent, ValsetUpdatedEvent,
+        LogicCallExecutedEvent, SendToHubEvent, TransactionBatchExecutedEvent, ValsetUpdatedEvent,
     },
 };
 use std::time;
@@ -25,11 +24,12 @@ use web30::jsonrpc::error::Web3Error;
 pub async fn check_for_events(
     web3: &Web3,
     contact: &Contact,
-    grpc_client: &mut GravityQueryClient<Channel>,
+    grpc_client: &mut Mhub2QueryClient<Channel>,
     gravity_contract_address: EthAddress,
     cosmos_key: CosmosPrivateKey,
     starting_block: Uint256,
     msg_sender: tokio::sync::mpsc::Sender<Vec<Msg>>,
+    chain_id: String,
 ) -> Result<Uint256, GravityError> {
     let prefix = contact.get_prefix();
     let our_cosmos_address = cosmos_key.to_address(&prefix).unwrap();
@@ -44,7 +44,7 @@ pub async fn check_for_events(
             starting_block.clone(),
             Some(latest_block.clone()),
             vec![gravity_contract_address],
-            vec!["SendToCosmosEvent(address,address,bytes32,uint256,uint256)"],
+            vec!["SendToHubEvent(address,address,bytes32,uint256,uint256)"],
         )
         .await;
     debug!("Deposit events detected {:?}", deposits);
@@ -57,7 +57,7 @@ pub async fn check_for_events(
             vec!["TransactionBatchExecutedEvent(uint256,address,uint256)"],
         )
         .await;
-    debug!("Batche events detected {:?}", batches);
+    debug!("Batch events detected {:?}", batches);
 
     let valsets = web3
         .check_for_events(
@@ -69,16 +69,6 @@ pub async fn check_for_events(
         .await;
     debug!("Valset events detected {:?}", valsets);
 
-    let erc20_deployed = web3
-        .check_for_events(
-            starting_block.clone(),
-            Some(latest_block.clone()),
-            vec![gravity_contract_address],
-            vec!["ERC20DeployedEvent(string,address,string,string,uint8,uint256)"],
-        )
-        .await;
-    debug!("ERC20 events detected {:?}", erc20_deployed);
-
     let logic_calls = web3
         .check_for_events(
             starting_block.clone(),
@@ -89,20 +79,17 @@ pub async fn check_for_events(
         .await;
     debug!("Logic call events detected {:?}", logic_calls);
 
-    if let (Ok(valsets), Ok(batches), Ok(deposits), Ok(deploys), Ok(logic_calls)) =
-        (valsets, batches, deposits, erc20_deployed, logic_calls)
+    if let (Ok(valsets), Ok(batches), Ok(deposits), Ok(logic_calls)) =
+        (valsets, batches, deposits, logic_calls)
     {
-        let deposits = SendToCosmosEvent::from_logs(&deposits, &prefix)?;
+        let deposits = SendToHubEvent::from_logs(&deposits, &prefix)?;
         debug!("parsed deposits {:?}", deposits);
 
-        let batches = TransactionBatchExecutedEvent::from_logs(&batches)?;
+        let batches = TransactionBatchExecutedEvent::from_logs(&batches, web3).await?;
         debug!("parsed batches {:?}", batches);
 
         let valsets = ValsetUpdatedEvent::from_logs(&valsets)?;
         debug!("parsed valsets {:?}", valsets);
-
-        let erc20_deploys = Erc20DeployedEvent::from_logs(&deploys)?;
-        debug!("parsed erc20 deploys {:?}", erc20_deploys);
 
         let logic_calls = LogicCallExecutedEvent::from_logs(&logic_calls)?;
         debug!("logic call executions {:?}", logic_calls);
@@ -112,21 +99,20 @@ pub async fn check_for_events(
         // block, so we also need this routine so make sure we don't send in the first event in this hypothetical
         // multi event block again. In theory we only send all events for every block and that will pass of fail
         // atomicly but lets not take that risk.
-        let last_event_nonce = get_last_event_nonce(grpc_client, our_cosmos_address).await?;
+        let last_event_nonce =
+            get_last_event_nonce(grpc_client, our_cosmos_address, chain_id.clone()).await?;
         metrics::set_cosmos_last_event_nonce(last_event_nonce);
 
-        let deposits = SendToCosmosEvent::filter_by_event_nonce(last_event_nonce, &deposits);
+        let deposits = SendToHubEvent::filter_by_event_nonce(last_event_nonce, &deposits);
         let batches =
             TransactionBatchExecutedEvent::filter_by_event_nonce(last_event_nonce, &batches);
         let valsets = ValsetUpdatedEvent::filter_by_event_nonce(last_event_nonce, &valsets);
-        let erc20_deploys =
-            Erc20DeployedEvent::filter_by_event_nonce(last_event_nonce, &erc20_deploys);
         let logic_calls =
             LogicCallExecutedEvent::filter_by_event_nonce(last_event_nonce, &logic_calls);
 
         for deposit in deposits.iter() {
             info!(
-                    "Oracle observed deposit with ethereum sender {}, cosmos_reciever {}, amount {}, and event nonce {}",
+                    "Oracle observed deposit with ethereum sender {}, hub_receiver {}, amount {}, and event nonce {}",
                     deposit.sender, deposit.destination, deposit.amount, deposit.event_nonce
             );
         }
@@ -145,13 +131,6 @@ pub async fn check_for_events(
             )
         }
 
-        for erc20_deploy in erc20_deploys.iter() {
-            info!(
-                "Oracle observed ERC20 deploy with denom {} erc20 name {} and symbol {} and event_nonce {}",
-                erc20_deploy.cosmos_denom, erc20_deploy.name, erc20_deploy.symbol, erc20_deploy.event_nonce,
-            )
-        }
-
         for logic_call in logic_calls.iter() {
             info!(
                 "Oracle observed logic call execution with invalidation_id {} invalidation_nonce {} and event_nonce {}",
@@ -164,7 +143,6 @@ pub async fn check_for_events(
         if !deposits.is_empty()
             || !batches.is_empty()
             || !valsets.is_empty()
-            || !erc20_deploys.is_empty()
             || !logic_calls.is_empty()
         {
             let messages = build::ethereum_event_messages(
@@ -172,9 +150,9 @@ pub async fn check_for_events(
                 cosmos_key,
                 deposits.to_owned(),
                 batches.to_owned(),
-                erc20_deploys.to_owned(),
                 logic_calls.to_owned(),
                 valsets.to_owned(),
+                chain_id.clone(),
             );
 
             if let Some(deposit) = deposits.last() {
@@ -192,11 +170,6 @@ pub async fn check_for_events(
                 metrics::set_ethereum_last_valset_nonce(valset.valset_nonce.clone());
             }
 
-            if let Some(erc20_deploy) = erc20_deploys.last() {
-                metrics::set_ethereum_last_erc20_event(erc20_deploy.event_nonce.clone());
-                metrics::set_ethereum_last_erc20_block(erc20_deploy.block_height.clone());
-            }
-
             if let Some(logic_call) = logic_calls.last() {
                 metrics::set_ethereum_last_logic_call_event(logic_call.event_nonce.clone());
                 metrics::set_ethereum_last_logic_call_nonce(logic_call.invalidation_nonce.clone());
@@ -210,7 +183,8 @@ pub async fn check_for_events(
             let timeout = time::Duration::from_secs(30);
             contact.wait_for_next_block(timeout).await?;
 
-            let new_event_nonce = get_last_event_nonce(grpc_client, our_cosmos_address).await?;
+            let new_event_nonce =
+                get_last_event_nonce(grpc_client, our_cosmos_address, chain_id.clone()).await?;
             if new_event_nonce == last_event_nonce {
                 return Err(GravityError::InvalidBridgeStateError(
                     format!("Claims did not process, trying to update but still on {}, trying again in a moment", last_event_nonce),

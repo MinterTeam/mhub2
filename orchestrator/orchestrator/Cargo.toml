@@ -16,8 +16,9 @@ path = "src/main.rs"
 relayer = { path = "../relayer" }
 ethereum_gravity = { path = "../ethereum_gravity" }
 cosmos_gravity = { path = "../cosmos_gravity" }
-gravity_utils = { path = "../gravity_utils" }
-gravity_proto = { path = "../gravity_proto" }
+mhub2_utils = { path = "../mhub2_utils" }
+mhub2_proto = { path = "../mhub2_proto" }
+web30 = {path = "../web30" }
 
 deep_space = { git = "https://github.com/iqlusioninc/deep_space/", branch = "zaki/tendermint_0_21" }
 serde_derive = "1.0"
@@ -26,7 +27,6 @@ docopt = "1"
 serde = "1.0"
 actix-rt = "2.2"
 lazy_static = "1"
-web30 = "0.14.4"
 num256 = "0.3"
 log = "0.4"
 env_logger = "0.8"

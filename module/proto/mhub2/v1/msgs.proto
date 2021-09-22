@@ -1,0 +1,229 @@
+syntax = "proto3";
+package mhub2.v1;
+
+import "cosmos/base/v1beta1/coin.proto";
+import "cosmos_proto/cosmos.proto";
+import "mhub2/v1/mhub2.proto";
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "google/protobuf/any.proto";
+
+option go_package = "github.com/MinterTeam/mhub2/module/x/mhub2/types";
+
+// Msg defines the state transitions possible within gravity
+service Msg {
+  rpc SendToExternal(MsgSendToExternal) returns (MsgSendToExternalResponse) {
+    // option (google.api.http).post = "/gravity/v1/send_to_external";
+  }
+  rpc CancelSendToExternal(MsgCancelSendToExternal)
+      returns (MsgCancelSendToExternalResponse) {
+    // option (google.api.http).post = "/gravity/v1/send_to_external/cancel";
+  }
+  rpc RequestBatchTx(MsgRequestBatchTx) returns (MsgRequestBatchTxResponse) {
+    // option (google.api.http).post = "/gravity/v1/batchtx/request";
+  }
+  rpc SubmitTxConfirmation(MsgSubmitExternalTxConfirmation)
+      returns (MsgSubmitTxConfirmationResponse) {
+    // option (google.api.http).post = "/gravity/v1/external_signature";
+  }
+  rpc SubmitExternalEvent(MsgSubmitExternalEvent)
+      returns (MsgSubmitExternalEventResponse) {
+    // option (google.api.http).post = "/gravity/v1/external_event";
+  }
+  rpc SetDelegateKeys(MsgDelegateKeys) returns (MsgDelegateKeysResponse) {
+    // option (google.api.http).post = "/gravity/v1/delegate_keys";
+  }
+}
+
+// MsgSendToExternal submits a SendToExternal attempt to bridge an asset over to
+// External chain. The SendToExternal will be stored and then included in a batch and
+// then submitted to external chain.
+message MsgSendToExternal {
+  string sender = 1;
+  string external_recipient = 2;
+  cosmos.base.v1beta1.Coin amount = 3 [ (gogoproto.nullable) = false ];
+  cosmos.base.v1beta1.Coin bridge_fee = 4 [ (gogoproto.nullable) = false ];
+  string chain_id = 5;
+}
+
+// MsgSendToExternalResponse returns the SendToExternal transaction ID which
+// will be included in the batch tx.
+message MsgSendToExternalResponse { uint64 id = 1; }
+
+// MsgCancelSendToExternal allows the sender to cancel its own outgoing
+// SendToExternal tx and recieve a refund of the tokens and bridge fees. This tx
+// will only succeed if the SendToExternal tx hasn't been batched to be
+// processed and relayed to External.
+message MsgCancelSendToExternal {
+  uint64 id = 1;
+  string sender = 2;
+  string chain_id = 3;
+}
+
+message MsgCancelSendToExternalResponse {}
+
+// MsgRequestBatchTx requests a batch of transactions with a given coin
+// denomination to send across the bridge to external chain.
+message MsgRequestBatchTx {
+  string denom = 1;
+  string signer = 2;
+  string chain_id = 3;
+}
+
+message MsgRequestBatchTxResponse {}
+
+// MsgSubmitExternalTxConfirmation submits an external signature for a given
+// validator
+message MsgSubmitExternalTxConfirmation {
+  option (gogoproto.goproto_getters) = false;
+
+  // TODO: can we make this take an array?
+  google.protobuf.Any confirmation = 1
+      [ (cosmos_proto.accepts_interface) = "ExternalTxConfirmation" ];
+  string signer = 2;
+  string chain_id = 3;
+}
+
+// ContractCallTxConfirmation is a signature on behalf of a validator for a
+// ContractCallTx.
+message ContractCallTxConfirmation {
+  bytes invalidation_scope = 1;
+  uint64 invalidation_nonce = 2;
+  string external_signer = 3;
+  bytes signature = 4;
+}
+
+// BatchTxConfirmation is a signature on behalf of a validator for a BatchTx.
+message BatchTxConfirmation {
+  string external_token_id = 1;
+  uint64 batch_nonce = 2;
+  string external_signer = 3;
+  bytes signature = 4;
+}
+
+// SignerSetTxConfirmation is a signature on behalf of a validator for a
+// SignerSetTx
+message SignerSetTxConfirmation {
+  uint64 signer_set_nonce = 1;
+  string external_signer = 2;
+  bytes signature = 3;
+}
+
+message MsgSubmitTxConfirmationResponse {}
+
+// MsgSubmitExternalEvent
+message MsgSubmitExternalEvent {
+  option (gogoproto.goproto_getters) = false;
+
+  google.protobuf.Any event = 1
+      [ (cosmos_proto.accepts_interface) = "ExternalEvent" ];
+  string signer = 2;
+  string chain_id = 3;
+}
+
+
+message MsgSubmitExternalEventResponse {}
+
+// MsgDelegateKey allows validators to delegate their voting responsibilities
+// to a given orchestrator address. This key is then used as an optional
+// authentication method for attesting events from External Chain.
+message MsgDelegateKeys {
+  string validator_address = 1;
+  string orchestrator_address = 2;
+  string external_address = 3;
+  bytes  eth_signature = 4;
+}
+
+message MsgDelegateKeysResponse {}
+
+// DelegateKeysSignMsg defines the message structure an operator is expected to
+// sign when submitting a MsgDelegateKeys message. The resulting signature should
+// populate the eth_signature field.
+message DelegateKeysSignMsg {
+  string validator_address = 1;
+  uint64 nonce = 2;
+}
+
+////////////
+// Events //
+////////////
+
+// SendToHubEvent is submitted when the SendToHubEvent is emitted by they
+// gravity contract.
+message SendToHubEvent {
+  option (gogoproto.equal) = true;
+
+  uint64 event_nonce = 1;
+  string external_coin_id = 2;
+  string amount = 3 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+  string sender = 4;
+  string cosmos_receiver = 5;
+  uint64 external_height = 6;
+  string tx_hash = 7;
+}
+
+// TransferToChainEvent is submitted when the TransferToChainEvent is emitted by they
+// gravity contract.
+message TransferToChainEvent {
+  option (gogoproto.equal) = true;
+
+  uint64 event_nonce = 1;
+  string external_coin_id = 2;
+  string amount = 3 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+  string fee = 4 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+  string sender = 5;
+  string receiver_chain_id = 6;
+  string external_receiver = 7;
+  uint64 external_height = 8;
+  string tx_hash = 9;
+}
+
+// BatchExecutedEvent claims that a batch of BatchTxExecuted operations on the
+// bridge contract was executed successfully
+message BatchExecutedEvent {
+  string external_coin_id = 1;
+  uint64 event_nonce = 2;
+  uint64 external_height = 3;
+  uint64 batch_nonce = 4;
+  string tx_hash = 5;
+  string fee_paid = 6 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+  string fee_payer = 7;
+}
+
+// ContractCallExecutedEvent describes a contract call that has been
+// successfully executed on external chain.
+
+// NOTE: bytes.HexBytes is supposed to "help" with json encoding/decoding
+// investigate?
+message ContractCallExecutedEvent {
+  uint64 event_nonce = 1;
+  bytes invalidation_scope = 2
+      [ (gogoproto.casttype) =
+            "github.com/tendermint/tendermint/libs/bytes.HexBytes" ];
+  uint64 invalidation_nonce = 3;
+  uint64 external_height = 4;
+  string tx_hash = 5;
+}
+
+// This informs the Cosmos module that a validator
+// set has been updated.
+message SignerSetTxExecutedEvent {
+  uint64 event_nonce = 1;
+  uint64 signer_set_tx_nonce = 2;
+  uint64 external_height = 3;
+  repeated ExternalSigner members = 4;
+  string tx_hash = 5;
+}
+
