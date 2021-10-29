@@ -29,7 +29,7 @@ func GetLatestMinterBlockAndNonce(ctx context.Context, currentNonce uint64) cont
 	ctx.Logger.Info("Current nonce @ hub", "nonce", currentNonce)
 	latestBlock := GetLatestMinterBlock(ctx.MinterClient, ctx.Logger)
 
-	firstBlock := ctx.LastCheckedMinterBlock
+	firstBlock := ctx.LastCheckedMinterBlock()
 
 	const blocksPerBatch = 100
 	for i := uint64(0); i <= uint64(math.Ceil(float64(latestBlock-firstBlock)/blocksPerBatch)); i++ {
@@ -68,25 +68,25 @@ func GetLatestMinterBlockAndNonce(ctx context.Context, currentNonce uint64) cont
 					value, _ := sdk.NewIntFromString(sendData.Value)
 					if cmd.Validate(value) == nil {
 						ctx.Logger.Debug("Found deposit")
-						if currentNonce > 0 && currentNonce < ctx.LastEventNonce {
-							ctx.LastCheckedMinterBlock = block.Height - 1
+						if currentNonce > 0 && currentNonce < ctx.LastEventNonce() {
+							ctx.SetLastCheckedMinterBlock(block.Height - 1)
 							return ctx
 						}
 
-						ctx.LastEventNonce++
+						ctx.SetLastEventNonce(ctx.LastEventNonce() + 1)
 					}
 				}
 
 				if tx.Type == uint64(transaction.TypeMultisend) && tx.From == ctx.MinterMultisigAddr {
 					ctx.Logger.Debug("Found batch")
 
-					if currentNonce > 0 && currentNonce < ctx.LastEventNonce {
-						ctx.LastCheckedMinterBlock = block.Height - 1
+					if currentNonce > 0 && currentNonce < ctx.LastEventNonce() {
+						ctx.SetLastCheckedMinterBlock(block.Height - 1)
 						return ctx
 					}
 
-					ctx.LastEventNonce++
-					ctx.LastBatchNonce++
+					ctx.SetLastEventNonce(ctx.LastEventNonce() + 1)
+					ctx.SetLastBatchNonce(ctx.LastBatchNonce() + 1)
 				}
 
 				if tx.Type == uint64(transaction.TypeEditMultisig) && tx.From == ctx.MinterMultisigAddr {
@@ -96,18 +96,18 @@ func GetLatestMinterBlockAndNonce(ctx context.Context, currentNonce uint64) cont
 					} else {
 						ctx.Logger.Debug("Found valset update")
 
-						if currentNonce > 0 && currentNonce < ctx.LastEventNonce {
-							ctx.LastCheckedMinterBlock = block.Height - 1
+						if currentNonce > 0 && currentNonce < ctx.LastEventNonce() {
+							ctx.SetLastCheckedMinterBlock(block.Height - 1)
 							return ctx
 						}
 
-						ctx.LastValsetNonce = uint64(nonce)
-						ctx.LastEventNonce++
+						ctx.SetLastValsetNonce(uint64(nonce))
+						ctx.SetLastEventNonce(ctx.LastEventNonce() + 1)
 					}
 				}
 			}
 
-			ctx.LastCheckedMinterBlock = block.Height
+			ctx.SetLastCheckedMinterBlock(block.Height)
 		}
 	}
 

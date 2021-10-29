@@ -61,18 +61,16 @@ func main() {
 	}))
 
 	ctx := context.Context{
-		LastCheckedMinterBlock: cfg.Minter.StartBlock,
-		LastEventNonce:         cfg.Minter.StartEventNonce,
-		LastBatchNonce:         cfg.Minter.StartBatchNonce,
-		LastValsetNonce:        cfg.Minter.StartValsetNonce,
-		MinterMultisigAddr:     cfg.Minter.MultisigAddr,
-		CosmosConn:             cosmosConn,
-		MinterClient:           minterClient,
-		OrcAddress:             orcAddress,
-		OrcPriv:                orcPriv,
-		MinterWallet:           minterWallet,
-		Logger:                 log.NewTMLogger(os.Stdout),
+		MinterMultisigAddr: cfg.Minter.MultisigAddr,
+		CosmosConn:         cosmosConn,
+		MinterClient:       minterClient,
+		OrcAddress:         orcAddress,
+		OrcPriv:            orcPriv,
+		MinterWallet:       minterWallet,
+		Logger:             log.NewTMLogger(os.Stdout),
 	}
+
+	ctx.LoadStatus("connector-status.json", cfg.Minter)
 
 	ctx.Logger.Info("Syncing with Minter")
 
@@ -178,7 +176,7 @@ func relayBatches(ctx context.Context) {
 		return
 	}
 
-	if oldestSignedBatch.BatchNonce < ctx.LastBatchNonce {
+	if oldestSignedBatch.BatchNonce < ctx.LastBatchNonce() {
 		return
 	}
 
@@ -353,7 +351,7 @@ func relayValsets(ctx context.Context) {
 		return
 	}
 
-	if oldestSignedValset.Nonce <= ctx.LastValsetNonce {
+	if oldestSignedValset.Nonce <= ctx.LastValsetNonce() {
 		return
 	}
 
@@ -431,8 +429,8 @@ func relayValsets(ctx context.Context) {
 
 func relayMinterEvents(ctx context.Context) context.Context {
 	latestBlock := minter.GetLatestMinterBlock(ctx.MinterClient, ctx.Logger)
-	if latestBlock-ctx.LastCheckedMinterBlock > 100 {
-		latestBlock = ctx.LastCheckedMinterBlock + 100
+	if latestBlock-ctx.LastCheckedMinterBlock() > 100 {
+		latestBlock = ctx.LastCheckedMinterBlock() + 100
 	}
 
 	var deposits []cosmos.Deposit
@@ -440,9 +438,9 @@ func relayMinterEvents(ctx context.Context) context.Context {
 	var valsets []cosmos.Valset
 
 	const blocksPerBatch = 100
-	for i := uint64(0); i <= uint64(math.Ceil(float64(latestBlock-ctx.LastCheckedMinterBlock)/blocksPerBatch)); i++ {
-		from := ctx.LastCheckedMinterBlock + 1 + i*blocksPerBatch
-		to := ctx.LastCheckedMinterBlock + (i+1)*blocksPerBatch
+	for i := uint64(0); i <= uint64(math.Ceil(float64(latestBlock-ctx.LastCheckedMinterBlock())/blocksPerBatch)); i++ {
+		from := ctx.LastCheckedMinterBlock() + 1 + i*blocksPerBatch
+		to := ctx.LastCheckedMinterBlock() + (i+1)*blocksPerBatch
 
 		if to > latestBlock {
 			to = latestBlock
@@ -457,7 +455,7 @@ func relayMinterEvents(ctx context.Context) context.Context {
 		}
 
 		for _, block := range blocks.Blocks {
-			ctx.LastCheckedMinterBlock = block.Height
+			ctx.SetLastCheckedMinterBlock(block.Height)
 
 			ctx.Logger.Debug("Checking block", "height", block.Height)
 			for _, tx := range block.Transactions {
@@ -488,13 +486,13 @@ func relayMinterEvents(ctx context.Context) context.Context {
 						Recipient:  cmd.Recipient,
 						Amount:     sendData.Value,
 						Fee:        cmd.Fee,
-						EventNonce: ctx.LastEventNonce,
+						EventNonce: ctx.LastEventNonce(),
 						CoinID:     sendData.Coin.ID,
 						TxHash:     tx.Hash,
 						Height:     block.Height,
 					})
 
-					ctx.LastEventNonce++
+					ctx.SetLastEventNonce(ctx.LastEventNonce() + 1)
 				}
 
 				if tx.Type == uint64(transaction.TypeMultisend) && tx.From == cfg.Minter.MultisigAddr {
@@ -503,15 +501,15 @@ func relayMinterEvents(ctx context.Context) context.Context {
 					multisendData := data.(*models.MultiSendData)
 
 					batches = append(batches, cosmos.Batch{
-						BatchNonce: ctx.LastBatchNonce,
-						EventNonce: ctx.LastEventNonce,
+						BatchNonce: ctx.LastBatchNonce(),
+						EventNonce: ctx.LastEventNonce(),
 						CoinId:     multisendData.List[0].Coin.ID,
 						TxHash:     tx.Hash,
 						Height:     block.Height,
 					})
 
-					ctx.LastEventNonce++
-					ctx.LastBatchNonce++
+					ctx.SetLastEventNonce(ctx.LastEventNonce() + 1)
+					ctx.SetLastBatchNonce(ctx.LastBatchNonce() + 1)
 				}
 
 				if tx.Type == uint64(transaction.TypeEditMultisig) && tx.From == cfg.Minter.MultisigAddr {
@@ -534,14 +532,14 @@ func relayMinterEvents(ctx context.Context) context.Context {
 
 						valsets = append(valsets, cosmos.Valset{
 							ValsetNonce: uint64(nonce),
-							EventNonce:  ctx.LastEventNonce,
+							EventNonce:  ctx.LastEventNonce(),
 							Height:      block.Height,
 							TxHash:      tx.Hash,
 							Members:     members,
 						})
 
-						ctx.LastEventNonce++
-						ctx.LastValsetNonce = uint64(nonce)
+						ctx.SetLastEventNonce(ctx.LastEventNonce() + 1)
+						ctx.SetLastValsetNonce(uint64(nonce))
 					}
 				}
 			}
