@@ -9,13 +9,3 @@ func (c ChainID) Bytes() []byte {
 func (c ChainID) String() string {
 	return string(c)
 }
-
-var chains = []ChainID{
-	"ethereum",
-	"minter",
-	"bsc",
-}
-
-func GetChains() []ChainID {
-	return chains
-}

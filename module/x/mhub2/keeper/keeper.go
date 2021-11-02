@@ -361,6 +361,17 @@ func (k Keeper) getBridgeChainID(ctx sdk.Context) uint64 {
 	return a
 }
 
+func (k Keeper) GetChains(ctx sdk.Context) []types.ChainID {
+	params := k.GetParams(ctx)
+
+	var chains []types.ChainID
+	for _, chain := range params.GetChains().GetList() {
+		chains = append(chains, types.ChainID(chain))
+	}
+
+	return chains
+}
+
 // getGravityID returns the GravityID the GravityID is essentially a salt value
 // for bridge signatures, provided each chain running Gravity has a unique ID
 // it won't be possible to play back signatures from one bridge onto another

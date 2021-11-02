@@ -15,7 +15,7 @@ import (
 // clients listening to the chain and creating transactions
 // based on the events (i.e. orchestrators)
 func BeginBlocker(ctx sdk.Context, k keeper.Keeper) {
-	for _, chainId := range types.GetChains() {
+	for _, chainId := range k.GetChains(ctx) {
 		cleanupTimedOutBatchTxs(ctx, chainId, k)
 		cleanupTimedOutContractCallTxs(ctx, chainId, k)
 		createSignerSetTxs(ctx, chainId, k)
@@ -26,7 +26,7 @@ func BeginBlocker(ctx sdk.Context, k keeper.Keeper) {
 
 // EndBlocker is called at the end of every block
 func EndBlocker(ctx sdk.Context, k keeper.Keeper) {
-	for _, chainId := range types.GetChains() {
+	for _, chainId := range k.GetChains(ctx) {
 		outgoingTxSlashing(ctx, chainId, k)
 		eventVoteRecordTally(ctx, chainId, k)
 	}

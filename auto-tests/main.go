@@ -41,41 +41,6 @@ func init() {
 	app.SetAddressConfig()
 }
 
-func deployContractsAndMultisig(prKeyString string) {
-	b, _ := hex.DecodeString(prKeyString)
-	pk := crypto.ToECDSAUnsafe(b)
-	ethPrivateKeyString := fmt.Sprintf("%x", crypto.FromECDSA(pk))
-	ethAddress := crypto.PubkeyToAddress(pk.PublicKey)
-
-	{
-		client, err := ethclient.Dial("https://ropsten.infura.io/v3/c2f9dc16ef8d4897a1bd6f9270e38914")
-		if err != nil {
-			panic(err)
-		}
-
-		contract := deployContract(pk, client, 3)
-
-		println("eth", contract)
-	}
-
-	{
-		client, err := ethclient.Dial("https://data-seed-prebsc-1-s1.binance.org:8545/")
-		if err != nil {
-			panic(err)
-		}
-
-		contract := deployContract(pk, client, 97)
-
-		println("bsc", contract)
-	}
-
-	minterClient, _ := http_client.New("https://node-api.taconet.minter.network/v2")
-	minterMultisig := createMinterMultisig(ethPrivateKeyString, ethAddress, minterClient)
-
-	println("minter", minterMultisig)
-
-}
-
 func main() {
 	wd := getWd()
 	const (
@@ -725,4 +690,39 @@ func populateMinterGenesis(pubkey minterTypes.Pubkey, address common.Address) {
 	if err := genesis.SaveAs("data/minter/config/genesis.json"); err != nil {
 		panic(err)
 	}
+}
+
+func deployContractsAndMultisig(prKeyString string) {
+	b, _ := hex.DecodeString(prKeyString)
+	pk := crypto.ToECDSAUnsafe(b)
+	ethPrivateKeyString := fmt.Sprintf("%x", crypto.FromECDSA(pk))
+	ethAddress := crypto.PubkeyToAddress(pk.PublicKey)
+
+	{
+		client, err := ethclient.Dial("https://ropsten.infura.io/v3/c2f9dc16ef8d4897a1bd6f9270e38914")
+		if err != nil {
+			panic(err)
+		}
+
+		contract := deployContract(pk, client, 3)
+
+		println("eth", contract)
+	}
+
+	{
+		client, err := ethclient.Dial("https://data-seed-prebsc-1-s1.binance.org:8545/")
+		if err != nil {
+			panic(err)
+		}
+
+		contract := deployContract(pk, client, 97)
+
+		println("bsc", contract)
+	}
+
+	minterClient, _ := http_client.New("https://node-api.taconet.minter.network/v2")
+	minterMultisig := createMinterMultisig(ethPrivateKeyString, ethAddress, minterClient)
+
+	println("minter", minterMultisig)
+
 }

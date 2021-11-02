@@ -98,13 +98,14 @@ func InitGenesis(ctx sdk.Context, k Keeper, data types.GenesisState) {
 // from the current state of the chain
 func ExportGenesis(ctx sdk.Context, k Keeper) types.GenesisState {
 	params := k.GetParams(ctx)
+	chains := k.GetChains(ctx)
 	tokenInfos := k.GetTokenInfos(ctx)
 	state := types.GenesisState{
 		Params:     &params,
 		TokenInfos: &tokenInfos,
 	}
 
-	for _, chainId := range types.GetChains() {
+	for _, chainId := range chains {
 		var (
 			outgoingTxs              []*cdctypes.Any
 			externalTxConfirmations  []*cdctypes.Any
