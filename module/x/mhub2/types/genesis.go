@@ -175,7 +175,7 @@ func DefaultParams() *Params {
 		SlashFractionEthereumSignature:            sdk.NewDec(1).Quo(sdk.NewDec(1000)),
 		SlashFractionConflictingEthereumSignature: sdk.NewDec(1).Quo(sdk.NewDec(1000)),
 		UnbondSlashingSignerSetTxsWindow:          10000,
-		Chains:                                    &Chains{List: []string{"ethereum", "minter", "bsc"}},
+		Chains:                                    []string{"ethereum", "minter", "bsc"},
 	}
 }
 
@@ -225,6 +225,9 @@ func (p Params) ValidateBasic() error {
 	}
 	if err := validateUnbondSlashingSignerSetTxsWindow(p.UnbondSlashingSignerSetTxsWindow); err != nil {
 		return sdkerrors.Wrap(err, "unbond slashing signersettx window")
+	}
+	if err := validateChains(p.Chains); err != nil {
+		return sdkerrors.Wrap(err, "chains")
 	}
 
 	return nil
@@ -349,7 +352,7 @@ func validateSignedSignerSetTxsWindow(i interface{}) error {
 
 func validateChains(i interface{}) error {
 	// TODO: do we want to set some bounds on this value?
-	if _, ok := i.(*Chains); !ok {
+	if _, ok := i.([]string); !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)
 	}
 	return nil

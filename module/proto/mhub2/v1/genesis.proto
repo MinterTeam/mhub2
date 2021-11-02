@@ -100,11 +100,7 @@ message Params {
     (gogoproto.nullable) = false
   ];
   uint64 unbond_slashing_signer_set_txs_window = 17;
-  Chains chains = 18;
-}
-
-message Chains {
-  repeated string list = 1;
+  repeated string chains = 18;
 }
 
 // GenesisState struct

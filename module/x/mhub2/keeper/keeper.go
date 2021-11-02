@@ -365,7 +365,7 @@ func (k Keeper) GetChains(ctx sdk.Context) []types.ChainID {
 	params := k.GetParams(ctx)
 
 	var chains []types.ChainID
-	for _, chain := range params.GetChains().GetList() {
+	for _, chain := range params.GetChains() {
 		chains = append(chains, types.ChainID(chain))
 	}
 

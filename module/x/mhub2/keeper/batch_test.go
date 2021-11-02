@@ -12,7 +12,7 @@ import (
 	"github.com/MinterTeam/mhub2/module/x/mhub2/types"
 )
 
-var chainId = types.GetChains()[0]
+var chainId = types.ChainID("ethereum")
 
 func TestBatches(t *testing.T) {
 	input := CreateTestEnv(t)

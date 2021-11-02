@@ -47,7 +47,12 @@ func (c *Context) LoadStatus(file string, defaultStatus config.MinterConfig) {
 
 	status := statusData{}
 	if err := json.Unmarshal(data, &status); err != nil {
-		panic(err)
+		c.status = statusData{
+			LastCheckedMinterBlock: defaultStatus.StartBlock,
+			LastEventNonce:         defaultStatus.StartEventNonce,
+			LastBatchNonce:         defaultStatus.StartBatchNonce,
+			LastValsetNonce:        defaultStatus.StartValsetNonce,
+		}
 	}
 
 	c.status = status

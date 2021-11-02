@@ -16,7 +16,7 @@ import (
 	"github.com/MinterTeam/mhub2/module/x/mhub2/types"
 )
 
-var chainId = types.GetChains()[0]
+var chainId = types.ChainID("ethereum")
 
 var testDenomResolver = func(id uint64) (string, error) {
 	return "hub", nil
