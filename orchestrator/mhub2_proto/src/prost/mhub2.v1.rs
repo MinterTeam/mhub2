@@ -319,6 +319,29 @@ pub struct SendToHubEvent {
     #[prost(string, tag = "7")]
     pub tx_hash: ::prost::alloc::string::String,
 }
+/// TransferToChainEvent is submitted when the TransferToChainEvent is emitted by they
+/// gravity contract.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct TransferToChainEvent {
+    #[prost(uint64, tag = "1")]
+    pub event_nonce: u64,
+    #[prost(string, tag = "2")]
+    pub external_coin_id: ::prost::alloc::string::String,
+    #[prost(string, tag = "3")]
+    pub amount: ::prost::alloc::string::String,
+    #[prost(string, tag = "4")]
+    pub fee: ::prost::alloc::string::String,
+    #[prost(string, tag = "5")]
+    pub sender: ::prost::alloc::string::String,
+    #[prost(string, tag = "6")]
+    pub receiver_chain_id: ::prost::alloc::string::String,
+    #[prost(string, tag = "7")]
+    pub external_receiver: ::prost::alloc::string::String,
+    #[prost(uint64, tag = "8")]
+    pub external_height: u64,
+    #[prost(string, tag = "9")]
+    pub tx_hash: ::prost::alloc::string::String,
+}
 /// BatchExecutedEvent claims that a batch of BatchTxExecuted operations on the
 /// bridge contract was executed successfully
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -599,6 +622,13 @@ pub struct Params {
     pub slash_fraction_conflicting_ethereum_signature: ::prost::alloc::vec::Vec<u8>,
     #[prost(uint64, tag = "17")]
     pub unbond_slashing_signer_set_txs_window: u64,
+    #[prost(message, optional, tag = "18")]
+    pub chains: ::core::option::Option<Chains>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Chains {
+    #[prost(string, repeated, tag = "1")]
+    pub list: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
 }
 /// GenesisState struct
 /// TODO: this need to be audited and potentially simplified using the new

@@ -502,6 +502,7 @@ func run(cmdString string, args ...interface{}) (string, error) {
 	cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
 	cmd.Stdout = buffer
 	cmd.Stderr = buffer
+	cmd.Env = append(os.Environ(), "RUST_LOG=debug")
 
 	if err := cmd.Run(); err != nil {
 		return "", err

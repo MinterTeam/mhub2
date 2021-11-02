@@ -11,9 +11,6 @@ import (
 // InitGenesis starts a chain from a genesis state
 func InitGenesis(ctx sdk.Context, k Keeper, data types.GenesisState) {
 	k.setParams(ctx, *data.Params)
-
-	// TODO: import chains
-
 	k.SetTokenInfos(ctx, data.TokenInfos)
 
 	for _, externalState := range data.ExternalStates {
