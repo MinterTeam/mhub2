@@ -138,7 +138,7 @@ pub fn ethereum_event_messages(
             external_receiver: transfer.destination.to_string(),
             sender: transfer.sender.to_string(),
             tx_hash: transfer.tx_hash,
-            fee: "0".to_string()
+            fee: "0".to_string(),
         };
         let msg = proto::MsgSubmitExternalEvent {
             signer: cosmos_address.to_string(),
@@ -173,6 +173,7 @@ pub fn ethereum_event_messages(
             invalidation_scope: logic_call.invalidation_id,
             invalidation_nonce: downcast_uint256(logic_call.invalidation_nonce).unwrap(),
             tx_hash: logic_call.tx_hash,
+            return_data: logic_call.return_data,
         };
         let msg = proto::MsgSubmitExternalEvent {
             signer: cosmos_address.to_string(),

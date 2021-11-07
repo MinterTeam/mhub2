@@ -78,8 +78,8 @@ contract Hub2 is ReentrancyGuard {
 	event LogicCallEvent(
 		bytes32 _invalidationId,
 		uint256 _invalidationNonce,
-		bytes _returnData,
-		uint256 _eventNonce
+		uint256 _eventNonce,
+		bytes _returnData
 	);
 
 	// TEST FIXTURES
@@ -516,8 +516,8 @@ contract Hub2 is ReentrancyGuard {
 			emit LogicCallEvent(
 				_args.invalidationId,
 				_args.invalidationNonce,
-				returnData,
-				state_lastEventNonce
+				state_lastEventNonce,
+				returnData
 			);
 		}
 	}

@@ -213,8 +213,9 @@ message ContractCallExecutedEvent {
       [ (gogoproto.casttype) =
             "github.com/tendermint/tendermint/libs/bytes.HexBytes" ];
   uint64 invalidation_nonce = 3;
-  uint64 external_height = 4;
-  string tx_hash = 5;
+  bytes return_data = 4;
+  uint64 external_height = 5;
+  string tx_hash = 6;
 }
 
 // This informs the Cosmos module that a validator

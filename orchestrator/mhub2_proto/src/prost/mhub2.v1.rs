@@ -374,9 +374,11 @@ pub struct ContractCallExecutedEvent {
     pub invalidation_scope: ::prost::alloc::vec::Vec<u8>,
     #[prost(uint64, tag = "3")]
     pub invalidation_nonce: u64,
-    #[prost(uint64, tag = "4")]
+    #[prost(bytes = "vec", tag = "4")]
+    pub return_data: ::prost::alloc::vec::Vec<u8>,
+    #[prost(uint64, tag = "5")]
     pub external_height: u64,
-    #[prost(string, tag = "5")]
+    #[prost(string, tag = "6")]
     pub tx_hash: ::prost::alloc::string::String,
 }
 /// This informs the Cosmos module that a validator
@@ -622,13 +624,8 @@ pub struct Params {
     pub slash_fraction_conflicting_ethereum_signature: ::prost::alloc::vec::Vec<u8>,
     #[prost(uint64, tag = "17")]
     pub unbond_slashing_signer_set_txs_window: u64,
-    #[prost(message, optional, tag = "18")]
-    pub chains: ::core::option::Option<Chains>,
-}
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Chains {
-    #[prost(string, repeated, tag = "1")]
-    pub list: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
+    #[prost(string, repeated, tag = "18")]
+    pub chains: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
 }
 /// GenesisState struct
 /// TODO: this need to be audited and potentially simplified using the new
