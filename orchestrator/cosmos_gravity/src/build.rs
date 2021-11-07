@@ -111,7 +111,7 @@ pub fn contract_call_tx_confirmation_messages(
 pub fn ethereum_event_messages(
     contact: &Contact,
     cosmos_key: CosmosPrivateKey,
-    deposits: Vec<SendToHubEvent>,
+    transfers: Vec<TransferToChainEvent>,
     batches: Vec<TransactionBatchExecutedEvent>,
     logic_calls: Vec<LogicCallExecutedEvent>,
     valsets: Vec<ValsetUpdatedEvent>,
@@ -128,15 +128,17 @@ pub fn ethereum_event_messages(
     //
     // We index the events by event nonce in an unordered hashmap and then play them back in order into a vec
     let mut unordered_msgs = std::collections::HashMap::new();
-    for deposit in deposits {
-        let event = proto::SendToHubEvent {
-            event_nonce: downcast_uint256(deposit.event_nonce.clone()).unwrap(),
-            external_height: downcast_uint256(deposit.block_height).unwrap(),
-            external_coin_id: deposit.erc20.to_string(),
-            amount: deposit.amount.to_string(),
-            cosmos_receiver: deposit.destination.to_string(),
-            sender: deposit.sender.to_string(),
-            tx_hash: deposit.tx_hash,
+    for transfer in transfers {
+        let event = proto::TransferToChainEvent {
+            event_nonce: downcast_uint256(transfer.event_nonce.clone()).unwrap(),
+            external_height: downcast_uint256(transfer.block_height).unwrap(),
+            external_coin_id: transfer.erc20.to_string(),
+            amount: transfer.amount.to_string(),
+            receiver_chain_id: transfer.destination_chain,
+            external_receiver: transfer.destination.to_string(),
+            sender: transfer.sender.to_string(),
+            tx_hash: transfer.tx_hash,
+            fee: "0".to_string()
         };
         let msg = proto::MsgSubmitExternalEvent {
             signer: cosmos_address.to_string(),
@@ -144,7 +146,7 @@ pub fn ethereum_event_messages(
             chain_id: chain_id.clone(),
         };
         let msg = Msg::new("/mhub2.v1.MsgSubmitExternalEvent", msg);
-        unordered_msgs.insert(deposit.event_nonce, msg);
+        unordered_msgs.insert(transfer.event_nonce, msg);
     }
     for batch in batches {
         let event = proto::BatchExecutedEvent {

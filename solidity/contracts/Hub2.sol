@@ -50,7 +50,7 @@ contract Hub2 is ReentrancyGuard {
 
 	address public wethAddress;
 
-	// TransactionBatchExecutedEvent and SendToHubEvent both include the field _eventNonce.
+	// TransactionBatchExecutedEvent and TransferToChain both include the field _eventNonce.
 	// This is incremented every time one of these events is emitted. It is checked by the
 	// Cosmos module to ensure that all events are received in order, and that none are lost.
 	//
@@ -61,10 +61,11 @@ contract Hub2 is ReentrancyGuard {
 		address indexed _token,
 		uint256 _eventNonce
 	);
-	event SendToHubEvent(
+	event TransferToChainEvent(
 		address indexed _tokenContract,
 		address indexed _sender,
-		bytes32 indexed _destination,
+		bytes32 indexed _destinationChain,
+		bytes32 _destination,
 		uint256 _amount,
 		uint256 _eventNonce
 	);
@@ -521,18 +522,37 @@ contract Hub2 is ReentrancyGuard {
 		}
 	}
 
-	function sendToHub(
+	function transferToChain(
 		address _tokenContract,
+		bytes32 _destinationChain,
 		bytes32 _destination,
 		uint256 _amount
 	) public nonReentrant {
 		IERC20(_tokenContract).safeTransferFrom(msg.sender, address(this), _amount);
 		state_lastEventNonce = state_lastEventNonce.add(1);
-		emit SendToHubEvent(
+		emit TransferToChainEvent(
 			_tokenContract,
 			msg.sender,
+			_destinationChain,
 			_destination,
 			_amount,
+			state_lastEventNonce
+		);
+	}
+
+	function transferETHToChain(
+		address _tokenContract,
+		bytes32 _destinationChain,
+		bytes32 _destination
+	) public nonReentrant payable {
+		IWETH(wethAddress).deposit{value: msg.value}();
+		state_lastEventNonce = state_lastEventNonce.add(1);
+		emit TransferToChainEvent(
+			_tokenContract,
+			msg.sender,
+			_destinationChain,
+			_destination,
+			msg.value,
 			state_lastEventNonce
 		);
 	}

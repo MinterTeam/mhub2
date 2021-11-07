@@ -74,6 +74,17 @@ impl ToAny for mhub2::SendToHubEvent {
     }
 }
 
+impl ToAny for mhub2::TransferToChainEvent {
+    fn to_any(&self) -> Option<prost_types::Any> {
+        let mut buf = BytesMut::with_capacity(self.encoded_len());
+        self.encode(&mut buf).expect("encoding failed");
+        Some(Any {
+            type_url: "/mhub2.v1.TransferToChainEvent".into(),
+            value: buf.to_vec(),
+        })
+    }
+}
+
 impl ToAny for mhub2::SignerSetTxExecutedEvent {
     fn to_any(&self) -> Option<prost_types::Any> {
         let mut buf = BytesMut::with_capacity(self.encoded_len());

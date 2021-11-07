@@ -31,6 +31,18 @@ func (a ExternalEventProcessor) DetectMaliciousSupply(ctx sdk.Context, denom str
 func (a ExternalEventProcessor) Handle(ctx sdk.Context, chainId types.ChainID, eve types.ExternalEvent) (err error) {
 	switch event := eve.(type) {
 	case *types.TransferToChainEvent:
+		if event.ReceiverChainId == "HUB" {
+			return a.Handle(ctx, chainId, &types.SendToHubEvent{
+				EventNonce:     event.EventNonce,
+				ExternalCoinId: event.ExternalCoinId,
+				Amount:         event.Amount.Add(event.Fee),
+				Sender:         event.Sender,
+				CosmosReceiver: event.ExternalReceiver,
+				ExternalHeight: event.ExternalHeight,
+				TxHash:         event.TxHash,
+			})
+		}
+
 		tempReceiver, _ := sdk.AccAddressFromBech32("hub1xhaedvjeu88p5hrpgyugyy7stflm3nmqa0jhjc") // todo
 		err := a.Handle(ctx, chainId, &types.SendToHubEvent{
 			EventNonce:     event.EventNonce,

@@ -416,7 +416,10 @@ func sendERC20ToHub(privateKey *ecdsa.PrivateKey, client *ethclient.Client, hub2
 		rec := [32]byte{}
 		copy(rec[12:], recipient)
 
-		response, err := hub2Instance.SendToHub(auth, common.HexToAddress(erc20addr), rec, big.NewInt(10000))
+		destinationChain := [32]byte{}
+		copy(destinationChain[:], "hub")
+
+		response, err := hub2Instance.TransferToChain(auth, common.HexToAddress(erc20addr), destinationChain, rec, big.NewInt(10000))
 		if err != nil {
 			panic(err)
 		}
@@ -725,5 +728,4 @@ func deployContractsAndMultisig(prKeyString string) {
 	minterMultisig := createMinterMultisig(ethPrivateKeyString, ethAddress, minterClient)
 
 	println("minter", minterMultisig)
-
 }

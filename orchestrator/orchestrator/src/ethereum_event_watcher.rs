@@ -13,7 +13,7 @@ use mhub2_proto::mhub2::query_client::QueryClient as Mhub2QueryClient;
 use mhub2_utils::{
     error::GravityError,
     types::{
-        LogicCallExecutedEvent, SendToHubEvent, TransactionBatchExecutedEvent, ValsetUpdatedEvent,
+        LogicCallExecutedEvent, TransferToChainEvent, TransactionBatchExecutedEvent, ValsetUpdatedEvent,
     },
 };
 use std::time;
@@ -39,15 +39,15 @@ pub async fn check_for_events(
     metrics::set_ethereum_check_for_events_starting_block(starting_block.clone());
     metrics::set_ethereum_check_for_events_end_block(latest_block.clone());
 
-    let deposits = web3
+    let transfers = web3
         .check_for_events(
             starting_block.clone(),
             Some(latest_block.clone()),
             vec![gravity_contract_address],
-            vec!["SendToHubEvent(address,address,bytes32,uint256,uint256)"],
+            vec!["TransferToChainEvent(address,address,bytes32,bytes32,uint256,uint256)"],
         )
         .await;
-    debug!("Deposit events detected {:?}", deposits);
+    debug!("Transfers events detected {:?}", transfers);
 
     let batches = web3
         .check_for_events(
@@ -80,10 +80,10 @@ pub async fn check_for_events(
     debug!("Logic call events detected {:?}", logic_calls);
 
     if let (Ok(valsets), Ok(batches), Ok(deposits), Ok(logic_calls)) =
-        (valsets, batches, deposits, logic_calls)
+        (valsets, batches, transfers, logic_calls)
     {
-        let deposits = SendToHubEvent::from_logs(&deposits, &prefix)?;
-        debug!("parsed deposits {:?}", deposits);
+        let deposits = TransferToChainEvent::from_logs(&deposits, &prefix)?;
+        debug!("parsed transfers {:?}", deposits);
 
         let batches = TransactionBatchExecutedEvent::from_logs(&batches, web3).await?;
         debug!("parsed batches {:?}", batches);
@@ -103,7 +103,7 @@ pub async fn check_for_events(
             get_last_event_nonce(grpc_client, our_cosmos_address, chain_id.clone()).await?;
         metrics::set_cosmos_last_event_nonce(last_event_nonce);
 
-        let deposits = SendToHubEvent::filter_by_event_nonce(last_event_nonce, &deposits);
+        let deposits = TransferToChainEvent::filter_by_event_nonce(last_event_nonce, &deposits);
         let batches =
             TransactionBatchExecutedEvent::filter_by_event_nonce(last_event_nonce, &batches);
         let valsets = ValsetUpdatedEvent::filter_by_event_nonce(last_event_nonce, &valsets);

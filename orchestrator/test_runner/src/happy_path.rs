@@ -17,7 +17,7 @@ use deep_space::Contact;
 use ethereum_gravity::utils::get_valset_nonce;
 use ethereum_gravity::{send_to_cosmos::send_to_cosmos, utils::get_tx_batch_nonce};
 use mhub2_proto::mhub2::query_client::QueryClient as GravityQueryClient;
-use mhub2_utils::types::SendToHubEvent;
+use mhub2_utils::types::TransferToChainEvent;
 use rand::Rng;
 use std::time::Duration;
 use std::time::Instant;
@@ -416,13 +416,15 @@ async fn submit_duplicate_erc20_send(
     let ethereum_sender = "0x912fd21d7a69678227fe6d08c64222db41477ba0"
         .parse()
         .unwrap();
-    let event = SendToHubEvent {
+    let event = TransferToChainEvent {
         event_nonce: nonce,
         block_height: 500u16.into(),
         erc20: erc20_address,
         sender: ethereum_sender,
+        destination_chain: "hub".to_string(),
         destination: receiver,
         amount,
+        tx_hash: "".to_string()
     };
 
     // iterate through all validators and try to send an event with duplicate nonce

@@ -2,7 +2,7 @@ use clarity::{Address, Uint256};
 use deep_space::address::Address as CosmosAddress;
 use mhub2_proto::mhub2::query_client::QueryClient as Mhub2QueryClient;
 use mhub2_utils::types::{
-    LogicCallExecutedEvent, SendToHubEvent, TransactionBatchExecutedEvent, ValsetUpdatedEvent,
+    LogicCallExecutedEvent, TransferToChainEvent, TransactionBatchExecutedEvent, ValsetUpdatedEvent,
 };
 use tokio::time::sleep as delay_for;
 use tonic::transport::Channel;
@@ -122,7 +122,7 @@ pub async fn get_last_checked_block(
         }
         for event in send_to_cosmos_events {
             let prefix = our_cosmos_address.get_prefix();
-            match SendToHubEvent::from_log(&event, &prefix) {
+            match TransferToChainEvent::from_log(&event, &prefix) {
                 Ok(send) => {
                     trace!(
                         "{} send event nonce {} last event nonce",

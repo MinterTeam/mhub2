@@ -269,11 +269,13 @@ impl TransactionBatchExecutedEvent {
 /// A parsed struct representing the Ethereum event fired when someone makes a deposit
 /// on the Gravity contract
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq, Hash)]
-pub struct SendToHubEvent {
+pub struct TransferToChainEvent {
     /// The token contract address for the deposit
     pub erc20: EthAddress,
     /// The Ethereum Sender
     pub sender: EthAddress,
+    /// The destination chain
+    pub destination_chain: String,
     /// The Cosmos destination
     pub destination: CosmosAddress,
     /// The amount of the erc20 token that is being sent
@@ -286,23 +288,24 @@ pub struct SendToHubEvent {
     pub tx_hash: String,
 }
 
-impl SendToHubEvent {
-    pub fn from_log(input: &Log, prefix: &str) -> Result<SendToHubEvent, GravityError> {
+impl TransferToChainEvent {
+    pub fn from_log(input: &Log, prefix: &str) -> Result<TransferToChainEvent, GravityError> {
         let topics = (
             input.topics.get(1),
             input.topics.get(2),
             input.topics.get(3),
         );
-        if let (Some(erc20_data), Some(sender_data), Some(destination_data)) = topics {
+        if let (Some(erc20_data), Some(sender_data), Some(destination_chain_data)) = topics {
             let erc20 = EthAddress::from_slice(&erc20_data[12..32])?;
             let sender = EthAddress::from_slice(&sender_data[12..32])?;
             // this is required because deep_space requires a fixed length slice to
             // create an address from bytes.
+            let destination_chain = String::asci(&destination_chain_data).to_string();
             let mut c_address_bytes: [u8; 20] = [0; 20];
-            c_address_bytes.copy_from_slice(&destination_data[12..32]);
+            c_address_bytes.copy_from_slice(&input.data[12..32]);
             let destination = CosmosAddress::from_bytes(c_address_bytes, prefix).unwrap();
-            let amount = Uint256::from_bytes_be(&input.data[..32]);
-            let event_nonce = Uint256::from_bytes_be(&input.data[32..]);
+            let amount = Uint256::from_bytes_be(&input.data[32..64]);
+            let event_nonce = Uint256::from_bytes_be(&input.data[64..]);
             let block_height = if let Some(bn) = input.block_number.clone() {
                 bn
             } else {
@@ -316,9 +319,10 @@ impl SendToHubEvent {
                     "Event nonce overflow, probably incorrect parsing".to_string(),
                 ))
             } else {
-                Ok(SendToHubEvent {
+                Ok(TransferToChainEvent {
                     erc20,
                     sender,
+                    destination_chain,
                     destination,
                     amount,
                     event_nonce,
@@ -335,7 +339,7 @@ impl SendToHubEvent {
             ))
         }
     }
-    pub fn from_logs(input: &[Log], prefix: &str) -> Result<Vec<SendToHubEvent>, GravityError> {
+    pub fn from_logs(input: &[Log], prefix: &str) -> Result<Vec<TransferToChainEvent>, GravityError> {
         let mut res = Vec::new();
         for item in input {
             res.push(Self::from_log(item, prefix)?);
