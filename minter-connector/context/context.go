@@ -35,7 +35,8 @@ type Context struct {
 }
 
 func (c *Context) LoadStatus(file string, defaultStatus config.MinterConfig) {
-	data, err := os.ReadFile(file)
+	c.statusFilePath = file
+	data, err := os.ReadFile(c.statusFilePath)
 	if err != nil {
 		c.status = statusData{
 			LastCheckedMinterBlock: defaultStatus.StartBlock,
@@ -43,6 +44,7 @@ func (c *Context) LoadStatus(file string, defaultStatus config.MinterConfig) {
 			LastBatchNonce:         defaultStatus.StartBatchNonce,
 			LastValsetNonce:        defaultStatus.StartValsetNonce,
 		}
+		return
 	}
 
 	status := statusData{}
@@ -56,7 +58,6 @@ func (c *Context) LoadStatus(file string, defaultStatus config.MinterConfig) {
 	}
 
 	c.status = status
-	c.statusFilePath = file
 }
 
 func (c *Context) LastCheckedMinterBlock() uint64 {
