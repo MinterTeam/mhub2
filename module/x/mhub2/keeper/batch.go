@@ -33,6 +33,7 @@ func (k Keeper) BuildBatchTx(ctx sdk.Context, chainId types.ChainID, externalTok
 	k.iterateUnbatchedSendToExternalsByCoin(ctx, chainId, externalTokenId, func(ste *types.SendToExternal) bool {
 		selectedStes = append(selectedStes, ste)
 		k.deleteUnbatchedSendToExternal(ctx, chainId, ste.Id, ste.Fee)
+		k.SetTxStatus(ctx, chainId, ste.TxHash, types.TX_STATUS_BATCH_CREATED, "")
 		return len(selectedStes) == maxElements
 	})
 
