@@ -18,11 +18,11 @@ import (
 
 var _ types.QueryServer = Keeper{}
 
-func (k Keeper) TokenInfos(ctx context.Context, req *types.TokenInfosRequest) (*types.TokenInfosResponse, error) {
+func (k Keeper) TokenInfos(ctx context.Context, _ *types.TokenInfosRequest) (*types.TokenInfosResponse, error) {
 	return &types.TokenInfosResponse{List: k.GetTokenInfos(sdk.UnwrapSDKContext(ctx))}, nil
 }
 
-func (k Keeper) Params(c context.Context, req *types.ParamsRequest) (*types.ParamsResponse, error) {
+func (k Keeper) Params(c context.Context, _ *types.ParamsRequest) (*types.ParamsResponse, error) {
 	params := k.GetParams(sdk.UnwrapSDKContext(c))
 	return &types.ParamsResponse{Params: params}, nil
 }

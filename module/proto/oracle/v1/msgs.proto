@@ -3,6 +3,7 @@ package oracle.v1;
 
 import "google/api/annotations.proto";
 import "gogoproto/gogo.proto";
+import "oracle/v1/prices.proto";
 
 option go_package = "github.com/MinterTeam/mhub2/module/x/oracle/types";
 
@@ -13,18 +14,6 @@ service Msg {
     rpc HoldersClaim(MsgHoldersClaim) returns(MsgHoldersClaimResponse) {
         option (google.api.http).post = "/oracle/v1/holders_claim";
     }
-}
-
-message Prices {
-  repeated Price list = 1;
-}
-
-message Price {
-  string name  = 1;
-  string value = 2 [
-      (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
-      (gogoproto.nullable) = false
-  ];
 }
 
 message Holders {

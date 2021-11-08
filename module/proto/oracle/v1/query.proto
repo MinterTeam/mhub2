@@ -3,22 +3,29 @@ package oracle.v1;
 
 import "google/api/annotations.proto";
 import "oracle/v1/types.proto";
+import "oracle/v1/prices.proto";
 import "gogoproto/gogo.proto";
 
 option go_package = "github.com/MinterTeam/mhub2/module/x/oracle/types";
 
 // Query defines the gRPC querier service
 service Query {
-  rpc CurrentEpoch(QueryCurrentEpochRequest) returns(QueryCurrentEpochResponse) {
-    option (google.api.http).get = "/oracle/v1beta/epoch/current";
-  }
-  rpc EthFee(QueryEthFeeRequest) returns(QueryEthFeeResponse) {
-      option (google.api.http).get = "/oracle/v1beta/eth_fee";
-  }
+    rpc CurrentEpoch(QueryCurrentEpochRequest) returns(QueryCurrentEpochResponse) {
+       // option (google.api.http).get = "/oracle/v1beta/epoch/current";
+    }
+    rpc EthFee(QueryEthFeeRequest) returns(QueryEthFeeResponse) {
+       // option (google.api.http).get = "/oracle/v1beta/eth_fee";
+    }
+    rpc Prices(QueryPricesRequest) returns(QueryPricesResponse) {
+       // option (google.api.http).get = "/oracle/v1beta/prices";
+    }
 }
 
 message QueryCurrentEpochRequest {}
 message QueryCurrentEpochResponse { Epoch epoch = 1; }
+
+message QueryPricesRequest {}
+message QueryPricesResponse { Prices prices = 1; }
 
 message QueryEthFeeRequest {}
 message QueryEthFeeResponse {

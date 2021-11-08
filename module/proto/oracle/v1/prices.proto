@@ -1,0 +1,18 @@
+syntax = "proto3";
+package oracle.v1;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/MinterTeam/mhub2/module/x/oracle/types";
+
+message Prices {
+    repeated Price list = 1;
+}
+
+message Price {
+    string name  = 1;
+    string value = 2 [
+        (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+        (gogoproto.nullable) = false
+    ];
+}

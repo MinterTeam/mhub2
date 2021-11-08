@@ -12,6 +12,12 @@ const gweiInEth = 1e9
 
 var _ types.QueryServer = Keeper{}
 
+func (k Keeper) Prices(context context.Context, _ *types.QueryPricesRequest) (*types.QueryPricesResponse, error) {
+	ctx := sdk.UnwrapSDKContext(context)
+
+	return &types.QueryPricesResponse{Prices: k.GetPrices(ctx)}, nil
+}
+
 func (k Keeper) CurrentEpoch(context context.Context, request *types.QueryCurrentEpochRequest) (*types.QueryCurrentEpochResponse, error) {
 	ctx := sdk.UnwrapSDKContext(context)
 
@@ -25,9 +31,11 @@ func (k Keeper) CurrentEpoch(context context.Context, request *types.QueryCurren
 		validator, _ := sdk.ValAddressFromBech32(valaddr)
 		oracle := sdk.AccAddress(validator).String()
 		priceClaim := k.GetPriceClaim(ctx, oracle, currentEpoch.Nonce).(*types.GenericClaim).GetPriceClaim()
+		holdersChaim := k.GetHoldersClaim(ctx, oracle, currentEpoch.Nonce).(*types.GenericClaim).GetHoldersClaim()
 		currentEpoch.Votes = append(currentEpoch.Votes, &types.Vote{
-			Oracle: oracle,
-			Claim:  priceClaim,
+			Oracle:       oracle,
+			PriceClaim:   priceClaim,
+			HoldersClaim: holdersChaim,
 		})
 	}
 

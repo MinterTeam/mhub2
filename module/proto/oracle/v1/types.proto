@@ -29,5 +29,6 @@ message Epoch {
 
 message Vote {
   string oracle = 1;
-  MsgPriceClaim claim = 2;
+  MsgPriceClaim price_claim = 2;
+  MsgHoldersClaim holders_claim = 3;
 }
