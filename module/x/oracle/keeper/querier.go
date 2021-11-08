@@ -36,10 +36,10 @@ func queryCurrentEpoch(ctx sdk.Context, keeper Keeper) ([]byte, error) {
 	att := keeper.GetAttestation(ctx, currentEpoch.Nonce, &types.MsgPriceClaim{})
 	votes := att.GetVotes()
 	for _, valaddr := range votes {
-		priceClaim := keeper.GetPriceClaim(ctx, valaddr, currentEpoch.Nonce).(*types.GenericClaim).GetPriceClaim()
 		currentEpoch.Votes = append(currentEpoch.Votes, &types.Vote{
-			Oracle: valaddr,
-			Claim:  priceClaim,
+			Oracle:       valaddr,
+			PriceClaim:   keeper.GetPriceClaim(ctx, valaddr, currentEpoch.Nonce).(*types.GenericClaim).GetPriceClaim(),
+			HoldersClaim: keeper.GetHoldersClaim(ctx, valaddr, currentEpoch.Nonce).(*types.GenericClaim).GetHoldersClaim(),
 		})
 	}
 

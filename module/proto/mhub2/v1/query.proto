@@ -144,14 +144,15 @@ service Query {
     // "/gravity/v1/delegate_keys";
   }
 
-  rpc TokenInfos(TokenInfosRequest) returns (TokenInfosResponse) {
-    // option (google.api.http).get =
-    // "/gravity/v1/delegate_keys";
-  }
+  rpc TokenInfos(TokenInfosRequest) returns (TokenInfosResponse) {}
+  rpc TransactionStatus(TransactionStatusRequest) returns (TransactionStatusResponse) {}
 }
 
 message TokenInfosRequest {}
 message TokenInfosResponse { TokenInfos list = 1 [ (gogoproto.nullable) = false ]; }
+
+message TransactionStatusRequest { string chain_id = 1; string tx_hash = 2; }
+message TransactionStatusResponse { TxStatus status = 1 [ (gogoproto.nullable) = true ]; }
 
 //  rpc Params
 message ParamsRequest {}
