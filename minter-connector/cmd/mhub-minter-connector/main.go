@@ -76,7 +76,7 @@ func main() {
 
 	ctx = minter.GetLatestMinterBlockAndNonce(ctx, cosmos.GetLastMinterNonce(orcAddress.String(), cosmosConn))
 
-	ctx.Logger.Info("Starting with block", "height", ctx.LastCheckedMinterBlock, "eventNonce", ctx.LastEventNonce, "batchNonce", ctx.LastBatchNonce, "valsetNonce", ctx.LastValsetNonce)
+	ctx.Logger.Info("Starting with block", "height", ctx.LastCheckedMinterBlock(), "eventNonce", ctx.LastEventNonce(), "batchNonce", ctx.LastBatchNonce(), "valsetNonce", ctx.LastValsetNonce())
 
 	// main loop
 	for {
@@ -84,7 +84,7 @@ func main() {
 		relayValsets(ctx)
 		ctx = relayMinterEvents(ctx)
 
-		ctx.Logger.Info("Last checked minter block", "height", ctx.LastCheckedMinterBlock, "eventNonce", ctx.LastEventNonce, "batchNonce", ctx.LastBatchNonce, "valsetNonce", ctx.LastValsetNonce)
+		ctx.Logger.Info("Last checked minter block", "height", ctx.LastCheckedMinterBlock(), "eventNonce", ctx.LastEventNonce(), "batchNonce", ctx.LastBatchNonce(), "valsetNonce", ctx.LastValsetNonce())
 		time.Sleep(2 * time.Second)
 	}
 }
