@@ -68,6 +68,9 @@ message SendToExternal {
   ExternalToken fee = 6 [ (gogoproto.nullable) = false ];
   string tx_hash = 7;
   ExternalToken val_commission = 8 [ (gogoproto.nullable) = false ];
+  uint64 created_at = 9;
+  string refund_address = 10;
+  string refund_chain_id = 11;
 }
 
 // ContractCallTx represents an individual arbitrary logic call transaction

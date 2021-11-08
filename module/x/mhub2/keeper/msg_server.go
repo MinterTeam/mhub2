@@ -213,7 +213,7 @@ func (k msgServer) SendToExternal(c context.Context, msg *types.MsgSendToExterna
 	}
 	commission := k.GetCommissionForHolder(ctx, sender.String(), tokenInfo.Commission).Mul(msg.Amount.Amount.Add(msg.BridgeFee.Amount).ToDec()).TruncateInt()
 
-	txID, err := k.createSendToExternal(ctx, types.ChainID(msg.ChainId), sender, msg.ExternalRecipient, msg.Amount, msg.BridgeFee, sdk.NewCoin(msg.Amount.Denom, commission), fmt.Sprintf("%x", sha256.Sum256(ctx.TxBytes())))
+	txID, err := k.createSendToExternal(ctx, types.ChainID(msg.ChainId), sender, msg.ExternalRecipient, msg.Amount, msg.BridgeFee, sdk.NewCoin(msg.Amount.Denom, commission), fmt.Sprintf("%x", sha256.Sum256(ctx.TxBytes())), "hub", sender.String())
 	if err != nil {
 		return nil, err
 	}

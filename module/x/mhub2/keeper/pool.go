@@ -17,7 +17,7 @@ import (
 // - burns the voucher for transfer amount and fees
 // - persists an OutgoingTx
 // - adds the TX to the `available` TX pool via a second index
-func (k Keeper) createSendToExternal(ctx sdk.Context, chainId types.ChainID, sender sdk.AccAddress, counterpartReceiver string, amount sdk.Coin, fee sdk.Coin, valCommission sdk.Coin, txHash string) (uint64, error) {
+func (k Keeper) createSendToExternal(ctx sdk.Context, chainId types.ChainID, sender sdk.AccAddress, counterpartReceiver string, amount sdk.Coin, fee sdk.Coin, valCommission sdk.Coin, txHash string, refundChain types.ChainID, refundAddress string) (uint64, error) {
 	totalAmount := amount.Add(fee).Add(valCommission)
 	totalInVouchers := sdk.Coins{totalAmount}
 
@@ -51,6 +51,9 @@ func (k Keeper) createSendToExternal(ctx sdk.Context, chainId types.ChainID, sen
 		ValCommission:     types.NewSDKIntExternalToken(convertedValCommission, tokenInfo.Id, tokenInfo.ExternalTokenId),
 		ChainId:           chainId.String(),
 		TxHash:            txHash,
+		CreatedAt:         uint64(ctx.BlockTime().Unix()),
+		RefundAddress:     refundAddress,
+		RefundChainId:     refundChain.String(),
 	})
 
 	return nextID, nil
@@ -86,7 +89,7 @@ func (k Keeper) cancelSendToExternal(ctx sdk.Context, chainId types.ChainID, id 
 
 		return info.Denom, nil
 	})
-	totalToRefund.Amount = totalToRefund.Amount.Add(send.Fee.Amount)
+	totalToRefund.Amount = totalToRefund.Amount.Add(send.Fee.Amount).Add(send.ValCommission.Amount)
 	totalToRefund.Amount = k.ConvertFromExternalValue(ctx, chainId, send.Token.ExternalTokenId, totalToRefund.Amount)
 
 	totalToRefundCoins := sdk.NewCoins(totalToRefund)
@@ -95,8 +98,23 @@ func (k Keeper) cancelSendToExternal(ctx sdk.Context, chainId types.ChainID, id 
 		return sdkerrors.Wrapf(err, "mint vouchers coins: %s", totalToRefundCoins)
 	}
 
-	if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, sender, totalToRefundCoins); err != nil {
-		return sdkerrors.Wrap(err, "sending coins from module account")
+	if send.RefundChainId != "" {
+		if send.RefundChainId == "hub" {
+			if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, sender, totalToRefundCoins); err != nil {
+				return sdkerrors.Wrap(err, "sending coins from module account")
+			}
+		} else {
+			var defaultSender = sdk.AccAddress{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0} // todo
+
+			if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, defaultSender, totalToRefundCoins); err != nil {
+				return sdkerrors.Wrap(err, "sending coins from module account")
+			}
+
+			_, err := k.createSendToExternal(ctx, types.ChainID(send.RefundChainId), defaultSender, send.RefundAddress, totalToRefund, sdk.NewCoin(totalToRefund.Denom, sdk.NewInt(0)), sdk.NewCoin(totalToRefund.Denom, sdk.NewInt(0)), "#", "", "")
+			if err != nil {
+				return err
+			}
+		}
 	}
 
 	k.deleteUnbatchedSendToExternal(ctx, chainId, send.Id, send.Fee)

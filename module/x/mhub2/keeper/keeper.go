@@ -729,7 +729,7 @@ func (k Keeper) ColdStorageTransfer(ctx sdk.Context, c *types.ColdStorageTransfe
 			return errors2.Wrap(err, "transfer vouchers")
 		}
 
-		txID, err := k.createSendToExternal(ctx, chainId, defaultSender, coldStorageAddr, coin, sdk.NewCoin(coin.Denom, sdk.NewInt(0)), sdk.NewCoin(coin.Denom, sdk.NewInt(0)), fmt.Sprintf("%x", sha256.Sum256(ctx.TxBytes())))
+		txID, err := k.createSendToExternal(ctx, chainId, defaultSender, coldStorageAddr, coin, sdk.NewCoin(coin.Denom, sdk.NewInt(0)), sdk.NewCoin(coin.Denom, sdk.NewInt(0)), fmt.Sprintf("%x", sha256.Sum256(ctx.TxBytes())), "hub", defaultSender.String())
 		if err != nil {
 			return err
 		}
@@ -751,6 +751,10 @@ func (k Keeper) ColdStorageTransfer(ctx sdk.Context, c *types.ColdStorageTransfe
 	}
 
 	return nil
+}
+
+func (k Keeper) OnOutgoingTransactionTimeouts(ctx sdk.Context, chainId types.ChainID, txId uint64, sender string) {
+	k.cancelSendToExternal(ctx, chainId, txId, sender)
 }
 
 func convertDecimals(fromDecimals uint64, toDecimals uint64, amount sdk.Int) sdk.Int {

@@ -74,7 +74,7 @@ func (a ExternalEventProcessor) Handle(ctx sdk.Context, chainId types.ChainID, e
 		commission := sdk.NewCoin(receiverChainTokenInfo.Denom, commissionValue)
 		amount := sdk.NewCoin(receiverChainTokenInfo.Denom, event.Amount).Sub(commission)
 
-		txID, err := a.keeper.createSendToExternal(ctx, types.ChainID(event.ReceiverChainId), tempReceiver, event.ExternalReceiver, amount, fee, commission, event.TxHash)
+		txID, err := a.keeper.createSendToExternal(ctx, types.ChainID(event.ReceiverChainId), tempReceiver, event.ExternalReceiver, amount, fee, commission, event.TxHash, chainId, event.Sender)
 		if err != nil {
 			return err
 		}

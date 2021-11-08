@@ -229,7 +229,7 @@ func (input TestInput) AddSendToEthTxsToPool(t *testing.T, ctx sdk.Context, chai
 	for i, id := range ids {
 		amount := types.NewExternalToken(uint64(i+100), tokenId, externalTokenId).HubCoin(testDenomResolver)
 		fee := types.NewExternalToken(id, tokenId, externalTokenId).HubCoin(testDenomResolver)
-		_, err := input.GravityKeeper.createSendToExternal(ctx, chainId, sender, receiver.Hex(), amount, fee, sdk.NewInt64Coin(amount.Denom, 0), "#")
+		_, err := input.GravityKeeper.createSendToExternal(ctx, chainId, sender, receiver.Hex(), amount, fee, sdk.NewInt64Coin(amount.Denom, 0), "#", "", "")
 		require.NoError(t, err)
 	}
 }

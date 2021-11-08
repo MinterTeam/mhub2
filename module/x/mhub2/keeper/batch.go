@@ -124,7 +124,7 @@ func (k Keeper) batchTxExecuted(ctx sdk.Context, chainId types.ChainID, external
 
 		for _, val := range valset {
 			amount := totalValCommission.Amount.Mul(sdk.NewIntFromUint64(val.Power)).Quo(sdk.NewIntFromUint64(totalPower))
-			_, err = k.createSendToExternal(ctx, "minter", tempSender, val.ExternalAddress, sdk.NewCoin(tokenInfo.Denom, amount), sdk.NewInt64Coin(tokenInfo.Denom, 0), sdk.NewInt64Coin(tokenInfo.Denom, 0), "#commission")
+			_, err = k.createSendToExternal(ctx, "minter", tempSender, val.ExternalAddress, sdk.NewCoin(tokenInfo.Denom, amount), sdk.NewInt64Coin(tokenInfo.Denom, 0), sdk.NewInt64Coin(tokenInfo.Denom, 0), "#commission", "", "")
 			if err != nil {
 				panic(err)
 			}
@@ -146,7 +146,7 @@ func (k Keeper) batchTxExecuted(ctx sdk.Context, chainId types.ChainID, external
 				panic(err)
 			}
 
-			_, err = k.createSendToExternal(ctx, "minter", tempSender, feePayer, fee, sdk.NewInt64Coin(fee.Denom, 0), sdk.NewInt64Coin(fee.Denom, 0), "#fee")
+			_, err = k.createSendToExternal(ctx, "minter", tempSender, feePayer, fee, sdk.NewInt64Coin(fee.Denom, 0), sdk.NewInt64Coin(fee.Denom, 0), "#fee", "", "")
 			if err != nil {
 				panic(err)
 			}
@@ -163,7 +163,7 @@ func (k Keeper) batchTxExecuted(ctx sdk.Context, chainId types.ChainID, external
 				averageFeePaid := fee.Amount.QuoRaw(int64(len(batchTx.Transactions)))
 				for _, tx := range batchTx.Transactions {
 					toRefund := tx.Fee.Amount.Sub(averageFeePaid)
-					_, err = k.createSendToExternal(ctx, "minter", tempSender, tx.Sender, sdk.NewCoin(fee.Denom, toRefund), sdk.NewInt64Coin(fee.Denom, 0), sdk.NewInt64Coin(fee.Denom, 0), "#fee")
+					_, err = k.createSendToExternal(ctx, "minter", tempSender, tx.Sender, sdk.NewCoin(fee.Denom, toRefund), sdk.NewInt64Coin(fee.Denom, 0), sdk.NewInt64Coin(fee.Denom, 0), "#fee", "", "")
 					if err != nil {
 						panic(err)
 					}

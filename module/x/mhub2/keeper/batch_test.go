@@ -163,7 +163,7 @@ func TestBatchesFullCoins(t *testing.T) {
 		fee := types.NewSDKIntExternalToken(oneEth.Mul(vAsSDKInt), tokenId, myTokenContractAddr).HubCoin(testDenomResolver)
 		valCommission := types.NewSDKIntExternalToken(sdk.NewInt(0), tokenId, myTokenContractAddr).HubCoin(testDenomResolver)
 
-		_, err := input.GravityKeeper.createSendToExternal(ctx, chainId, mySender, myReceiver.Hex(), amount, fee, valCommission, "")
+		_, err := input.GravityKeeper.createSendToExternal(ctx, chainId, mySender, myReceiver.Hex(), amount, fee, valCommission, "", "", "")
 		require.NoError(t, err)
 	}
 
@@ -245,7 +245,7 @@ func TestBatchesFullCoins(t *testing.T) {
 		fee := types.NewSDKIntExternalToken(oneEth.Mul(vAsSDKInt), tokenId, myTokenContractAddr).HubCoin(testDenomResolver)
 		valCommission := types.NewSDKIntExternalToken(sdk.NewInt(0), tokenId, myTokenContractAddr).HubCoin(testDenomResolver)
 
-		_, err := input.GravityKeeper.createSendToExternal(ctx, chainId, mySender, myReceiver.Hex(), amount, fee, valCommission, "")
+		_, err := input.GravityKeeper.createSendToExternal(ctx, chainId, mySender, myReceiver.Hex(), amount, fee, valCommission, "", "", "")
 		require.NoError(t, err)
 	}
 
