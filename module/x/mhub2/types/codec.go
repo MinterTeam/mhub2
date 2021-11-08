@@ -1,6 +1,7 @@
 package types
 
 import (
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/gogo/protobuf/proto"
 
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -44,6 +45,11 @@ func RegisterInterfaces(registry types.InterfaceRegistry) {
 		&MsgSubmitExternalEvent{},
 		&MsgSubmitExternalTxConfirmation{},
 		&MsgDelegateKeys{},
+	)
+
+	registry.RegisterImplementations(
+		(*govtypes.Content)(nil),
+		&ColdStorageTransferProposal{},
 	)
 
 	registry.RegisterInterface(

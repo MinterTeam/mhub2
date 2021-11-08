@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 
+	mhub2client "github.com/MinterTeam/mhub2/module/x/mhub2/client"
+
 	"github.com/MinterTeam/mhub2/module/x/oracle"
 
 	mhub2params "github.com/MinterTeam/mhub2/module/app/params"
@@ -128,6 +130,7 @@ var (
 			distrclient.ProposalHandler,
 			upgradeclient.ProposalHandler,
 			upgradeclient.CancelProposalHandler,
+			mhub2client.ProposalHandler,
 		),
 		params.AppModuleBasic{},
 		crisis.AppModuleBasic{},
@@ -376,6 +379,7 @@ func NewMhub2App(
 		AddRoute(paramsproposal.RouterKey, params.NewParamChangeProposalHandler(app.paramsKeeper)).
 		AddRoute(distrtypes.RouterKey, distr.NewCommunityPoolSpendProposalHandler(app.distrKeeper)).
 		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(app.upgradeKeeper)).
+		AddRoute(mhub2types.RouterKey, mhub2.NewColdStorageTransferProposalHandler(app.mhub2Keeper)).
 		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(app.ibcKeeper.ClientKeeper))
 
 	app.govKeeper = govkeeper.NewKeeper(

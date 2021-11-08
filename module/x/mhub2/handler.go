@@ -3,6 +3,7 @@ package mhub2
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 
 	"github.com/MinterTeam/mhub2/module/x/mhub2/keeper"
 	"github.com/MinterTeam/mhub2/module/x/mhub2/types"
@@ -42,6 +43,18 @@ func NewHandler(k keeper.Keeper) sdk.Handler {
 
 		default:
 			return nil, sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "unrecognized %s message type: %T", types.ModuleName, msg)
+		}
+	}
+}
+
+func NewColdStorageTransferProposalHandler(k keeper.Keeper) govtypes.Handler {
+	return func(ctx sdk.Context, content govtypes.Content) error {
+		switch c := content.(type) {
+		case *types.ColdStorageTransferProposal:
+			return k.ColdStorageTransfer(ctx, c)
+
+		default:
+			return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "unrecognized proposal content type: %T", c)
 		}
 	}
 }

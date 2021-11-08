@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -697,6 +698,59 @@ func (k Keeper) GetCommissionForHolder(ctx sdk.Context, address string, commissi
 	}
 
 	return commission
+}
+
+func (k Keeper) GetColdStorageAddr(ctx sdk.Context, chainId types.ChainID) string {
+	switch chainId {
+	case "minter":
+		return "Mx..." // todo
+	case "ethereum":
+		return "0x..." // todo
+	case "bsc":
+		return "0x..." // todo
+	}
+
+	panic("unknown network")
+}
+
+func (k Keeper) ColdStorageTransfer(ctx sdk.Context, c *types.ColdStorageTransferProposal) error {
+	chainId := types.ChainID(c.ChainId)
+	coldStorageAddr := k.GetColdStorageAddr(ctx, chainId)
+
+	var defaultSender = sdk.AccAddress{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0} // todo
+
+	for _, coin := range c.Amount {
+		vouchers := sdk.Coins{coin}
+		if err := k.bankKeeper.MintCoins(ctx, types.ModuleName, vouchers); err != nil {
+			return errors2.Wrapf(err, "mint vouchers coins: %s", vouchers)
+		}
+
+		if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, defaultSender, vouchers); err != nil {
+			return errors2.Wrap(err, "transfer vouchers")
+		}
+
+		txID, err := k.createSendToExternal(ctx, chainId, defaultSender, coldStorageAddr, coin, sdk.NewCoin(coin.Denom, sdk.NewInt(0)), sdk.NewCoin(coin.Denom, sdk.NewInt(0)), fmt.Sprintf("%x", sha256.Sum256(ctx.TxBytes())))
+		if err != nil {
+			return err
+		}
+
+		ctx.EventManager().EmitEvents([]sdk.Event{
+			sdk.NewEvent(
+				types.EventTypeBridgeWithdrawalReceived,
+				sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
+				sdk.NewAttribute(types.AttributeKeyContract, k.getBridgeContractAddress(ctx)),
+				sdk.NewAttribute(types.AttributeKeyBridgeChainID, strconv.Itoa(int(k.getBridgeChainID(ctx)))),
+				sdk.NewAttribute(types.AttributeKeyOutgoingTXID, strconv.Itoa(int(txID))),
+				sdk.NewAttribute(types.AttributeKeyNonce, fmt.Sprint(txID)),
+			),
+			sdk.NewEvent(
+				sdk.EventTypeMessage,
+				sdk.NewAttribute(types.AttributeKeyOutgoingTXID, fmt.Sprint(txID)),
+			),
+		})
+	}
+
+	return nil
 }
 
 func convertDecimals(fromDecimals uint64, toDecimals uint64, amount sdk.Int) sdk.Int {
