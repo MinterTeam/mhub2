@@ -120,6 +120,7 @@ pub async fn estimate_logic_call_cost(
     Ok(GasCost {
         gas: val,
         gas_price,
+        total_fee_eth: 0u64.into(),
     })
 }
 

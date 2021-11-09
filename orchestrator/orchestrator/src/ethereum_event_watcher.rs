@@ -13,7 +13,8 @@ use mhub2_proto::mhub2::query_client::QueryClient as Mhub2QueryClient;
 use mhub2_utils::{
     error::GravityError,
     types::{
-        LogicCallExecutedEvent, TransferToChainEvent, TransactionBatchExecutedEvent, ValsetUpdatedEvent,
+        LogicCallExecutedEvent, TransactionBatchExecutedEvent, TransferToChainEvent,
+        ValsetUpdatedEvent,
     },
 };
 use std::time;

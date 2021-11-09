@@ -4,6 +4,7 @@ use clarity::{Address as EthAddress, Uint256};
 use mhub2_utils::error::GravityError;
 use mhub2_utils::message_signatures::encode_tx_batch_confirm_hashed;
 use mhub2_utils::types::*;
+use std::collections::HashMap;
 use std::{cmp::min, time::Duration};
 use web30::{client::Web3, types::TransactionRequest};
 
@@ -115,7 +116,22 @@ pub async fn estimate_tx_batch_cost(
     Ok(GasCost {
         gas: val,
         gas_price,
+        total_fee_eth: get_total_batch_fee_in_eth(batch),
     })
+}
+
+fn get_total_batch_fee_in_eth(batch: TransactionBatch) -> Uint256 {
+    let data = reqwest::blocking::get(
+        "https://estimate.minter.network/to_eth?contract="
+            + batch.total_fee.token_contract_address
+            + "&value="
+            + batch.total_fee.amount.to_string(),
+    )
+    .unwrap()
+    .json::<HashMap<String, String>>()
+    .unwrap();
+
+    Uint256::from_str_radix(data.get("result").unwrap(), 10).unwrap()
 }
 
 /// Encodes the batch payload for both estimate_tx_batch_cost and send_eth_transaction_batch

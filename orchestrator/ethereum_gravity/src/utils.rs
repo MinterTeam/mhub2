@@ -243,10 +243,14 @@ pub async fn get_erc20_symbol(
 pub struct GasCost {
     pub gas: Uint256,
     pub gas_price: Uint256,
+    pub total_fee_eth: Uint256,
 }
 
 impl GasCost {
     pub fn get_total(&self) -> Uint256 {
         self.gas.clone() * self.gas_price.clone()
+    }
+    pub fn is_profitable(&self) -> bool {
+        self.get_total().lt(&self.total_fee_eth)
     }
 }

@@ -33,6 +33,5 @@ tokio = "1.4"
 tonic = "0.4"
 openssl-probe = "0.1"
 
-
 [dev-dependencies]
 actix = "0.11"

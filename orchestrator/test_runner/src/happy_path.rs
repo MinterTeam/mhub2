@@ -424,7 +424,7 @@ async fn submit_duplicate_erc20_send(
         destination_chain: "hub".to_string(),
         destination: receiver,
         amount,
-        tx_hash: "".to_string()
+        tx_hash: "".to_string(),
     };
 
     // iterate through all validators and try to send an event with duplicate nonce

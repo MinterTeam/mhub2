@@ -106,6 +106,7 @@ pub async fn estimate_valset_cost(
     Ok(GasCost {
         gas: val,
         gas_price,
+        total_fee_eth: 0u64.into(),
     })
 }
 

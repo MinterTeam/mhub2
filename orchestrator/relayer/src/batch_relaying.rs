@@ -207,13 +207,18 @@ async fn submit_batches(
                 }
                 let cost = cost.unwrap();
                 info!(
-                "We have detected latest batch {} but latest on Ethereum is {} This batch is estimated to cost {} Gas / {:.4} ETH to submit",
-                latest_cosmos_batch_nonce,
-                latest_ethereum_batch,
-                cost.gas_price.clone(),
-                downcast_to_u128(cost.get_total()).unwrap() as f32
-                    / downcast_to_u128(one_eth()).unwrap() as f32
-            );
+                    "We have detected latest batch {} but latest on Ethereum is {} This batch is estimated to cost {} Gas / {:.4} ETH to submit",
+                    latest_cosmos_batch_nonce,
+                    latest_ethereum_batch,
+                    cost.gas_price.clone(),
+                    downcast_to_u128(cost.get_total()).unwrap() as f32
+                        / downcast_to_u128(one_eth()).unwrap() as f32
+                );
+
+                if cost.is_profitable() {
+                    info!("Rejected to submit batch due to low fee");
+                    continue;
+                }
 
                 let res = send_eth_transaction_batch(
                     current_valset.clone(),

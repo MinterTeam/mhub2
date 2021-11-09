@@ -2,7 +2,7 @@ use clarity::{Address, Uint256};
 use deep_space::address::Address as CosmosAddress;
 use mhub2_proto::mhub2::query_client::QueryClient as Mhub2QueryClient;
 use mhub2_utils::types::{
-    LogicCallExecutedEvent, TransferToChainEvent, TransactionBatchExecutedEvent, ValsetUpdatedEvent,
+    LogicCallExecutedEvent, TransactionBatchExecutedEvent, TransferToChainEvent, ValsetUpdatedEvent,
 };
 use tokio::time::sleep as delay_for;
 use tonic::transport::Channel;
