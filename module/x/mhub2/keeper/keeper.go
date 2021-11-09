@@ -630,7 +630,7 @@ func (k Keeper) ExternalIdToTokenInfoLookup(ctx sdk.Context, chainId types.Chain
 	return nil, errors2.Wrap(ErrTokenNotFound, fmt.Sprintf("chainId:%s externalId:%s", chainId, externalId))
 }
 
-func (k Keeper) incrementOutgoingSequence(ctx sdk.Context, chainId types.ChainID) uint64 {
+func (k Keeper) getOutgoingSequence(ctx sdk.Context, chainId types.ChainID) uint64 {
 	store := ctx.KVStore(k.storeKey)
 	key := append([]byte{types.OutgoingSequence}, chainId.Bytes()...)
 	bz := store.Get(key)
@@ -638,9 +638,21 @@ func (k Keeper) incrementOutgoingSequence(ctx sdk.Context, chainId types.ChainID
 	if bz != nil {
 		id = binary.BigEndian.Uint64(bz)
 	}
-	newId := id + 1
-	bz = sdk.Uint64ToBigEndian(newId)
+
+	return id
+}
+
+func (k Keeper) setOutgoingSequence(ctx sdk.Context, chainId types.ChainID, sequence uint64) {
+	store := ctx.KVStore(k.storeKey)
+	key := append([]byte{types.OutgoingSequence}, chainId.Bytes()...)
+	bz := sdk.Uint64ToBigEndian(sequence)
 	store.Set(key, bz)
+}
+
+func (k Keeper) incrementOutgoingSequence(ctx sdk.Context, chainId types.ChainID) uint64 {
+	newId := k.getOutgoingSequence(ctx, chainId) + 1
+	k.setOutgoingSequence(ctx, chainId, newId)
+
 	return newId
 }
 

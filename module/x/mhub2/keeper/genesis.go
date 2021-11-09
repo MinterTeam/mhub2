@@ -16,6 +16,8 @@ func InitGenesis(ctx sdk.Context, k Keeper, data types.GenesisState) {
 	for _, externalState := range data.ExternalStates {
 		chainId := types.ChainID(externalState.ChainId)
 
+		k.setOutgoingSequence(ctx, chainId, externalState.Sequence)
+
 		// reset pool transactions in state
 		for _, tx := range externalState.UnbatchedSendToExternalTxs {
 			k.setUnbatchedSendToExternal(ctx, chainId, tx)
@@ -166,6 +168,7 @@ func ExportGenesis(ctx sdk.Context, k Keeper) types.GenesisState {
 			LastObservedEventNonce:     lastobserved,
 			OutgoingTxs:                outgoingTxs,
 			Confirmations:              externalTxConfirmations,
+			Sequence:                   k.getOutgoingSequence(ctx, chainId),
 		})
 	}
 

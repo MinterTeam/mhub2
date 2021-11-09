@@ -120,4 +120,5 @@ message ExternalState {
   uint64 last_observed_event_nonce = 5;
   repeated google.protobuf.Any outgoing_txs = 6;
   repeated google.protobuf.Any confirmations = 7;
+  uint64 sequence = 8;
 }
