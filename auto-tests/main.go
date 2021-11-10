@@ -885,14 +885,11 @@ func approveERC20ToHub(privateKey *ecdsa.PrivateKey, client *ethclient.Client, h
 		panic(err)
 	}
 
-	{
-		response, err := erc20Instance.Approve(auth, common.HexToAddress(hub2Addr), abi.MaxUint256)
-		if err != nil {
-			panic(err)
-		}
-		waitEthTx(response.Hash(), client)
-		println("approved")
+	response, err := erc20Instance.Approve(auth, common.HexToAddress(hub2Addr), abi.MaxUint256)
+	if err != nil {
+		panic(err)
 	}
+	waitEthTx(response.Hash(), client)
 }
 
 func sendERC20ToHub(privateKey *ecdsa.PrivateKey, client *ethclient.Client, hub2Addr string, erc20addr string, to string, chainId int64) {
@@ -921,25 +918,23 @@ func sendERC20ToHub(privateKey *ecdsa.PrivateKey, client *ethclient.Client, hub2
 		panic(err)
 	}
 
-	{
-		recipient, err := sdk.GetFromBech32(to, "hub")
-		if err != nil {
-			panic(err)
-		}
-
-		rec := [32]byte{}
-		copy(rec[12:], recipient)
-
-		destinationChain := [32]byte{}
-		copy(destinationChain[:], "hub")
-
-		response, err := hub2Instance.TransferToChain(auth, common.HexToAddress(erc20addr), destinationChain, rec, transaction.BipToPip(big.NewInt(1)))
-		if err != nil {
-			panic(err)
-		}
-
-		waitEthTx(response.Hash(), client)
+	recipient, err := sdk.GetFromBech32(to, "hub")
+	if err != nil {
+		panic(err)
 	}
+
+	rec := [32]byte{}
+	copy(rec[12:], recipient)
+
+	destinationChain := [32]byte{}
+	copy(destinationChain[:], "hub")
+
+	response, err := hub2Instance.TransferToChain(auth, common.HexToAddress(erc20addr), destinationChain, rec, transaction.BipToPip(big.NewInt(1)))
+	if err != nil {
+		panic(err)
+	}
+
+	waitEthTx(response.Hash(), client)
 }
 
 func fundContractWithErc20(privateKey *ecdsa.PrivateKey, client *ethclient.Client, hub2Addr string, erc20addr string, chainId int64) {
@@ -974,7 +969,6 @@ func fundContractWithErc20(privateKey *ecdsa.PrivateKey, client *ethclient.Clien
 	}
 
 	waitEthTx(response.Hash(), client)
-	println("funded")
 }
 
 func waitEthTx(hash common.Hash, client *ethclient.Client) {
