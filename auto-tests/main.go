@@ -432,7 +432,7 @@ func testBSCToHubTransfer(ctx *Context) {
 			}
 
 			if response.Balance.IsZero() {
-				if time.Now().Sub(startTime).Seconds() > 60 {
+				if time.Now().Sub(startTime).Seconds() > 120 {
 					panic("Timeout waiting for the balance to update")
 				}
 
@@ -471,7 +471,7 @@ func testEthereumToHubTransfer(ctx *Context) {
 			}
 
 			if response.Balance.IsZero() {
-				if time.Now().Sub(startTime).Seconds() > 60 {
+				if time.Now().Sub(startTime).Seconds() > 120 {
 					panic("Timeout waiting for the balance to update")
 				}
 
@@ -551,7 +551,7 @@ func testEthereumToMinterTransfer(ctx *Context) {
 
 			hubBalance := getMinterCoinBalance(response.Balance, "HUB")
 			if hubBalance.IsZero() {
-				if time.Now().Sub(startTime).Seconds() > 120 {
+				if time.Now().Sub(startTime).Seconds() > 180 {
 					panic("Timeout waiting for the balance to update")
 				}
 
