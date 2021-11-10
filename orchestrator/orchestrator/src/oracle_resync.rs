@@ -121,8 +121,7 @@ pub async fn get_last_checked_block(
             }
         }
         for event in send_to_cosmos_events {
-            let prefix = our_cosmos_address.get_prefix();
-            match TransferToChainEvent::from_log(&event, &prefix) {
+            match TransferToChainEvent::from_log(&event) {
                 Ok(send) => {
                     trace!(
                         "{} send event nonce {} last event nonce",

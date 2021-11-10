@@ -8,7 +8,6 @@ use super::ValsetMember;
 use crate::error::GravityError;
 use clarity::Address as EthAddress;
 use deep_space::utils::bytes_to_hex_str;
-use deep_space::Address as CosmosAddress;
 use num256::Uint256;
 use std::ops::Mul;
 use web30::client::Web3;
@@ -276,7 +275,7 @@ pub struct TransferToChainEvent {
     /// The destination chain
     pub destination_chain: String,
     /// The Cosmos destination
-    pub destination: CosmosAddress,
+    pub destination: EthAddress,
     /// The amount of the erc20 token that is being sent
     pub amount: Uint256,
     /// The transaction's nonce, used to make sure there can be no accidental duplication
@@ -288,7 +287,7 @@ pub struct TransferToChainEvent {
 }
 
 impl TransferToChainEvent {
-    pub fn from_log(input: &Log, prefix: &str) -> Result<TransferToChainEvent, GravityError> {
+    pub fn from_log(input: &Log) -> Result<TransferToChainEvent, GravityError> {
         let topics = (
             input.topics.get(1),
             input.topics.get(2),
@@ -297,12 +296,10 @@ impl TransferToChainEvent {
         if let (Some(erc20_data), Some(sender_data), Some(destination_chain_data)) = topics {
             let erc20 = EthAddress::from_slice(&erc20_data[12..32])?;
             let sender = EthAddress::from_slice(&sender_data[12..32])?;
-            // this is required because deep_space requires a fixed length slice to
-            // create an address from bytes.
-            let destination_chain = String::from_utf8_lossy(&destination_chain_data).to_string();
-            let mut c_address_bytes: [u8; 20] = [0; 20];
-            c_address_bytes.copy_from_slice(&input.data[12..32]);
-            let destination = CosmosAddress::from_bytes(c_address_bytes, prefix).unwrap();
+            let destination_chain = String::from_utf8_lossy(&destination_chain_data)
+                .trim_end_matches('\x00')
+                .to_string();
+            let destination = EthAddress::from_slice(&input.data[12..32]).unwrap();
             let amount = Uint256::from_bytes_be(&input.data[32..64]);
             let event_nonce = Uint256::from_bytes_be(&input.data[64..]);
             let block_height = if let Some(bn) = input.block_number.clone() {
@@ -338,13 +335,10 @@ impl TransferToChainEvent {
             ))
         }
     }
-    pub fn from_logs(
-        input: &[Log],
-        prefix: &str,
-    ) -> Result<Vec<TransferToChainEvent>, GravityError> {
+    pub fn from_logs(input: &[Log]) -> Result<Vec<TransferToChainEvent>, GravityError> {
         let mut res = Vec::new();
         for item in input {
-            res.push(Self::from_log(item, prefix)?);
+            res.push(Self::from_log(item)?);
         }
         Ok(res)
     }

@@ -83,7 +83,7 @@ pub async fn check_for_events(
     if let (Ok(valsets), Ok(batches), Ok(deposits), Ok(logic_calls)) =
         (valsets, batches, transfers, logic_calls)
     {
-        let deposits = TransferToChainEvent::from_logs(&deposits, &prefix)?;
+        let deposits = TransferToChainEvent::from_logs(&deposits)?;
         debug!("parsed transfers {:?}", deposits);
 
         let batches = TransactionBatchExecutedEvent::from_logs(&batches, web3).await?;

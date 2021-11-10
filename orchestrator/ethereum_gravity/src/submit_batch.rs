@@ -121,15 +121,14 @@ pub async fn estimate_tx_batch_cost(
 }
 
 fn get_total_batch_fee_in_eth(batch: TransactionBatch) -> Uint256 {
-    let data = reqwest::blocking::get(
-        "https://estimate.minter.network/to_eth?contract="
-            + batch.total_fee.token_contract_address
-            + "&value="
-            + batch.total_fee.amount.to_string(),
-    )
-    .unwrap()
-    .json::<HashMap<String, String>>()
-    .unwrap();
+    let mut url: String = "https://estimate.minter.network/to_eth?contract=".to_owned();
+    url.push_str(batch.total_fee.token_contract_address.to_string().as_str());
+    url.push_str("&value=".into());
+    url.push_str(batch.total_fee.amount.to_string().as_str());
+    let data = reqwest::blocking::get(url)
+        .unwrap()
+        .json::<HashMap<String, String>>()
+        .unwrap();
 
     Uint256::from_str_radix(data.get("result").unwrap(), 10).unwrap()
 }

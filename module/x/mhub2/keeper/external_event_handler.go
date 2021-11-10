@@ -32,12 +32,17 @@ func (a ExternalEventProcessor) Handle(ctx sdk.Context, chainId types.ChainID, e
 	switch event := eve.(type) {
 	case *types.TransferToChainEvent:
 		if event.ReceiverChainId == "HUB" {
+			receiver, err := sdk.AccAddressFromHex(event.ExternalReceiver)
+			if err != nil {
+				return err
+			}
+
 			return a.Handle(ctx, chainId, &types.SendToHubEvent{
 				EventNonce:     event.EventNonce,
 				ExternalCoinId: event.ExternalCoinId,
 				Amount:         event.Amount.Add(event.Fee),
 				Sender:         event.Sender,
-				CosmosReceiver: event.ExternalReceiver,
+				CosmosReceiver: receiver.String(),
 				ExternalHeight: event.ExternalHeight,
 				TxHash:         event.TxHash,
 			})

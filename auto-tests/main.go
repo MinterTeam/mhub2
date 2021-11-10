@@ -14,11 +14,16 @@ import (
 	"github.com/MinterTeam/mhub2/module/x/mhub2/types"
 	minterTypes "github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-sdk/v2/api/http_client"
+	"github.com/MinterTeam/minter-go-sdk/v2/api/http_client/models"
 	"github.com/MinterTeam/minter-go-sdk/v2/transaction"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
+	types2 "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/params"
@@ -57,6 +62,7 @@ func main() {
 	if err := os.RemoveAll(fmt.Sprintf("%s/data", wd)); err != nil {
 		panic(err)
 	}
+	_ = os.Remove(fmt.Sprintf("%s/connector-status.json", wd))
 
 	runOrPanic("mkdir %s/data", wd)
 	runOrPanic("mkdir %s/data/logs", wd)
@@ -94,7 +100,7 @@ func main() {
 	runOrPanic("mhub2 init --chain-id=%s validator1", mhubChainId)
 	cosmosMnemonic := strings.Split(runOrPanic("mhub2 keys add --keyring-backend test validator1"), "\n")[11]
 	hubAddress := strings.Trim(runOrPanic("mhub2 keys show validator1 -a --keyring-backend test"), "\n")
-	println(hubAddress, cosmosMnemonic)
+
 	runOrPanic("mhub2 add-genesis-account --keyring-backend test validator1 100000000000000000000000000%s,100000000000000000000000000hub", denom)
 	runOrPanic("mhub2 add-genesis-token-info %s %s", erc20addr, bep20addr)
 
@@ -123,51 +129,200 @@ func main() {
 
 	time.Sleep(time.Second * 30)
 
-	//_, _ = ethClient, bscClient
+	approveERC20ToHub(ethPrivateKey, ethClient, ethContract, erc20addr, ethChainId)
+	approveERC20ToHub(ethPrivateKey, bscClient, bscContract, bep20addr, bscChainId)
+
+	// test Ethereum -> Minter transfer
+	{
+		randomPk, _ := crypto.GenerateKey()
+		recipient := crypto.PubkeyToAddress(randomPk.PublicKey).Hex()
+		sendERC20ToMinter(ethPrivateKey, ethClient, ethContract, erc20addr, recipient, ethChainId)
+
+		go func() {
+			expectedValue := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(1)))
+			expectedValue = expectedValue.Sub(expectedValue.QuoRaw(100))
+			startTime := time.Now()
+
+			for {
+				response, err := minterClient.Address("Mx" + recipient[2:])
+				if err != nil {
+					panic(err)
+				}
+
+				hubBalance := getMinterCoinBalance(response.Balance, "HUB")
+				if hubBalance.IsZero() {
+					if time.Now().Sub(startTime).Seconds() > 120 {
+						panic("Timeout waiting for the balance to update")
+					}
+
+					time.Sleep(time.Second)
+					continue
+				}
+
+				if !hubBalance.Equal(expectedValue) {
+					panic(fmt.Sprintf("Balance is not equal to expected value. Expected %s, got %s", expectedValue.String(), hubBalance.String()))
+				}
+
+				println("SUCCESS: test Eth -> Minter transfer")
+				break
+			}
+		}()
+	}
+
+	println("done")
+	select {}
+
 	sendERC20ToHub(ethPrivateKey, ethClient, ethContract, erc20addr, hubAddress, ethChainId) // eth
 	sendERC20ToHub(ethPrivateKey, bscClient, bscContract, bep20addr, hubAddress, bscChainId) // bsc
 
-	sendMinterCoinToHub(ethPrivateKeyString, ethAddress, minterMultisig, minterClient, hubAddress) // minter
+	// test Minter -> Hub transfer
+	{
+		hubRecipient := sdk.AccAddress(secp256k1.GenPrivKey().PubKey().Address()).String()
+		sendMinterCoinToHub(ethPrivateKeyString, ethAddress, minterMultisig, minterClient, hubRecipient) // minter
+		go func() {
+			client := banktypes.NewQueryClient(cosmosConn)
+			expectedValue := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(1)))
+			startTime := time.Now()
 
-	// todo: check if tokens were received
+			for {
+				response, err := client.Balance(context.TODO(), &banktypes.QueryBalanceRequest{
+					Address: hubRecipient,
+					Denom:   "hub",
+				})
+				if err != nil {
+					panic(err)
+				}
+
+				if response.Balance.IsZero() {
+					if time.Now().Sub(startTime).Seconds() > 60 {
+						panic("Timeout waiting for the balance to update")
+					}
+
+					time.Sleep(time.Second)
+					continue
+				}
+
+				if !response.Balance.Amount.Equal(expectedValue) {
+					panic(fmt.Sprintf("Balance is not equal to expected value. Expected %s, got %s", expectedValue.String(), response.Balance.Amount.String()))
+				}
+
+				println("SUCCESS: test Minter -> Hub transfer")
+				break
+			}
+
+		}()
+	}
 
 	time.Sleep(time.Second * 30)
 
+	// test Hub -> Minter transfer
 	{
 		addr, priv := cosmos.GetAccount(cosmosMnemonic)
 		if err != nil {
 			panic(err)
 		}
+
+		randomPk, _ := crypto.GenerateKey()
+		recipient := crypto.PubkeyToAddress(randomPk.PublicKey).Hex()
 		cosmos.SendCosmosTx([]sdk.Msg{
 			&types.MsgSendToExternal{
 				Sender:            addr.String(),
-				ExternalRecipient: ethAddress.Hex(),
-				Amount:            sdk.NewInt64Coin("hub", 100),
-				BridgeFee:         sdk.NewInt64Coin("hub", 1),
-				ChainId:           "ethereum",
-			},
-			&types.MsgSendToExternal{
-				Sender:            addr.String(),
-				ExternalRecipient: ethAddress.Hex(),
-				Amount:            sdk.NewInt64Coin("hub", 100),
-				BridgeFee:         sdk.NewInt64Coin("hub", 1),
-				ChainId:           "bsc",
-			},
-			&types.MsgSendToExternal{
-				Sender:            addr.String(),
-				ExternalRecipient: ethAddress.Hex(),
-				Amount:            sdk.NewInt64Coin("hub", 100),
-				BridgeFee:         sdk.NewInt64Coin("hub", 1),
+				ExternalRecipient: recipient,
+				Amount:            sdk.NewInt64Coin("hub", 1e18),
+				BridgeFee:         sdk.NewInt64Coin("hub", 0),
 				ChainId:           "minter",
 			},
 		}, addr, priv, cosmosConn, log.NewTMLogger(os.Stdout), true)
+
+		go func() {
+			expectedValue := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(1)))
+			expectedValue = expectedValue.Sub(expectedValue.QuoRaw(100))
+			startTime := time.Now()
+
+			for {
+				response, err := minterClient.Address("Mx" + recipient[2:])
+				if err != nil {
+					panic(err)
+				}
+
+				hubBalance := getMinterCoinBalance(response.Balance, "HUB")
+				if hubBalance.IsZero() {
+					if time.Now().Sub(startTime).Seconds() > 60 {
+						panic("Timeout waiting for the balance to update")
+					}
+
+					time.Sleep(time.Second)
+					continue
+				}
+
+				if !hubBalance.Equal(expectedValue) {
+					panic(fmt.Sprintf("Balance is not equal to expected value. Expected %s, got %s", expectedValue.String(), hubBalance.String()))
+				}
+
+				println("SUCCESS: test Hub -> Minter transfer")
+				break
+			}
+		}()
 	}
 
 	time.Sleep(time.Second * 30)
 
-	sendMinterCoinToEthereum(ethPrivateKeyString, ethAddress, minterMultisig, minterClient, ethAddress.String())
+	// test Minter -> Ethereum transfer
+	{
+		randomPk, _ := crypto.GenerateKey()
+		recipient := crypto.PubkeyToAddress(randomPk.PublicKey).Hex()
+		sendMinterCoinToEthereum(ethPrivateKeyString, ethAddress, minterMultisig, minterClient, recipient)
+
+		go func() {
+			fee := int64(100)
+			expectedValue := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(1)))
+			expectedValue = expectedValue.AddRaw(fee)
+			expectedValue = expectedValue.Sub(expectedValue.QuoRaw(100))
+			expectedValue = expectedValue.SubRaw(fee)
+
+			startTime := time.Now()
+			timeout := time.Minute * 2
+
+			hubContract, _ := erc20.NewErc20(common.HexToAddress(erc20addr), ethClient)
+
+			for {
+				hubBalanceInt, err := hubContract.BalanceOf(nil, common.HexToAddress(recipient))
+				if err != nil {
+					panic(err)
+				}
+
+				hubBalance := sdk.NewIntFromBigInt(hubBalanceInt)
+				if hubBalance.IsZero() {
+					if time.Now().Sub(startTime).Seconds() > timeout.Seconds() {
+						panic("Timeout waiting for the balance to update")
+					}
+
+					time.Sleep(time.Second)
+					continue
+				}
+
+				if !hubBalance.Equal(expectedValue) {
+					panic(fmt.Sprintf("Balance is not equal to expected value. Expected %s, got %s", expectedValue.String(), hubBalance.String()))
+				}
+
+				println("SUCCESS: test Minter -> Ethereum transfer")
+				break
+			}
+		}()
+	}
 
 	select {}
+}
+
+func getMinterCoinBalance(balances []*models.AddressBalance, coin string) sdk.Int {
+	for _, balance := range balances {
+		if balance.Coin.Symbol == coin {
+			b, _ := sdk.NewIntFromString(balance.Value)
+			return b
+		}
+	}
+
+	return sdk.NewInt(0)
 }
 
 func sendMinterCoinToHub(privateKeyString string, sender common.Address, multisig string, client *http_client.Client, to string) {
@@ -363,7 +518,7 @@ func deployERC20(privateKey *ecdsa.PrivateKey, client *ethclient.Client, chainId
 	return address.Hex()
 }
 
-func sendERC20ToHub(privateKey *ecdsa.PrivateKey, client *ethclient.Client, hub2Addr string, erc20addr string, to string, chainId int64) {
+func sendERC20ToMinter(privateKey *ecdsa.PrivateKey, client *ethclient.Client, hub2Addr string, erc20addr string, to string, chainId int64) {
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
 	nonce, err := client.NonceAt(context.TODO(), addr, nil)
 	if err != nil {
@@ -389,23 +544,89 @@ func sendERC20ToHub(privateKey *ecdsa.PrivateKey, client *ethclient.Client, hub2
 		panic(err)
 	}
 
+	{
+		recipient, err := hex.DecodeString(to[2:])
+		if err != nil {
+			panic(err)
+		}
+
+		rec := [32]byte{}
+		copy(rec[12:], recipient)
+
+		destinationChain := [32]byte{}
+		copy(destinationChain[:], "minter")
+
+		response, err := hub2Instance.TransferToChain(auth, common.HexToAddress(erc20addr), destinationChain, rec, transaction.BipToPip(big.NewInt(1)))
+		if err != nil {
+			panic(err)
+		}
+
+		waitEthTx(response.Hash(), client)
+		println("sent from eth to minter")
+	}
+}
+
+func approveERC20ToHub(privateKey *ecdsa.PrivateKey, client *ethclient.Client, hub2Addr string, erc20addr string, chainId int64) {
+	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
+	nonce, err := client.NonceAt(context.TODO(), addr, nil)
+	if err != nil {
+		panic(err)
+	}
+
+	gasPrice, err := client.SuggestGasPrice(context.TODO())
+	if err != nil {
+		panic(err)
+	}
+
+	auth, err := bind.NewKeyedTransactorWithChainID(privateKey, big.NewInt(chainId))
+	if err != nil {
+		panic(err)
+	}
+	auth.Nonce = big.NewInt(int64(nonce))
+	auth.Value = big.NewInt(0)
+	auth.GasLimit = uint64(3000000)
+	auth.GasPrice = gasPrice
+
 	erc20Instance, err := erc20.NewErc20(common.HexToAddress(erc20addr), client)
 	if err != nil {
 		panic(err)
 	}
 
 	{
-		response, err := erc20Instance.Approve(auth, common.HexToAddress(hub2Addr), big.NewInt(10000000000))
+		response, err := erc20Instance.Approve(auth, common.HexToAddress(hub2Addr), abi.MaxUint256)
 		if err != nil {
 			panic(err)
 		}
-
 		waitEthTx(response.Hash(), client)
-
 		println("approved")
 	}
+}
 
-	auth.Nonce.Add(auth.Nonce, big.NewInt(1))
+func sendERC20ToHub(privateKey *ecdsa.PrivateKey, client *ethclient.Client, hub2Addr string, erc20addr string, to string, chainId int64) {
+	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
+	nonce, err := client.NonceAt(context.TODO(), addr, nil)
+	if err != nil {
+		panic(err)
+	}
+
+	gasPrice, err := client.SuggestGasPrice(context.TODO())
+	if err != nil {
+		panic(err)
+	}
+
+	auth, err := bind.NewKeyedTransactorWithChainID(privateKey, big.NewInt(chainId))
+	if err != nil {
+		panic(err)
+	}
+	auth.Nonce = big.NewInt(int64(nonce))
+	auth.Value = big.NewInt(0)
+	auth.GasLimit = uint64(3000000)
+	auth.GasPrice = gasPrice
+
+	hub2Instance, err := hub2.NewHub2(common.HexToAddress(hub2Addr), client)
+	if err != nil {
+		panic(err)
+	}
 
 	{
 		recipient, err := sdk.GetFromBech32(to, "hub")
@@ -472,6 +693,15 @@ func waitEthTx(hash common.Hash, client *ethclient.Client) {
 		}
 
 		if !pending {
+			receipt, err := client.TransactionReceipt(context.TODO(), hash)
+			if err != nil {
+				panic(err)
+			}
+
+			if receipt.Status == types2.ReceiptStatusFailed {
+				panic("ethereum tx failed")
+			}
+
 			break
 		}
 
@@ -505,7 +735,7 @@ func run(cmdString string, args ...interface{}) (string, error) {
 	cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
 	cmd.Stdout = buffer
 	cmd.Stderr = buffer
-	cmd.Env = append(os.Environ(), "RUST_LOG=debug")
+	//cmd.Env = append(os.Environ(), "RUST_LOG=debug")
 
 	if err := cmd.Run(); err != nil {
 		return "", err

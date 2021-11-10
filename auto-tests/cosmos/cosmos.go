@@ -15,7 +15,6 @@ import (
 	tmClient "github.com/tendermint/tendermint/rpc/client/http"
 	tmTypes "github.com/tendermint/tendermint/types"
 	"google.golang.org/grpc"
-	"strings"
 	"time"
 )
 
@@ -103,10 +102,7 @@ func SendCosmosTx(msgs []sdk.Msg, address sdk.AccAddress, priv crypto.PrivKey, c
 
 	result, err := client.BroadcastTxCommit(context.Background(), txBytes)
 	if err != nil {
-		if !strings.Contains(err.Error(), "incorrect account sequence") {
-			logger.Error("Failed broadcast tx", "err", err.Error())
-		}
-
+		logger.Error("Failed broadcast tx", "err", err.Error())
 		time.Sleep(5 * time.Second)
 		txResponse, err := client.Tx(context.Background(), tmTypes.Tx(txBytes).Hash(), false)
 		if (err != nil || txResponse.TxResult.IsErr()) && retry {
@@ -117,7 +113,10 @@ func SendCosmosTx(msgs []sdk.Msg, address sdk.AccAddress, priv crypto.PrivKey, c
 	}
 
 	if result.DeliverTx.GetCode() != 0 || result.CheckTx.GetCode() != 0 {
-		logger.Error("Error on sending cosmos tx with", "code", result.CheckTx.GetCode(), "deliver-code", result.DeliverTx.GetCode(), "log", result.CheckTx.GetLog(), "deliver-log", result.DeliverTx.GetLog())
+		if result.CheckTx.GetCode() != 32 {
+			logger.Error("Error on sending cosmos tx with", "code", result.CheckTx.GetCode(), "deliver-code", result.DeliverTx.GetCode(), "log", result.CheckTx.GetLog(), "deliver-log", result.DeliverTx.GetLog())
+		}
+
 		if retry {
 			time.Sleep(1 * time.Second)
 			SendCosmosTx(msgs, address, priv, cosmosConn, logger, retry)
@@ -126,7 +125,7 @@ func SendCosmosTx(msgs []sdk.Msg, address sdk.AccAddress, priv crypto.PrivKey, c
 		return
 	}
 
-	logger.Info("Sending cosmos tx", "code", result.DeliverTx.GetCode(), "log", result.DeliverTx.GetLog(), "info", result.DeliverTx.GetInfo())
+	logger.Debug("Sending cosmos tx", "code", result.DeliverTx.GetCode(), "log", result.DeliverTx.GetLog(), "info", result.DeliverTx.GetInfo())
 }
 
 func getAccount(address string, conn *grpc.ClientConn, logger log.Logger) (number, sequence uint64) {
