@@ -45,7 +45,7 @@ pub async fn check_for_events(
             starting_block.clone(),
             Some(latest_block.clone()),
             vec![gravity_contract_address],
-            vec!["TransferToChainEvent(address,address,bytes32,bytes32,uint256,uint256)"],
+            vec!["TransferToChainEvent(address,address,bytes32,bytes32,uint256,uint256,uint256)"],
         )
         .await;
     debug!("Transfers events detected {:?}", transfers);
@@ -113,7 +113,7 @@ pub async fn check_for_events(
 
         for deposit in deposits.iter() {
             info!(
-                    "Oracle observed deposit with ethereum sender {}, hub_receiver {}, amount {}, and event nonce {}",
+                    "Oracle observed deposit with ethereum sender {}, receiver {}, amount {}, and event nonce {}",
                     deposit.sender, deposit.destination, deposit.amount, deposit.event_nonce
             );
         }

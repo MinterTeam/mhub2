@@ -278,6 +278,7 @@ pub struct TransferToChainEvent {
     pub destination: EthAddress,
     /// The amount of the erc20 token that is being sent
     pub amount: Uint256,
+    pub fee: Uint256,
     /// The transaction's nonce, used to make sure there can be no accidental duplication
     pub event_nonce: Uint256,
     /// The block height this event occurred at
@@ -301,7 +302,8 @@ impl TransferToChainEvent {
                 .to_string();
             let destination = EthAddress::from_slice(&input.data[12..32]).unwrap();
             let amount = Uint256::from_bytes_be(&input.data[32..64]);
-            let event_nonce = Uint256::from_bytes_be(&input.data[64..]);
+            let fee = Uint256::from_bytes_be(&input.data[64..96]);
+            let event_nonce = Uint256::from_bytes_be(&input.data[96..]);
             let block_height = if let Some(bn) = input.block_number.clone() {
                 bn
             } else {
@@ -321,6 +323,7 @@ impl TransferToChainEvent {
                     destination_chain,
                     destination,
                     amount,
+                    fee,
                     event_nonce,
                     block_height,
                     tx_hash: format!(

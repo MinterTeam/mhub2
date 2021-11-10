@@ -81,6 +81,12 @@ pub struct SendToExternal {
     pub tx_hash: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "8")]
     pub val_commission: ::core::option::Option<ExternalToken>,
+    #[prost(uint64, tag = "9")]
+    pub created_at: u64,
+    #[prost(string, tag = "10")]
+    pub refund_address: ::prost::alloc::string::String,
+    #[prost(string, tag = "11")]
+    pub refund_chain_id: ::prost::alloc::string::String,
 }
 /// ContractCallTx represents an individual arbitrary logic call transaction
 /// from Cosmos to External.
@@ -147,6 +153,13 @@ pub struct TxStatus {
     pub out_tx_hash: ::prost::alloc::string::String,
     #[prost(enumeration = "TxStatusType", tag = "3")]
     pub status: i32,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ColdStorageTransferProposal {
+    #[prost(string, tag = "1")]
+    pub chain_id: ::prost::alloc::string::String,
+    #[prost(message, repeated, tag = "2")]
+    pub amount: ::prost::alloc::vec::Vec<cosmos_sdk_proto::cosmos::base::v1beta1::Coin>,
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
@@ -655,6 +668,8 @@ pub struct ExternalState {
     pub outgoing_txs: ::prost::alloc::vec::Vec<::prost_types::Any>,
     #[prost(message, repeated, tag = "7")]
     pub confirmations: ::prost::alloc::vec::Vec<::prost_types::Any>,
+    #[prost(uint64, tag = "8")]
+    pub sequence: u64,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TokenInfosRequest {}
@@ -662,6 +677,18 @@ pub struct TokenInfosRequest {}
 pub struct TokenInfosResponse {
     #[prost(message, optional, tag = "1")]
     pub list: ::core::option::Option<TokenInfos>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct TransactionStatusRequest {
+    #[prost(string, tag = "1")]
+    pub chain_id: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub tx_hash: ::prost::alloc::string::String,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct TransactionStatusResponse {
+    #[prost(message, optional, tag = "1")]
+    pub status: ::core::option::Option<TxStatus>,
 }
 ///  rpc Params
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -1404,6 +1431,20 @@ pub mod query_client {
             })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static("/mhub2.v1.Query/TokenInfos");
+            self.inner.unary(request.into_request(), path, codec).await
+        }
+        pub async fn transaction_status(
+            &mut self,
+            request: impl tonic::IntoRequest<super::TransactionStatusRequest>,
+        ) -> Result<tonic::Response<super::TransactionStatusResponse>, tonic::Status> {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static("/mhub2.v1.Query/TransactionStatus");
             self.inner.unary(request.into_request(), path, codec).await
         }
     }

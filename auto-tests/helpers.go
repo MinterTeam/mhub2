@@ -278,7 +278,7 @@ func sendERC20ToAnotherChain(privateKey *ecdsa.PrivateKey, client *ethclient.Cli
 		destinationChain := [32]byte{}
 		copy(destinationChain[:], destChain)
 
-		response, err := hub2Instance.TransferToChain(auth, common.HexToAddress(erc20addr), destinationChain, rec, transaction.BipToPip(big.NewInt(1)))
+		response, err := hub2Instance.TransferToChain(auth, common.HexToAddress(erc20addr), destinationChain, rec, transaction.BipToPip(big.NewInt(1)), big.NewInt(100))
 		if err != nil {
 			panic(err)
 		}
@@ -357,7 +357,7 @@ func sendERC20ToHub(privateKey *ecdsa.PrivateKey, client *ethclient.Client, hub2
 	destinationChain := [32]byte{}
 	copy(destinationChain[:], "hub")
 
-	response, err := hub2Instance.TransferToChain(auth, common.HexToAddress(erc20addr), destinationChain, rec, transaction.BipToPip(big.NewInt(1)))
+	response, err := hub2Instance.TransferToChain(auth, common.HexToAddress(erc20addr), destinationChain, rec, transaction.BipToPip(big.NewInt(1)), big.NewInt(0))
 	if err != nil {
 		panic(err)
 	}

@@ -57,12 +57,14 @@ pub async fn get_last_checked_block(
                 vec!["TransactionBatchExecutedEvent(uint256,address,uint256)"],
             )
             .await;
-        let send_to_cosmos_events = web3
+        let transfer_events = web3
             .check_for_events(
                 end_search.clone(),
                 Some(current_block.clone()),
                 vec![gravity_contract_address],
-                vec!["SendToHubEvent(address,address,bytes32,uint256,uint256)"],
+                vec![
+                    "TransferToChainEvent(address,address,bytes32,bytes32,uint256,uint256,uint256)",
+                ],
             )
             .await;
         let logic_call_executed_events = web3
@@ -88,7 +90,7 @@ pub async fn get_last_checked_block(
             )
             .await;
         if batch_events.is_err()
-            || send_to_cosmos_events.is_err()
+            || transfer_events.is_err()
             || valset_events.is_err()
             || logic_call_executed_events.is_err()
         {
@@ -97,7 +99,7 @@ pub async fn get_last_checked_block(
             continue;
         }
         let batch_events = batch_events.unwrap();
-        let send_to_cosmos_events = send_to_cosmos_events.unwrap();
+        let transfers_events = transfer_events.unwrap();
         let mut valset_events = valset_events.unwrap();
         let logic_call_executed_events = logic_call_executed_events.unwrap();
 
@@ -120,7 +122,7 @@ pub async fn get_last_checked_block(
                 Err(e) => error!("Got batch event that we can't parse {}", e),
             }
         }
-        for event in send_to_cosmos_events {
+        for event in transfers_events {
             match TransferToChainEvent::from_log(&event) {
                 Ok(send) => {
                     trace!(
@@ -132,7 +134,7 @@ pub async fn get_last_checked_block(
                         return event.block_number.unwrap();
                     }
                 }
-                Err(e) => error!("Got SendToCosmos event that we can't parse {}", e),
+                Err(e) => error!("Got TransferToChain event that we can't parse {}", e),
             }
         }
 

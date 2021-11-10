@@ -67,6 +67,7 @@ contract Hub2 is ReentrancyGuard {
 		bytes32 indexed _destinationChain,
 		bytes32 _destination,
 		uint256 _amount,
+		uint256 _fee,
 		uint256 _eventNonce
 	);
 	event ValsetUpdatedEvent(
@@ -526,7 +527,8 @@ contract Hub2 is ReentrancyGuard {
 		address _tokenContract,
 		bytes32 _destinationChain,
 		bytes32 _destination,
-		uint256 _amount
+		uint256 _amount,
+		uint256 _fee
 	) public nonReentrant {
 		IERC20(_tokenContract).safeTransferFrom(msg.sender, address(this), _amount);
 		state_lastEventNonce = state_lastEventNonce.add(1);
@@ -536,6 +538,7 @@ contract Hub2 is ReentrancyGuard {
 			_destinationChain,
 			_destination,
 			_amount,
+			_fee,
 			state_lastEventNonce
 		);
 	}
@@ -543,7 +546,8 @@ contract Hub2 is ReentrancyGuard {
 	function transferETHToChain(
 		address _tokenContract,
 		bytes32 _destinationChain,
-		bytes32 _destination
+		bytes32 _destination,
+		uint256 _fee
 	) public nonReentrant payable {
 		IWETH(wethAddress).deposit{value: msg.value}();
 		state_lastEventNonce = state_lastEventNonce.add(1);
@@ -553,6 +557,7 @@ contract Hub2 is ReentrancyGuard {
 			_destinationChain,
 			_destination,
 			msg.value,
+			_fee,
 			state_lastEventNonce
 		);
 	}

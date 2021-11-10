@@ -138,7 +138,7 @@ pub fn ethereum_event_messages(
             external_receiver: transfer.destination.to_string(),
             sender: transfer.sender.to_string(),
             tx_hash: transfer.tx_hash,
-            fee: "0".to_string(),
+            fee: transfer.fee.to_string(),
         };
         let msg = proto::MsgSubmitExternalEvent {
             signer: cosmos_address.to_string(),

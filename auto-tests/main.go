@@ -354,7 +354,7 @@ func testHubToMinterTransfer(ctx *Context) {
 
 			hubBalance := getMinterCoinBalance(response.Balance, "HUB")
 			if hubBalance.IsZero() {
-				if time.Now().Sub(startTime).Seconds() > 60 {
+				if time.Now().Sub(startTime).Seconds() > 120 {
 					panic("Timeout waiting for the balance to update")
 				}
 
@@ -392,7 +392,7 @@ func testMinterToHubTransfer(ctx *Context) {
 			}
 
 			if response.Balance.IsZero() {
-				if time.Now().Sub(startTime).Seconds() > 60 {
+				if time.Now().Sub(startTime).Seconds() > 120 {
 					panic("Timeout waiting for the balance to update")
 				}
 
@@ -498,7 +498,9 @@ func testBSCToEthereumTransfer(ctx *Context) {
 
 	go func() {
 		expectedValue := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(1)))
+		expectedValue = expectedValue.AddRaw(100)
 		expectedValue = expectedValue.Sub(expectedValue.QuoRaw(100))
+		expectedValue = expectedValue.SubRaw(100)
 
 		startTime := time.Now()
 		timeout := time.Minute * 3
@@ -540,7 +542,9 @@ func testEthereumToMinterTransfer(ctx *Context) {
 
 	go func() {
 		expectedValue := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(1)))
+		expectedValue = expectedValue.AddRaw(100)
 		expectedValue = expectedValue.Sub(expectedValue.QuoRaw(100))
+		expectedValue = expectedValue.SubRaw(100)
 		startTime := time.Now()
 
 		for {
@@ -578,7 +582,9 @@ func testEthereumToBscTransfer(ctx *Context) {
 
 	go func() {
 		expectedValue := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(1)))
+		expectedValue = expectedValue.AddRaw(100)
 		expectedValue = expectedValue.Sub(expectedValue.QuoRaw(100))
+		expectedValue = expectedValue.SubRaw(100)
 
 		startTime := time.Now()
 		timeout := time.Minute * 3
