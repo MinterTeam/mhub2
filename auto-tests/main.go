@@ -39,6 +39,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -132,8 +133,11 @@ func main() {
 	approveERC20ToHub(ethPrivateKey, ethClient, ethContract, erc20addr, ethChainId)
 	approveERC20ToHub(ethPrivateKey, bscClient, bscContract, bep20addr, bscChainId)
 
+	testsWg := sync.WaitGroup{}
+
 	// test Ethereum -> Minter transfer
 	{
+		testsWg.Add(1)
 		randomPk, _ := crypto.GenerateKey()
 		recipient := crypto.PubkeyToAddress(randomPk.PublicKey).Hex()
 		sendERC20ToMinter(ethPrivateKey, ethClient, ethContract, erc20addr, recipient, ethChainId)
@@ -164,16 +168,95 @@ func main() {
 				}
 
 				println("SUCCESS: test Eth -> Minter transfer")
+				testsWg.Done()
 				break
 			}
 		}()
 	}
 
-	sendERC20ToHub(ethPrivateKey, ethClient, ethContract, erc20addr, hubAddress, ethChainId) // eth
-	sendERC20ToHub(ethPrivateKey, bscClient, bscContract, bep20addr, hubAddress, bscChainId) // bsc
+	// test Ethereum -> Hub transfer
+	{
+		testsWg.Add(1)
+		hubRecipient := sdk.AccAddress(secp256k1.GenPrivKey().PubKey().Address()).String()
+		sendERC20ToHub(ethPrivateKey, ethClient, ethContract, erc20addr, hubRecipient, ethChainId)
+
+		go func() {
+			expectedValue := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(1)))
+			startTime := time.Now()
+			client := banktypes.NewQueryClient(cosmosConn)
+
+			for {
+				response, err := client.Balance(context.TODO(), &banktypes.QueryBalanceRequest{
+					Address: hubRecipient,
+					Denom:   "hub",
+				})
+				if err != nil {
+					panic(err)
+				}
+
+				if response.Balance.IsZero() {
+					if time.Now().Sub(startTime).Seconds() > 60 {
+						panic("Timeout waiting for the balance to update")
+					}
+
+					time.Sleep(time.Second)
+					continue
+				}
+
+				if !response.Balance.Amount.Equal(expectedValue) {
+					panic(fmt.Sprintf("Balance is not equal to expected value. Expected %s, got %s", expectedValue.String(), response.Balance.Amount.String()))
+				}
+
+				println("SUCCESS: test Ethereum -> Hub transfer")
+				testsWg.Done()
+				break
+			}
+		}()
+	}
+
+	// test BSC -> Hub transfer
+	{
+		testsWg.Add(1)
+		hubRecipient := sdk.AccAddress(secp256k1.GenPrivKey().PubKey().Address()).String()
+		sendERC20ToHub(ethPrivateKey, bscClient, bscContract, bep20addr, hubRecipient, bscChainId)
+
+		go func() {
+			expectedValue := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(1)))
+			startTime := time.Now()
+			client := banktypes.NewQueryClient(cosmosConn)
+
+			for {
+				response, err := client.Balance(context.TODO(), &banktypes.QueryBalanceRequest{
+					Address: hubRecipient,
+					Denom:   "hub",
+				})
+				if err != nil {
+					panic(err)
+				}
+
+				if response.Balance.IsZero() {
+					if time.Now().Sub(startTime).Seconds() > 60 {
+						panic("Timeout waiting for the balance to update")
+					}
+
+					time.Sleep(time.Second)
+					continue
+				}
+
+				if !response.Balance.Amount.Equal(expectedValue) {
+					panic(fmt.Sprintf("Balance is not equal to expected value. Expected %s, got %s", expectedValue.String(), response.Balance.Amount.String()))
+				}
+
+				println("SUCCESS: test BSC -> Hub transfer")
+				testsWg.Done()
+				break
+			}
+		}()
+	}
 
 	// test Minter -> Hub transfer
 	{
+		testsWg.Add(1)
 		hubRecipient := sdk.AccAddress(secp256k1.GenPrivKey().PubKey().Address()).String()
 		sendMinterCoinToHub(ethPrivateKeyString, ethAddress, minterMultisig, minterClient, hubRecipient) // minter
 		go func() {
@@ -204,6 +287,7 @@ func main() {
 				}
 
 				println("SUCCESS: test Minter -> Hub transfer")
+				testsWg.Done()
 				break
 			}
 
@@ -214,6 +298,7 @@ func main() {
 
 	// test Hub -> Minter transfer
 	{
+		testsWg.Add(1)
 		addr, priv := cosmos.GetAccount(cosmosMnemonic)
 		if err != nil {
 			panic(err)
@@ -257,6 +342,127 @@ func main() {
 				}
 
 				println("SUCCESS: test Hub -> Minter transfer")
+				testsWg.Done()
+				break
+			}
+		}()
+	}
+
+	// test Hub -> Ethereum transfer
+	{
+		testsWg.Add(1)
+
+		fee := int64(100)
+		addr, priv := cosmos.GetAccount(cosmosMnemonic)
+		if err != nil {
+			panic(err)
+		}
+
+		randomPk, _ := crypto.GenerateKey()
+		recipient := crypto.PubkeyToAddress(randomPk.PublicKey).Hex()
+		cosmos.SendCosmosTx([]sdk.Msg{
+			&types.MsgSendToExternal{
+				Sender:            addr.String(),
+				ExternalRecipient: recipient,
+				Amount:            sdk.NewInt64Coin("hub", 1e18),
+				BridgeFee:         sdk.NewInt64Coin("hub", fee),
+				ChainId:           "ethereum",
+			},
+		}, addr, priv, cosmosConn, log.NewTMLogger(os.Stdout), true)
+
+		go func() {
+			expectedValue := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(1)))
+			expectedValue = expectedValue.AddRaw(fee)
+			expectedValue = expectedValue.Sub(expectedValue.QuoRaw(100))
+			expectedValue = expectedValue.SubRaw(fee)
+
+			startTime := time.Now()
+			timeout := time.Minute
+
+			hubContract, _ := erc20.NewErc20(common.HexToAddress(erc20addr), ethClient)
+
+			for {
+				hubBalanceInt, err := hubContract.BalanceOf(nil, common.HexToAddress(recipient))
+				if err != nil {
+					panic(err)
+				}
+
+				hubBalance := sdk.NewIntFromBigInt(hubBalanceInt)
+				if hubBalance.IsZero() {
+					if time.Now().Sub(startTime).Seconds() > timeout.Seconds() {
+						panic("Timeout waiting for the balance to update")
+					}
+
+					time.Sleep(time.Second)
+					continue
+				}
+
+				if !hubBalance.Equal(expectedValue) {
+					panic(fmt.Sprintf("Balance is not equal to expected value. Expected %s, got %s", expectedValue.String(), hubBalance.String()))
+				}
+
+				println("SUCCESS: test Hub -> Ethereum transfer")
+				testsWg.Done()
+				break
+			}
+		}()
+	}
+
+	// test Hub -> BSC transfer
+	{
+		testsWg.Add(1)
+
+		fee := int64(100)
+		addr, priv := cosmos.GetAccount(cosmosMnemonic)
+		if err != nil {
+			panic(err)
+		}
+
+		randomPk, _ := crypto.GenerateKey()
+		recipient := crypto.PubkeyToAddress(randomPk.PublicKey).Hex()
+		cosmos.SendCosmosTx([]sdk.Msg{
+			&types.MsgSendToExternal{
+				Sender:            addr.String(),
+				ExternalRecipient: recipient,
+				Amount:            sdk.NewInt64Coin("hub", 1e18),
+				BridgeFee:         sdk.NewInt64Coin("hub", fee),
+				ChainId:           "bsc",
+			},
+		}, addr, priv, cosmosConn, log.NewTMLogger(os.Stdout), true)
+
+		go func() {
+			expectedValue := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(1)))
+			expectedValue = expectedValue.AddRaw(fee)
+			expectedValue = expectedValue.Sub(expectedValue.QuoRaw(100))
+			expectedValue = expectedValue.SubRaw(fee)
+
+			startTime := time.Now()
+			timeout := time.Minute
+
+			hubContract, _ := erc20.NewErc20(common.HexToAddress(bep20addr), bscClient)
+
+			for {
+				hubBalanceInt, err := hubContract.BalanceOf(nil, common.HexToAddress(recipient))
+				if err != nil {
+					panic(err)
+				}
+
+				hubBalance := sdk.NewIntFromBigInt(hubBalanceInt)
+				if hubBalance.IsZero() {
+					if time.Now().Sub(startTime).Seconds() > timeout.Seconds() {
+						panic("Timeout waiting for the balance to update")
+					}
+
+					time.Sleep(time.Second)
+					continue
+				}
+
+				if !hubBalance.Equal(expectedValue) {
+					panic(fmt.Sprintf("Balance is not equal to expected value. Expected %s, got %s", expectedValue.String(), hubBalance.String()))
+				}
+
+				println("SUCCESS: test Hub -> Bsc transfer")
+				testsWg.Done()
 				break
 			}
 		}()
@@ -266,6 +472,7 @@ func main() {
 
 	// test Minter -> Ethereum transfer
 	{
+		testsWg.Add(1)
 		randomPk, _ := crypto.GenerateKey()
 		recipient := crypto.PubkeyToAddress(randomPk.PublicKey).Hex()
 		sendMinterCoinToEthereum(ethPrivateKeyString, ethAddress, minterMultisig, minterClient, recipient)
@@ -303,12 +510,14 @@ func main() {
 				}
 
 				println("SUCCESS: test Minter -> Ethereum transfer")
+				testsWg.Done()
 				break
 			}
 		}()
 	}
 
-	select {}
+	testsWg.Wait()
+	println("done")
 }
 
 func getMinterCoinBalance(balances []*models.AddressBalance, coin string) sdk.Int {
@@ -561,7 +770,6 @@ func sendERC20ToMinter(privateKey *ecdsa.PrivateKey, client *ethclient.Client, h
 		}
 
 		waitEthTx(response.Hash(), client)
-		println("sent from eth to minter")
 	}
 }
 
@@ -639,13 +847,12 @@ func sendERC20ToHub(privateKey *ecdsa.PrivateKey, client *ethclient.Client, hub2
 		destinationChain := [32]byte{}
 		copy(destinationChain[:], "hub")
 
-		response, err := hub2Instance.TransferToChain(auth, common.HexToAddress(erc20addr), destinationChain, rec, big.NewInt(10000))
+		response, err := hub2Instance.TransferToChain(auth, common.HexToAddress(erc20addr), destinationChain, rec, transaction.BipToPip(big.NewInt(1)))
 		if err != nil {
 			panic(err)
 		}
 
 		waitEthTx(response.Hash(), client)
-		println("sent")
 	}
 }
 
