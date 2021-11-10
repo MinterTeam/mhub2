@@ -169,9 +169,6 @@ func main() {
 		}()
 	}
 
-	println("done")
-	select {}
-
 	sendERC20ToHub(ethPrivateKey, ethClient, ethContract, erc20addr, hubAddress, ethChainId) // eth
 	sendERC20ToHub(ethPrivateKey, bscClient, bscContract, bep20addr, hubAddress, bscChainId) // bsc
 
@@ -376,7 +373,9 @@ func sendMinterCoinToEthereum(privateKeyString string, sender common.Address, mu
 func fundMinterAddress(to string, privateKeyString string, sender common.Address, client *http_client.Client) {
 	addr := "Mx" + sender.Hex()[2:]
 	tx, _ := transaction.NewBuilder(transaction.TestNetChainID).NewTransaction(
-		transaction.NewSendData().MustSetTo(to).SetCoin(0).SetValue(transaction.BipToPip(big.NewInt(100000))),
+		transaction.NewMultisendData().
+			AddItem(transaction.NewSendData().MustSetTo(to).SetCoin(0).SetValue(transaction.BipToPip(big.NewInt(100000)))).
+			AddItem(transaction.NewSendData().MustSetTo(to).SetCoin(1).SetValue(transaction.BipToPip(big.NewInt(100000)))),
 	)
 
 	nonce, err := client.Nonce(addr)
