@@ -125,7 +125,7 @@ func SendCosmosTx(msgs []sdk.Msg, address sdk.AccAddress, priv crypto.PrivKey, c
 		return
 	}
 
-	logger.Debug("Sending cosmos tx", "code", result.DeliverTx.GetCode(), "log", result.DeliverTx.GetLog(), "info", result.DeliverTx.GetInfo())
+	//logger.Debug("Sending cosmos tx", "code", result.DeliverTx.GetCode(), "log", result.DeliverTx.GetLog(), "info", result.DeliverTx.GetInfo())
 }
 
 func getAccount(address string, conn *grpc.ClientConn, logger log.Logger) (number, sequence uint64) {
