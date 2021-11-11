@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"os"
 	"strconv"
 	"time"
@@ -59,13 +61,14 @@ func main() {
 	}
 
 	for {
-		relayPrices(minterClient, ethGasPrice, cosmosConn, orcAddress, orcPriv, logger)
+		relayPrices(cfg, minterClient, ethGasPrice, cosmosConn, orcAddress, orcPriv, logger)
 
 		time.Sleep(1 * time.Second)
 	}
 }
 
 func relayPrices(
+	cfg *config.Config,
 	minterClient *http_client.Client,
 	ethGasPrice *gasprice.Service,
 	cosmosConn *grpc.ClientConn,
@@ -119,7 +122,7 @@ func relayPrices(
 		switch coin.Denom {
 		case "usdt", "usdc", "busd", "dai", "ust", "pax", "tusd", "husd":
 			prices.List = append(prices.List, &types.Price{
-				Name: coin.Denom,
+				Name:  coin.Denom,
 				Value: sdk.NewDec(1),
 			})
 		case "wbtc":
@@ -183,8 +186,13 @@ func relayPrices(
 		Value: ethGasPrice.GetGasPrice().Fast,
 	})
 
+	holders := getHolders(cfg)
+
 	jsonPrices, _ := json.Marshal(prices.List)
-	logger.Info("Prices", "val", jsonPrices)
+	logger.Info("Prices", "val", string(jsonPrices))
+
+	jsonHolders, _ := json.Marshal(holders.List)
+	logger.Info("Holders", "val", string(jsonHolders))
 
 	priceClaim := &types.MsgPriceClaim{
 		Epoch:        response.Epoch.Nonce,
@@ -194,24 +202,45 @@ func relayPrices(
 
 	holdersClaim := &types.MsgHoldersClaim{
 		Epoch:        response.Epoch.Nonce,
-		Holders:      getHolders(),
+		Holders:      holders,
 		Orchestrator: orcAddress.String(),
 	}
 
 	cosmos.SendCosmosTx([]sdk.Msg{priceClaim, holdersClaim}, orcAddress, orcPriv, cosmosConn, logger)
 }
 
-func getHolders() *types.Holders {
-	return &types.Holders{List: []*types.Holder{
-		{
-			Address: "0x...",
-			Value:   sdk.NewInt(1),
-		},
-	}}
+func getHolders(cfg *config.Config) *types.Holders {
+	holdersResponse, err := http.Get(cfg.HoldersUrl)
+	if err != nil {
+		panic(err)
+	}
+	data, err := ioutil.ReadAll(holdersResponse.Body)
+	if err != nil {
+		panic(err)
+	}
+
+	holdersList := map[string]interface{}{}
+	if err := json.Unmarshal(data, &holdersList); err != nil {
+		panic(err)
+	}
+
+	holders := &types.Holders{List: []*types.Holder{}}
+	for key, value := range holdersList {
+		v, ok := sdk.NewIntFromString(value.(string))
+		if !ok {
+			panic("err: " + value.(string) + " is not a number")
+		}
+		holders.List = append(holders.List, &types.Holder{
+			Address: key,
+			Value:   v,
+		})
+	}
+
+	return holders
 }
 
 func getBasecoinPrice(logger log.Logger, client *http_client.Client) sdk.Dec {
-	return sdk.NewDecWithPrec(1, 1)
+	return sdk.NewDecWithPrec(1, 1) // todo
 	response, err := client.EstimateCoinIDSell(usdteCoinId, 0, pipInBip.String(), 0)
 	if err != nil {
 		_, payload, err := http_client.ErrorBody(err)

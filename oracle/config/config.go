@@ -21,9 +21,10 @@ type EthereumConfig struct {
 }
 
 type Config struct {
-	Cosmos   CosmosConfig
-	Minter   MinterConfig
-	Ethereum EthereumConfig
+	Cosmos     CosmosConfig
+	Minter     MinterConfig
+	Ethereum   EthereumConfig
+	HoldersUrl string `mapstructure:"holders_url"`
 }
 
 func Get() *Config {

@@ -151,17 +151,7 @@ func (k Keeper) GetMinBatchGas(ctx sdk.Context) uint64 {
 }
 
 func (k Keeper) GetHolderValue(ctx sdk.Context, address string) sdk.Int {
-	store := ctx.KVStore(k.storeKey)
-	bytes := store.Get(types.CurrentHoldersKey)
-
-	if len(bytes) == 0 {
-		return sdk.NewInt(0)
-	}
-
-	var holders types.Holders
-	k.cdc.MustUnmarshal(bytes, &holders)
-
-	for _, item := range holders.GetList() {
+	for _, item := range k.GetHolders(ctx).GetList() {
 		if strings.ToLower(item.GetAddress()) == strings.ToLower(address) {
 			return item.Value
 		}

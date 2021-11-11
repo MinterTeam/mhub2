@@ -1,3 +1,5 @@
+holders_url = "http://localhost:8844/holders"
+
 [minter]
 api_addr = "http://127.0.0.1:8843/v2/"
 

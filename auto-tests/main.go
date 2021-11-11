@@ -8,6 +8,7 @@ import (
 	"github.com/MinterTeam/mhub2/auto-tests/erc20"
 	"github.com/MinterTeam/mhub2/module/app"
 	"github.com/MinterTeam/mhub2/module/x/mhub2/types"
+	oracletypes "github.com/MinterTeam/mhub2/module/x/oracle/types"
 	minterTypes "github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-sdk/v2/api/http_client"
 	"github.com/MinterTeam/minter-go-sdk/v2/transaction"
@@ -70,6 +71,8 @@ func main() {
 	runOrPanic("mkdir %s/data", wd)
 	runOrPanic("mkdir %s/data/logs", wd)
 	runOrPanic(os.ExpandEnv("rm -rf $HOME/.mhub2"))
+
+	runHoldersServer()
 
 	// minter node
 	runOrPanic("mkdir %s/data/minter", wd)
@@ -164,8 +167,98 @@ func main() {
 	testHubToEthereumTransfer(ctx)
 	testHubToBSCTransfer(ctx)
 	testMinterToEthereumTransfer(ctx)
+
+	// tests associated with holders
+	ctx.TestsWg.Add(2)
+	go func() {
+		randomPk, _ := crypto.GenerateKey()
+		recipient := crypto.PubkeyToAddress(randomPk.PublicKey).Hex()
+
+		testUpdateHolders(ctx, recipient)
+		testDiscountForHolder(ctx, recipient)
+	}()
+
 	testsWg.Wait()
 	println("All tests are done")
+}
+
+func testDiscountForHolder(ctx *Context, recipient string) {
+	sendMinterCoinToEthereum(ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterMultisig, ctx.MinterClient, recipient)
+
+	fee := int64(100)
+	expectedValue := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(1)))
+	expectedValue = expectedValue.AddRaw(fee)
+	expectedValue = expectedValue.Sub(expectedValue.MulRaw(4).QuoRaw(1000))
+	expectedValue = expectedValue.SubRaw(fee)
+
+	startTime := time.Now()
+	timeout := time.Minute * 2
+
+	hubContract, _ := erc20.NewErc20(common.HexToAddress(ctx.Erc20addr), ctx.EthClient)
+
+	for {
+		hubBalanceInt, err := hubContract.BalanceOf(nil, common.HexToAddress(recipient))
+		if err != nil {
+			panic(err)
+		}
+
+		hubBalance := sdk.NewIntFromBigInt(hubBalanceInt)
+		if hubBalance.IsZero() {
+			if time.Now().Sub(startTime).Seconds() > timeout.Seconds() {
+				panic("Timeout waiting for the balance to update")
+			}
+
+			time.Sleep(time.Second)
+			continue
+		}
+
+		if !hubBalance.Equal(expectedValue) {
+			panic(fmt.Sprintf("Balance is not equal to expected value. Expected %s, got %s", expectedValue.String(), hubBalance.String()))
+		}
+
+		println("SUCCESS: test Minter -> Ethereum transfer with discount")
+		ctx.TestsWg.Done()
+		break
+	}
+}
+
+func testUpdateHolders(ctx *Context, recipient string) {
+	balance := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(100)))
+	HoldersList = map[string]string{
+		recipient: balance.String(),
+	}
+
+	client := oracletypes.NewQueryClient(ctx.CosmosConn)
+	startTime := time.Now()
+	timeout := time.Minute
+
+	for {
+		response, err := client.Holders(context.TODO(), &oracletypes.QueryHoldersRequest{})
+		if err != nil {
+			panic(err)
+		}
+
+		if time.Now().Sub(startTime).Seconds() > timeout.Seconds() {
+			panic("Timeout waiting for holders to update")
+		}
+
+		if response.Holders.Size() == 0 || len(response.Holders.List) == 0 {
+			continue
+		}
+
+		if response.Holders.List[0].Address != recipient {
+			continue
+		}
+
+		if !response.Holders.List[0].Value.Equal(balance) {
+			continue
+		}
+
+		time.Sleep(time.Second)
+		println("SUCCESS: update holders")
+		ctx.TestsWg.Done()
+		break
+	}
 }
 
 func testMinterToEthereumTransfer(ctx *Context) {

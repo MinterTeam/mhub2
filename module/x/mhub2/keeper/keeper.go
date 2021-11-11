@@ -674,9 +674,13 @@ func (k Keeper) ConvertToExternalValue(ctx sdk.Context, chainId types.ChainID, e
 	return convertDecimals(HubDecimals, coin.ExternalDecimals, amount)
 }
 
-func (k Keeper) GetCommissionForHolder(ctx sdk.Context, address string, commission sdk.Dec) sdk.Dec {
-	valueOnBalance := k.oracleKeeper.GetHolderValue(ctx, address)
-	if !valueOnBalance.IsPositive() {
+func (k Keeper) GetCommissionForHolder(ctx sdk.Context, addresses []string, commission sdk.Dec) sdk.Dec {
+	maxValue := sdk.NewInt(0)
+	for _, address := range addresses {
+		maxValue = sdk.MaxInt(k.oracleKeeper.GetHolderValue(ctx, address), maxValue)
+	}
+
+	if !maxValue.IsPositive() {
 		return commission
 	}
 
@@ -695,18 +699,18 @@ func (k Keeper) GetCommissionForHolder(ctx sdk.Context, address string, commissi
 	discont32 := convertDecimals(0, 18, sdk.NewInt(32))
 
 	switch {
-	case valueOnBalance.GTE(discont32):
-		return commission.MulInt64(60).QuoInt64(100)
-	case valueOnBalance.GTE(discont16):
-		return commission.MulInt64(50).QuoInt64(100)
-	case valueOnBalance.GTE(discont8):
-		return commission.MulInt64(40).QuoInt64(100)
-	case valueOnBalance.GTE(discont4):
-		return commission.MulInt64(30).QuoInt64(100)
-	case valueOnBalance.GTE(discont2):
-		return commission.MulInt64(20).QuoInt64(100)
-	case valueOnBalance.GTE(discont1):
-		return commission.MulInt64(10).QuoInt64(100)
+	case maxValue.GTE(discont32):
+		return commission.Sub(commission.MulInt64(60).QuoInt64(100))
+	case maxValue.GTE(discont16):
+		return commission.Sub(commission.MulInt64(50).QuoInt64(100))
+	case maxValue.GTE(discont8):
+		return commission.Sub(commission.MulInt64(40).QuoInt64(100))
+	case maxValue.GTE(discont4):
+		return commission.Sub(commission.MulInt64(30).QuoInt64(100))
+	case maxValue.GTE(discont2):
+		return commission.Sub(commission.MulInt64(20).QuoInt64(100))
+	case maxValue.GTE(discont1):
+		return commission.Sub(commission.MulInt64(10).QuoInt64(100))
 	}
 
 	return commission

@@ -74,7 +74,7 @@ func (a ExternalEventProcessor) Handle(ctx sdk.Context, chainId types.ChainID, e
 
 		// TODO: check decimals logic
 		totalAmount := event.Amount.Add(event.Fee)
-		commissionValue := a.keeper.GetCommissionForHolder(ctx, event.Sender, receiverChainTokenInfo.Commission).Mul(totalAmount.ToDec()).TruncateInt()
+		commissionValue := a.keeper.GetCommissionForHolder(ctx, []string{event.Sender, event.ExternalReceiver}, receiverChainTokenInfo.Commission).Mul(totalAmount.ToDec()).TruncateInt()
 		fee := sdk.NewCoin(receiverChainTokenInfo.Denom, event.Fee)
 		commission := sdk.NewCoin(receiverChainTokenInfo.Denom, commissionValue)
 		amount := sdk.NewCoin(receiverChainTokenInfo.Denom, event.Amount).Sub(commission)
