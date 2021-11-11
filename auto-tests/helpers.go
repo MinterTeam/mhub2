@@ -142,6 +142,15 @@ func createMinterMultisig(prKey string, ethAddress common.Address, client *http_
 		panic(response.Log)
 	}
 
+	for {
+		if _, err := client.Transaction(response.Hash); err != nil {
+			time.Sleep(time.Second)
+			continue
+		}
+
+		break
+	}
+
 	return transaction.MultisigAddress(addr, nonce)
 }
 
@@ -240,7 +249,7 @@ func deployERC20(privateKey *ecdsa.PrivateKey, client *ethclient.Client, chainId
 	return address.Hex()
 }
 
-func sendERC20ToAnotherChain(privateKey *ecdsa.PrivateKey, client *ethclient.Client, hub2Addr string, erc20addr string, to string, chainId int64, destChain string) {
+func sendERC20ToAnotherChain(privateKey *ecdsa.PrivateKey, client *ethclient.Client, hub2Addr string, erc20addr string, to string, chainId int64, destChain string, value *big.Int) {
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
 	nonce, err := client.NonceAt(context.TODO(), addr, nil)
 	if err != nil {
@@ -278,7 +287,7 @@ func sendERC20ToAnotherChain(privateKey *ecdsa.PrivateKey, client *ethclient.Cli
 		destinationChain := [32]byte{}
 		copy(destinationChain[:], destChain)
 
-		response, err := hub2Instance.TransferToChain(auth, common.HexToAddress(erc20addr), destinationChain, rec, transaction.BipToPip(big.NewInt(1)), big.NewInt(100))
+		response, err := hub2Instance.TransferToChain(auth, common.HexToAddress(erc20addr), destinationChain, rec, value, big.NewInt(100))
 		if err != nil {
 			panic(err)
 		}
@@ -320,7 +329,7 @@ func approveERC20ToHub(privateKey *ecdsa.PrivateKey, client *ethclient.Client, h
 	waitEthTx(response.Hash(), client)
 }
 
-func sendERC20ToHub(privateKey *ecdsa.PrivateKey, client *ethclient.Client, hub2Addr string, erc20addr string, to string, chainId int64) {
+func sendERC20ToHub(privateKey *ecdsa.PrivateKey, client *ethclient.Client, hub2Addr string, erc20addr string, to string, chainId int64, value *big.Int) {
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
 	nonce, err := client.NonceAt(context.TODO(), addr, nil)
 	if err != nil {
@@ -357,7 +366,7 @@ func sendERC20ToHub(privateKey *ecdsa.PrivateKey, client *ethclient.Client, hub2
 	destinationChain := [32]byte{}
 	copy(destinationChain[:], "hub")
 
-	response, err := hub2Instance.TransferToChain(auth, common.HexToAddress(erc20addr), destinationChain, rec, transaction.BipToPip(big.NewInt(1)), big.NewInt(0))
+	response, err := hub2Instance.TransferToChain(auth, common.HexToAddress(erc20addr), destinationChain, rec, value, big.NewInt(0))
 	if err != nil {
 		panic(err)
 	}

@@ -16,10 +16,10 @@ import (
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 )
 
-func AddGenesisTokenInfoCmd(defaultNodeHome string) *cobra.Command {
+func AddPrepareGenesisForTestsCmd(defaultNodeHome string) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "add-genesis-token-info [external-addr] [external-addr-2]",
-		Short: "Add a genesis token info to genesis.json",
+		Use:   "prepare-genesis-for-tests [external-addr] [external-addr-2]",
+		Short: "Prepare genesis for tests",
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx := client.GetClientContextFromCmd(cmd)
@@ -41,6 +41,7 @@ func AddGenesisTokenInfoCmd(defaultNodeHome string) *cobra.Command {
 
 			genState.TokenInfos.TokenInfos[0].ExternalTokenId = args[0]
 			genState.TokenInfos.TokenInfos[1].ExternalTokenId = args[1]
+			genState.TokenInfos.TokenInfos[1].ExternalDecimals = 6
 
 			genStateJson, err := cdc.MarshalJSON(genState)
 			if err != nil {
