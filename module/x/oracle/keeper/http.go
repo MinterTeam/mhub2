@@ -10,7 +10,7 @@ import (
 	gw "github.com/MinterTeam/mhub2/module/x/oracle/types" // Update
 )
 
-func Run(grpcServerEndpoint string) error {
+func Run(httpPort, grpcServerEndpoint string) error {
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -25,5 +25,5 @@ func Run(grpcServerEndpoint string) error {
 	}
 
 	// Start HTTP server (and proxy calls to gRPC server endpoint)
-	return http.ListenAndServe(":8081", mux)
+	return http.ListenAndServe(httpPort, mux)
 }
