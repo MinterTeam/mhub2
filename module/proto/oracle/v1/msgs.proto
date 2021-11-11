@@ -16,18 +16,6 @@ service Msg {
     }
 }
 
-message Holders {
-    repeated Holder list = 1;
-}
-
-message Holder {
-    string address = 1;
-    string value   = 2 [
-        (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
-        (gogoproto.nullable) = false
-    ];
-}
-
 message MsgPriceClaim {
   uint64 epoch        = 1;
   Prices prices       = 2;

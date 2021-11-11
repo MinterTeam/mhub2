@@ -51,6 +51,20 @@ func NewKeeper(cdc codec.BinaryCodec, storeKey sdk.StoreKey, paramSpace paramtyp
 	return k
 }
 
+func (k Keeper) GetHolders(ctx sdk.Context) *types.Holders {
+	store := ctx.KVStore(k.storeKey)
+	bytes := store.Get(types.CurrentHoldersKey)
+
+	if len(bytes) == 0 {
+		return nil
+	}
+
+	var holders types.Holders
+	k.cdc.MustUnmarshal(bytes, &holders)
+
+	return &holders
+}
+
 func (k Keeper) GetPrices(ctx sdk.Context) *types.Prices {
 	store := ctx.KVStore(k.storeKey)
 	bytes := store.Get(types.CurrentPricesKey)

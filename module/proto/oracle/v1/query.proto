@@ -19,6 +19,9 @@ service Query {
     rpc Prices(QueryPricesRequest) returns(QueryPricesResponse) {
        // option (google.api.http).get = "/oracle/v1beta/prices";
     }
+    rpc Holders(QueryHoldersRequest) returns(QueryHoldersResponse) {
+        // option (google.api.http).get = "/oracle/v1beta/holders";
+    }
 }
 
 message QueryCurrentEpochRequest {}
@@ -26,6 +29,9 @@ message QueryCurrentEpochResponse { Epoch epoch = 1; }
 
 message QueryPricesRequest {}
 message QueryPricesResponse { Prices prices = 1; }
+
+message QueryHoldersRequest {}
+message QueryHoldersResponse { Holders holders = 1; }
 
 message QueryEthFeeRequest {}
 message QueryEthFeeResponse {

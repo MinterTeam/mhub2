@@ -12,6 +12,12 @@ const gweiInEth = 1e9
 
 var _ types.QueryServer = Keeper{}
 
+func (k Keeper) Holders(context context.Context, _ *types.QueryHoldersRequest) (*types.QueryHoldersResponse, error) {
+	ctx := sdk.UnwrapSDKContext(context)
+
+	return &types.QueryHoldersResponse{Holders: k.GetHolders(ctx)}, nil
+}
+
 func (k Keeper) Prices(context context.Context, _ *types.QueryPricesRequest) (*types.QueryPricesResponse, error) {
 	ctx := sdk.UnwrapSDKContext(context)
 
