@@ -1,0 +1,1769 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "mhub2/v1/query.proto",
+    "version": "version not set"
+  },
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/gravity/v1/ContractCallTxs/{address}/pending": {
+      "get": {
+        "operationId": "Query_UnsignedContractCallTxs",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1UnsignedContractCallTxsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "chain_id",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/gravity/v1/SignerSetTxs/{address}/pending": {
+      "get": {
+        "summary": "pending external signature queries for orchestrators to figure out which\nsignatures they are missing\nTODO: can/should we group this into one endpoint?",
+        "operationId": "Query_UnsignedSignerSetTxs",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1UnsignedSignerSetTxsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "address",
+            "description": "NOTE: this is an sdk.AccAddress and can represent either the\norchestartor address or the cooresponding validator address",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "chain_id",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/gravity/v1/batch/batch_txs": {
+      "get": {
+        "operationId": "Query_BatchTxs",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1BatchTxsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "pagination.key",
+            "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "pagination.offset",
+            "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.limit",
+            "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.count_total",
+            "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "pagination.reverse",
+            "description": "reverse is set to true if results are to be returned in the descending order.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "chain_id",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/gravity/v1/batch/contract_call_txs": {
+      "get": {
+        "operationId": "Query_ContractCallTxs",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ContractCallTxsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "pagination.key",
+            "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "pagination.offset",
+            "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.limit",
+            "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.count_total",
+            "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "pagination.reverse",
+            "description": "reverse is set to true if results are to be returned in the descending order.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "chain_id",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/gravity/v1/batch_txs/external_signatures": {
+      "get": {
+        "operationId": "Query_BatchTxConfirmations",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1BatchTxConfirmationsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "batch_nonce",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "external_token_id",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "chain_id",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/gravity/v1/batch_txs/{external_token_id}/{batch_nonce}": {
+      "get": {
+        "operationId": "Query_BatchTx",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1BatchTxResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "external_token_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "batch_nonce",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "chain_id",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/gravity/v1/batches/fees": {
+      "get": {
+        "summary": "Queries the fees for all pending batches, results are returned in sdk.Coin\n(fee_amount_int)(contract_address) style",
+        "operationId": "Query_BatchTxFees",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1BatchTxFeesResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "chain_id",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/gravity/v1/batches/{address}/pending": {
+      "get": {
+        "operationId": "Query_UnsignedBatchTxs",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1UnsignedBatchTxsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "address",
+            "description": "NOTE: this is an sdk.AccAddress and can represent either the\norchestrator address or the cooresponding validator address",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "chain_id",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/gravity/v1/contract_call_txs/{invalidation_scope}/{invalidation_nonce}": {
+      "get": {
+        "operationId": "Query_ContractCallTx",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ContractCallTxResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "invalidation_scope",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "invalidation_nonce",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "chain_id",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/gravity/v1/cosmos_originated/denom_to_external_id": {
+      "get": {
+        "summary": "Query for info about denoms tracked by gravity",
+        "operationId": "Query_DenomToExternalId",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1DenomToExternalIdResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "denom",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "chain_id",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/gravity/v1/cosmos_originated/external_id_to_denom": {
+      "get": {
+        "summary": "Query for info about denoms tracked by gravity",
+        "operationId": "Query_ExternalIdToDenom",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ExternalIdToDenomResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "external_id",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "chain_id",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/gravity/v1/delegate_keys": {
+      "get": {
+        "operationId": "Query_DelegateKeys",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1DelegateKeysResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "chain_id",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/gravity/v1/delegate_keys/external/{external_signer}": {
+      "get": {
+        "operationId": "Query_DelegateKeysByExternalSigner",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1DelegateKeysByExternalSignerResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "external_signer",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "chain_id",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/gravity/v1/delegate_keys/orchestrator/{orchestrator_address}": {
+      "get": {
+        "operationId": "Query_DelegateKeysByOrchestrator",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1DelegateKeysByOrchestratorResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "orchestrator_address",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "chain_id",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/gravity/v1/delegate_keys/validator/{validator_address}": {
+      "get": {
+        "summary": "delegate keys",
+        "operationId": "Query_DelegateKeysByValidator",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1DelegateKeysByValidatorResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "validator_address",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "chain_id",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/gravity/v1/logic_calls/external_signatures": {
+      "get": {
+        "operationId": "Query_ContractCallTxConfirmations",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ContractCallTxConfirmationsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "invalidation_scope",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "invalidation_nonce",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "chain_id",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/gravity/v1/oracle/event_nonce/{address}": {
+      "get": {
+        "operationId": "Query_LastSubmittedExternalEvent",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1LastSubmittedExternalEventResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "chain_id",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/gravity/v1/params": {
+      "get": {
+        "summary": "Module parameters query",
+        "operationId": "Query_Params",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ParamsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/gravity/v1/query_batched_send_to_ext": {
+      "get": {
+        "summary": "Query for batch send to externals",
+        "operationId": "Query_BatchedSendToExternals",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1BatchedSendToExternalsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "sender_address",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "chain_id",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/gravity/v1/query_unbatched_send_to_ext": {
+      "get": {
+        "summary": "Query for unbatched send to externals",
+        "operationId": "Query_UnbatchedSendToExternals",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1UnbatchedSendToExternalsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "sender_address",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "chain_id",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "pagination.key",
+            "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "pagination.offset",
+            "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.limit",
+            "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.count_total",
+            "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "pagination.reverse",
+            "description": "reverse is set to true if results are to be returned in the descending order.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/gravity/v1/signer_set": {
+      "get": {
+        "summary": "get info on individual outgoing data",
+        "operationId": "Query_SignerSetTx",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1SignerSetTxResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "signer_set_nonce",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "chain_id",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/gravity/v1/signer_set/latest": {
+      "get": {
+        "operationId": "Query_LatestSignerSetTx",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1SignerSetTxResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "chain_id",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/gravity/v1/signer_sets": {
+      "get": {
+        "summary": "get collections of outgoing traffic from the bridge",
+        "operationId": "Query_SignerSetTxs",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1SignerSetTxsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "pagination.key",
+            "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "pagination.offset",
+            "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.limit",
+            "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.count_total",
+            "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "pagination.reverse",
+            "description": "reverse is set to true if results are to be returned in the descending order.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "chain_id",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/gravity/v1/signer_sets/external_signatures": {
+      "get": {
+        "summary": "TODO: can/should we group these into one endpoint?",
+        "operationId": "Query_SignerSetTxConfirmations",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1SignerSetTxConfirmationsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "signer_set_nonce",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "chain_id",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "type_url": {
+          "type": "string",
+          "description": "A URL/resource name that uniquely identifies the type of the serialized\nprotocol buffer message. This string must contain at least\none \"/\" character. The last segment of the URL's path must represent\nthe fully qualified name of the type (as in\n`path/google.protobuf.Duration`). The name should be in a canonical form\n(e.g., leading \".\" is not accepted).\n\nIn practice, teams usually precompile into the binary all types that they\nexpect it to use in the context of Any. However, for URLs which use the\nscheme `http`, `https`, or no scheme, one can optionally set up a type\nserver that maps type URLs to message definitions as follows:\n\n* If no scheme is provided, `https` is assumed.\n* An HTTP GET on the URL must yield a [google.protobuf.Type][]\n  value in binary format, or produce an error.\n* Applications are allowed to cache lookup results based on the\n  URL, or have them precompiled into a binary to avoid any\n  lookup. Therefore, binary compatibility needs to be preserved\n  on changes to types. (Use versioned type names to manage\n  breaking changes.)\n\nNote: this functionality is not currently available in the official\nprotobuf release, and it is not used for type URLs beginning with\ntype.googleapis.com.\n\nSchemes other than `http`, `https` (or the empty scheme) might be\nused with implementation specific semantics."
+        },
+        "value": {
+          "type": "string",
+          "format": "byte",
+          "description": "Must be a valid serialized protocol buffer of the above specified type."
+        }
+      },
+      "description": "`Any` contains an arbitrary serialized protocol buffer message along with a\nURL that describes the type of the serialized message.\n\nProtobuf library provides support to pack/unpack Any values in the form\nof utility functions or additional generated methods of the Any type.\n\nExample 1: Pack and unpack a message in C++.\n\n    Foo foo = ...;\n    Any any;\n    any.PackFrom(foo);\n    ...\n    if (any.UnpackTo(\u0026foo)) {\n      ...\n    }\n\nExample 2: Pack and unpack a message in Java.\n\n    Foo foo = ...;\n    Any any = Any.pack(foo);\n    ...\n    if (any.is(Foo.class)) {\n      foo = any.unpack(Foo.class);\n    }\n\n Example 3: Pack and unpack a message in Python.\n\n    foo = Foo(...)\n    any = Any()\n    any.Pack(foo)\n    ...\n    if any.Is(Foo.DESCRIPTOR):\n      any.Unpack(foo)\n      ...\n\n Example 4: Pack and unpack a message in Go\n\n     foo := \u0026pb.Foo{...}\n     any, err := anypb.New(foo)\n     if err != nil {\n       ...\n     }\n     ...\n     foo := \u0026pb.Foo{}\n     if err := any.UnmarshalTo(foo); err != nil {\n       ...\n     }\n\nThe pack methods provided by protobuf library will by default use\n'type.googleapis.com/full.type.name' as the type URL and the unpack\nmethods only use the fully qualified type name after the last '/'\nin the type URL, for example \"foo.bar.com/x/y.z\" will yield type\nname \"y.z\".\n\n\nJSON\n====\nThe JSON representation of an `Any` value uses the regular\nrepresentation of the deserialized, embedded message, with an\nadditional field `@type` which contains the type URL. Example:\n\n    package google.profile;\n    message Person {\n      string first_name = 1;\n      string last_name = 2;\n    }\n\n    {\n      \"@type\": \"type.googleapis.com/google.profile.Person\",\n      \"firstName\": \u003cstring\u003e,\n      \"lastName\": \u003cstring\u003e\n    }\n\nIf the embedded message type is well-known and has a custom JSON\nrepresentation, that representation will be embedded adding a field\n`value` which holds the custom JSON in addition to the `@type`\nfield. Example (for message [google.protobuf.Duration][]):\n\n    {\n      \"@type\": \"type.googleapis.com/google.protobuf.Duration\",\n      \"value\": \"1.212s\"\n    }"
+    },
+    "runtimeError": {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "string"
+        },
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "v1BatchTx": {
+      "type": "object",
+      "properties": {
+        "batch_nonce": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "timeout": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "transactions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1SendToExternal"
+          }
+        },
+        "external_token_id": {
+          "type": "string"
+        },
+        "height": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "sequence": {
+          "type": "string",
+          "format": "uint64"
+        }
+      },
+      "title": "BatchTx represents a batch of transactions going from Cosmos to External Chain.\nBatch txs are are identified by a unique hash and the token contract that is\nshared by all the SendToExternal"
+    },
+    "v1BatchTxConfirmation": {
+      "type": "object",
+      "properties": {
+        "external_token_id": {
+          "type": "string"
+        },
+        "batch_nonce": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "external_signer": {
+          "type": "string"
+        },
+        "signature": {
+          "type": "string",
+          "format": "byte"
+        }
+      },
+      "description": "BatchTxConfirmation is a signature on behalf of a validator for a BatchTx."
+    },
+    "v1BatchTxConfirmationsResponse": {
+      "type": "object",
+      "properties": {
+        "signatures": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1BatchTxConfirmation"
+          }
+        }
+      }
+    },
+    "v1BatchTxFeesResponse": {
+      "type": "object",
+      "properties": {
+        "fees": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1beta1Coin"
+          }
+        }
+      }
+    },
+    "v1BatchTxResponse": {
+      "type": "object",
+      "properties": {
+        "batch": {
+          "$ref": "#/definitions/v1BatchTx"
+        }
+      }
+    },
+    "v1BatchTxsResponse": {
+      "type": "object",
+      "properties": {
+        "batches": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1BatchTx"
+          }
+        },
+        "pagination": {
+          "$ref": "#/definitions/v1beta1PageResponse"
+        }
+      }
+    },
+    "v1BatchedSendToExternalsResponse": {
+      "type": "object",
+      "properties": {
+        "send_to_externals": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1SendToExternal"
+          }
+        },
+        "chain_id": {
+          "type": "string"
+        }
+      }
+    },
+    "v1ContractCallTx": {
+      "type": "object",
+      "properties": {
+        "invalidation_nonce": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "invalidation_scope": {
+          "type": "string",
+          "format": "byte"
+        },
+        "address": {
+          "type": "string"
+        },
+        "payload": {
+          "type": "string",
+          "format": "byte"
+        },
+        "timeout": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "tokens": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1ExternalToken"
+          }
+        },
+        "fees": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1ExternalToken"
+          }
+        },
+        "height": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "sequence": {
+          "type": "string",
+          "format": "uint64"
+        }
+      },
+      "description": "ContractCallTx represents an individual arbitrary logic call transaction\nfrom Cosmos to External."
+    },
+    "v1ContractCallTxConfirmation": {
+      "type": "object",
+      "properties": {
+        "invalidation_scope": {
+          "type": "string",
+          "format": "byte"
+        },
+        "invalidation_nonce": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "external_signer": {
+          "type": "string"
+        },
+        "signature": {
+          "type": "string",
+          "format": "byte"
+        }
+      },
+      "description": "ContractCallTxConfirmation is a signature on behalf of a validator for a\nContractCallTx."
+    },
+    "v1ContractCallTxConfirmationsResponse": {
+      "type": "object",
+      "properties": {
+        "signatures": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1ContractCallTxConfirmation"
+          }
+        }
+      }
+    },
+    "v1ContractCallTxResponse": {
+      "type": "object",
+      "properties": {
+        "logic_call": {
+          "$ref": "#/definitions/v1ContractCallTx"
+        }
+      }
+    },
+    "v1ContractCallTxsResponse": {
+      "type": "object",
+      "properties": {
+        "calls": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1ContractCallTx"
+          }
+        },
+        "pagination": {
+          "$ref": "#/definitions/v1beta1PageResponse"
+        }
+      }
+    },
+    "v1DelegateKeysByExternalSignerResponse": {
+      "type": "object",
+      "properties": {
+        "validator_address": {
+          "type": "string"
+        },
+        "orchestrator_address": {
+          "type": "string"
+        }
+      }
+    },
+    "v1DelegateKeysByOrchestratorResponse": {
+      "type": "object",
+      "properties": {
+        "validator_address": {
+          "type": "string"
+        },
+        "external_signer": {
+          "type": "string"
+        }
+      }
+    },
+    "v1DelegateKeysByValidatorResponse": {
+      "type": "object",
+      "properties": {
+        "eth_address": {
+          "type": "string"
+        },
+        "orchestrator_address": {
+          "type": "string"
+        }
+      }
+    },
+    "v1DelegateKeysResponse": {
+      "type": "object",
+      "properties": {
+        "delegate_keys": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1MsgDelegateKeys"
+          }
+        }
+      }
+    },
+    "v1DenomToExternalIdResponse": {
+      "type": "object",
+      "properties": {
+        "external_id": {
+          "type": "string"
+        }
+      }
+    },
+    "v1ExternalIdToDenomResponse": {
+      "type": "object",
+      "properties": {
+        "denom": {
+          "type": "string"
+        }
+      }
+    },
+    "v1ExternalSigner": {
+      "type": "object",
+      "properties": {
+        "power": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "external_address": {
+          "type": "string"
+        }
+      },
+      "description": "ExternalSigner represents a cosmos validator with its corresponding bridge\noperator address and its staking consensus power."
+    },
+    "v1ExternalToken": {
+      "type": "object",
+      "properties": {
+        "token_id": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "external_token_id": {
+          "type": "string"
+        },
+        "amount": {
+          "type": "string"
+        }
+      }
+    },
+    "v1LastSubmittedExternalEventResponse": {
+      "type": "object",
+      "properties": {
+        "event_nonce": {
+          "type": "string",
+          "format": "uint64"
+        }
+      }
+    },
+    "v1MsgDelegateKeys": {
+      "type": "object",
+      "properties": {
+        "validator_address": {
+          "type": "string"
+        },
+        "orchestrator_address": {
+          "type": "string"
+        },
+        "external_address": {
+          "type": "string"
+        },
+        "eth_signature": {
+          "type": "string",
+          "format": "byte"
+        }
+      },
+      "description": "MsgDelegateKey allows validators to delegate their voting responsibilities\nto a given orchestrator address. This key is then used as an optional\nauthentication method for attesting events from External Chain."
+    },
+    "v1Params": {
+      "type": "object",
+      "properties": {
+        "gravity_id": {
+          "type": "string"
+        },
+        "contract_source_hash": {
+          "type": "string"
+        },
+        "bridge_ethereum_address": {
+          "type": "string"
+        },
+        "bridge_chain_id": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "signed_signer_set_txs_window": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "signed_batches_window": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "ethereum_signatures_window": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "target_eth_tx_timeout": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "average_block_time": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "average_ethereum_block_time": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "slash_fraction_signer_set_tx": {
+          "type": "string",
+          "format": "byte",
+          "title": "TODO: slash fraction for contract call txs too"
+        },
+        "slash_fraction_batch": {
+          "type": "string",
+          "format": "byte"
+        },
+        "slash_fraction_ethereum_signature": {
+          "type": "string",
+          "format": "byte"
+        },
+        "slash_fraction_conflicting_ethereum_signature": {
+          "type": "string",
+          "format": "byte"
+        },
+        "unbond_slashing_signer_set_txs_window": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "chains": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "contract_hash:\nthe code hash of a known good version of the Gravity contract\nsolidity code. This can be used to verify the correct version\nof the contract has been deployed. This is a reference value for\ngoernance action only it is never read by any Gravity code\n\nbridge_ethereum_address:\nis address of the bridge contract on the Ethereum side, this is a\nreference value for governance only and is not actually used by any\nGravity code\n\nbridge_chain_id:\nthe unique identifier of the Ethereum chain, this is a reference value\nonly and is not actually used by any Gravity code\n\nThese reference values may be used by future Gravity client implemetnations\nto allow for saftey features or convenience features like the Gravity address\nin your relayer. A relayer would require a configured Gravity address if\ngovernance had not set the address on the chain it was relaying for.\n\nsigned_signer_set_txs_window\nsigned_batches_window\nsigned_ethereum_signatures_window\n\nThese values represent the time in blocks that a validator has to submit\na signature for a batch or valset, or to submit a ethereum_signature for a\nparticular attestation nonce. In the case of attestations this clock starts\nwhen the attestation is created, but only allows for slashing once the event\nhas passed\n\ntarget_eth_tx_timeout:\n\nThis is the 'target' value for when ethereum transactions time out, this is a target\nbecause Ethereum is a probabilistic chain and you can't say for sure what the\nblock frequency is ahead of time.\n\naverage_block_time\naverage_ethereum_block_time\n\nThese values are the average Cosmos block time and Ethereum block time\nrespectively and they are used to compute what the target batch timeout is. It\nis important that governance updates these in case of any major, prolonged\nchange in the time it takes to produce a block\n\nslash_fraction_signer_set_tx\nslash_fraction_batch\nslash_fraction_ethereum_signature\nslash_fraction_conflicting_ethereum_signature\n\nThe slashing fractions for the various gravity related slashing conditions.\nThe first three refer to not submitting a particular message, the third for\nsubmitting a different ethereum_signature for the same Ethereum event",
+      "title": "Params represent the Gravity genesis and store parameters\ngravity_id:\na random 32 byte value to prevent signature reuse, for example if the\ncosmos validators decided to use the same Ethereum keys for another chain\nalso running Gravity we would not want it to be possible to play a deposit\nfrom chain A back on chain B's Gravity. This value IS USED ON ETHEREUM so\nit must be set in your genesis.json before launch and not changed after\ndeploying Gravity"
+    },
+    "v1ParamsResponse": {
+      "type": "object",
+      "properties": {
+        "params": {
+          "$ref": "#/definitions/v1Params"
+        }
+      }
+    },
+    "v1SendToExternal": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "sender": {
+          "type": "string"
+        },
+        "external_recipient": {
+          "type": "string"
+        },
+        "chain_id": {
+          "type": "string"
+        },
+        "token": {
+          "$ref": "#/definitions/v1ExternalToken"
+        },
+        "fee": {
+          "$ref": "#/definitions/v1ExternalToken"
+        },
+        "tx_hash": {
+          "type": "string"
+        },
+        "val_commission": {
+          "$ref": "#/definitions/v1ExternalToken"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "refund_address": {
+          "type": "string"
+        },
+        "refund_chain_id": {
+          "type": "string"
+        }
+      },
+      "title": "SendToExternal represents an individual SendToExternal from Cosmos to\nExternal chain"
+    },
+    "v1SignerSetTx": {
+      "type": "object",
+      "properties": {
+        "nonce": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "height": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "signers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1ExternalSigner"
+          }
+        },
+        "sequence": {
+          "type": "string",
+          "format": "uint64"
+        }
+      },
+      "description": "SignerSetTx is the Bridge multisig set that relays\ntransactions the two chains. The staking validators keep external keys which\nare used to check signatures in order to get significant gas\nsavings."
+    },
+    "v1SignerSetTxConfirmation": {
+      "type": "object",
+      "properties": {
+        "signer_set_nonce": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "external_signer": {
+          "type": "string"
+        },
+        "signature": {
+          "type": "string",
+          "format": "byte"
+        }
+      },
+      "title": "SignerSetTxConfirmation is a signature on behalf of a validator for a\nSignerSetTx"
+    },
+    "v1SignerSetTxConfirmationsResponse": {
+      "type": "object",
+      "properties": {
+        "signatures": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1SignerSetTxConfirmation"
+          }
+        }
+      }
+    },
+    "v1SignerSetTxResponse": {
+      "type": "object",
+      "properties": {
+        "signer_set": {
+          "$ref": "#/definitions/v1SignerSetTx"
+        }
+      }
+    },
+    "v1SignerSetTxsResponse": {
+      "type": "object",
+      "properties": {
+        "signer_sets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1SignerSetTx"
+          }
+        },
+        "pagination": {
+          "$ref": "#/definitions/v1beta1PageResponse"
+        }
+      }
+    },
+    "v1TokenInfo": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "denom": {
+          "type": "string"
+        },
+        "chain_id": {
+          "type": "string"
+        },
+        "external_token_id": {
+          "type": "string"
+        },
+        "external_decimals": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "commission": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
+    "v1TokenInfos": {
+      "type": "object",
+      "properties": {
+        "token_infos": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1TokenInfo"
+          }
+        }
+      }
+    },
+    "v1TokenInfosResponse": {
+      "type": "object",
+      "properties": {
+        "list": {
+          "$ref": "#/definitions/v1TokenInfos"
+        }
+      }
+    },
+    "v1TransactionStatusResponse": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "$ref": "#/definitions/v1TxStatus"
+        }
+      }
+    },
+    "v1TxStatus": {
+      "type": "object",
+      "properties": {
+        "in_tx_hash": {
+          "type": "string"
+        },
+        "out_tx_hash": {
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/definitions/v1TxStatusType"
+        }
+      }
+    },
+    "v1TxStatusType": {
+      "type": "string",
+      "enum": [
+        "TX_STATUS_NOT_FOUND",
+        "TX_STATUS_DEPOSIT_RECEIVED",
+        "TX_STATUS_BATCH_CREATED",
+        "TX_STATUS_BATCH_EXECUTED",
+        "TX_STATUS_REFUNDED"
+      ],
+      "default": "TX_STATUS_NOT_FOUND"
+    },
+    "v1UnbatchedSendToExternalsResponse": {
+      "type": "object",
+      "properties": {
+        "send_to_externals": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1SendToExternal"
+          }
+        },
+        "chain_id": {
+          "type": "string"
+        },
+        "pagination": {
+          "$ref": "#/definitions/v1beta1PageResponse"
+        }
+      }
+    },
+    "v1UnsignedBatchTxsResponse": {
+      "type": "object",
+      "properties": {
+        "batches": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1BatchTx"
+          },
+          "title": "Note these are returned with the signature empty"
+        }
+      }
+    },
+    "v1UnsignedContractCallTxsResponse": {
+      "type": "object",
+      "properties": {
+        "calls": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1ContractCallTx"
+          }
+        }
+      }
+    },
+    "v1UnsignedSignerSetTxsResponse": {
+      "type": "object",
+      "properties": {
+        "signer_sets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1SignerSetTx"
+          }
+        }
+      }
+    },
+    "v1beta1Coin": {
+      "type": "object",
+      "properties": {
+        "denom": {
+          "type": "string"
+        },
+        "amount": {
+          "type": "string"
+        }
+      },
+      "description": "Coin defines a token with a denomination and an amount.\n\nNOTE: The amount field is an Int which implements the custom method\nsignatures required by gogoproto."
+    },
+    "v1beta1PageRequest": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string",
+          "format": "byte",
+          "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set."
+        },
+        "offset": {
+          "type": "string",
+          "format": "uint64",
+          "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set."
+        },
+        "limit": {
+          "type": "string",
+          "format": "uint64",
+          "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app."
+        },
+        "count_total": {
+          "type": "boolean",
+          "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set."
+        },
+        "reverse": {
+          "type": "boolean",
+          "description": "reverse is set to true if results are to be returned in the descending order."
+        }
+      },
+      "description": "message SomeRequest {\n         Foo some_parameter = 1;\n         PageRequest pagination = 2;\n }",
+      "title": "PageRequest is to be embedded in gRPC request messages for efficient\npagination. Ex:"
+    },
+    "v1beta1PageResponse": {
+      "type": "object",
+      "properties": {
+        "next_key": {
+          "type": "string",
+          "format": "byte",
+          "title": "next_key is the key to be passed to PageRequest.key to\nquery the next page most efficiently"
+        },
+        "total": {
+          "type": "string",
+          "format": "uint64",
+          "title": "total is total number of results available if PageRequest.count_total\nwas set, its value is undefined otherwise"
+        }
+      },
+      "description": "PageResponse is to be embedded in gRPC response messages where the\ncorresponding request message has used PageRequest.\n\n message SomeResponse {\n         repeated Bar results = 1;\n         PageResponse page = 2;\n }"
+    }
+  }
+}

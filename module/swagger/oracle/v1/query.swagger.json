@@ -1,0 +1,276 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "oracle/v1/query.proto",
+    "version": "version not set"
+  },
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/oracle/v1beta/epoch/current": {
+      "get": {
+        "operationId": "Query_CurrentEpoch",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1QueryCurrentEpochResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/oracle/v1beta/eth_fee": {
+      "get": {
+        "operationId": "Query_EthFee",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1QueryEthFeeResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/oracle/v1beta/holders": {
+      "get": {
+        "operationId": "Query_Holders",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1QueryHoldersResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/oracle/v1beta/prices": {
+      "get": {
+        "operationId": "Query_Prices",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1QueryPricesResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "tags": [
+          "Query"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "type_url": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
+    "runtimeError": {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "string"
+        },
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "v1Epoch": {
+      "type": "object",
+      "properties": {
+        "nonce": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "votes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1Vote"
+          }
+        }
+      }
+    },
+    "v1Holder": {
+      "type": "object",
+      "properties": {
+        "address": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "v1Holders": {
+      "type": "object",
+      "properties": {
+        "list": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1Holder"
+          }
+        }
+      }
+    },
+    "v1MsgHoldersClaim": {
+      "type": "object",
+      "properties": {
+        "epoch": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "holders": {
+          "$ref": "#/definitions/v1Holders"
+        },
+        "orchestrator": {
+          "type": "string"
+        }
+      }
+    },
+    "v1MsgPriceClaim": {
+      "type": "object",
+      "properties": {
+        "epoch": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "prices": {
+          "$ref": "#/definitions/v1Prices"
+        },
+        "orchestrator": {
+          "type": "string"
+        }
+      }
+    },
+    "v1Price": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "v1Prices": {
+      "type": "object",
+      "properties": {
+        "list": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1Price"
+          }
+        }
+      }
+    },
+    "v1QueryCurrentEpochResponse": {
+      "type": "object",
+      "properties": {
+        "epoch": {
+          "$ref": "#/definitions/v1Epoch"
+        }
+      }
+    },
+    "v1QueryEthFeeResponse": {
+      "type": "object",
+      "properties": {
+        "min": {
+          "type": "string"
+        },
+        "fast": {
+          "type": "string"
+        }
+      }
+    },
+    "v1QueryHoldersResponse": {
+      "type": "object",
+      "properties": {
+        "holders": {
+          "$ref": "#/definitions/v1Holders"
+        }
+      }
+    },
+    "v1QueryPricesResponse": {
+      "type": "object",
+      "properties": {
+        "prices": {
+          "$ref": "#/definitions/v1Prices"
+        }
+      }
+    },
+    "v1Vote": {
+      "type": "object",
+      "properties": {
+        "oracle": {
+          "type": "string"
+        },
+        "price_claim": {
+          "$ref": "#/definitions/v1MsgPriceClaim"
+        },
+        "holders_claim": {
+          "$ref": "#/definitions/v1MsgHoldersClaim"
+        }
+      }
+    }
+  }
+}

@@ -7,6 +7,8 @@ for dir in $proto_dirs; do
   buf protoc \
   -I "proto" \
   -I "third_party/proto" \
+  --grpc-gateway_out=logtostderr=true:. \
+  --swagger_out=logtostderr=true:./swagger \
   --gocosmos_out=plugins=interfacetype+grpc,\
 Mgoogle/protobuf/any.proto=github.com/cosmos/cosmos-sdk/codec/types:. \
   $(find "${dir}" -maxdepth 1 -name '*.proto')
