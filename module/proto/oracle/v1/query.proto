@@ -11,16 +11,16 @@ option go_package = "github.com/MinterTeam/mhub2/module/x/oracle/types";
 // Query defines the gRPC querier service
 service Query {
     rpc CurrentEpoch(QueryCurrentEpochRequest) returns(QueryCurrentEpochResponse) {
-        option (google.api.http).get = "/oracle/v1beta/epoch/current";
+        option (google.api.http).get = "/oracle/v1/epoch/current";
     }
     rpc EthFee(QueryEthFeeRequest) returns(QueryEthFeeResponse) {
-        option (google.api.http).get = "/oracle/v1beta/eth_fee";
+        option (google.api.http).get = "/oracle/v1/eth_fee";
     }
     rpc Prices(QueryPricesRequest) returns(QueryPricesResponse) {
-        option (google.api.http).get = "/oracle/v1beta/prices";
+        option (google.api.http).get = "/oracle/v1/prices";
     }
     rpc Holders(QueryHoldersRequest) returns(QueryHoldersResponse) {
-         option (google.api.http).get = "/oracle/v1beta/holders";
+         option (google.api.http).get = "/oracle/v1/holders";
     }
 }
 

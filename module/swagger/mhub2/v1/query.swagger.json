@@ -11,7 +11,7 @@
     "application/json"
   ],
   "paths": {
-    "/gravity/v1/ContractCallTxs/{address}/pending": {
+    "/mhub2/v1/ContractCallTxs/{address}/pending": {
       "get": {
         "operationId": "Query_UnsignedContractCallTxs",
         "responses": {
@@ -47,7 +47,7 @@
         ]
       }
     },
-    "/gravity/v1/SignerSetTxs/{address}/pending": {
+    "/mhub2/v1/SignerSetTxs/{address}/pending": {
       "get": {
         "summary": "pending external signature queries for orchestrators to figure out which\nsignatures they are missing\nTODO: can/should we group this into one endpoint?",
         "operationId": "Query_UnsignedSignerSetTxs",
@@ -85,7 +85,7 @@
         ]
       }
     },
-    "/gravity/v1/batch/batch_txs": {
+    "/mhub2/v1/batch/batch_txs": {
       "get": {
         "operationId": "Query_BatchTxs",
         "responses": {
@@ -153,7 +153,7 @@
         ]
       }
     },
-    "/gravity/v1/batch/contract_call_txs": {
+    "/mhub2/v1/batch/contract_call_txs": {
       "get": {
         "operationId": "Query_ContractCallTxs",
         "responses": {
@@ -221,7 +221,7 @@
         ]
       }
     },
-    "/gravity/v1/batch_txs/external_signatures": {
+    "/mhub2/v1/batch_txs/external_signatures": {
       "get": {
         "operationId": "Query_BatchTxConfirmations",
         "responses": {
@@ -264,7 +264,7 @@
         ]
       }
     },
-    "/gravity/v1/batch_txs/{external_token_id}/{batch_nonce}": {
+    "/mhub2/v1/batch_txs/{external_token_id}/{batch_nonce}": {
       "get": {
         "operationId": "Query_BatchTx",
         "responses": {
@@ -307,7 +307,7 @@
         ]
       }
     },
-    "/gravity/v1/batches/fees": {
+    "/mhub2/v1/batches/fees": {
       "get": {
         "summary": "Queries the fees for all pending batches, results are returned in sdk.Coin\n(fee_amount_int)(contract_address) style",
         "operationId": "Query_BatchTxFees",
@@ -338,7 +338,7 @@
         ]
       }
     },
-    "/gravity/v1/batches/{address}/pending": {
+    "/mhub2/v1/batches/{address}/pending": {
       "get": {
         "operationId": "Query_UnsignedBatchTxs",
         "responses": {
@@ -375,7 +375,7 @@
         ]
       }
     },
-    "/gravity/v1/contract_call_txs/{invalidation_scope}/{invalidation_nonce}": {
+    "/mhub2/v1/contract_call_txs/{invalidation_scope}/{invalidation_nonce}": {
       "get": {
         "operationId": "Query_ContractCallTx",
         "responses": {
@@ -419,9 +419,9 @@
         ]
       }
     },
-    "/gravity/v1/cosmos_originated/denom_to_external_id": {
+    "/mhub2/v1/cosmos_originated/denom_to_external_id": {
       "get": {
-        "summary": "Query for info about denoms tracked by gravity",
+        "summary": "Query for info about denoms tracked by mhub2",
         "operationId": "Query_DenomToExternalId",
         "responses": {
           "200": {
@@ -456,9 +456,9 @@
         ]
       }
     },
-    "/gravity/v1/cosmos_originated/external_id_to_denom": {
+    "/mhub2/v1/cosmos_originated/external_id_to_denom": {
       "get": {
-        "summary": "Query for info about denoms tracked by gravity",
+        "summary": "Query for info about denoms tracked by mhub2",
         "operationId": "Query_ExternalIdToDenom",
         "responses": {
           "200": {
@@ -493,7 +493,7 @@
         ]
       }
     },
-    "/gravity/v1/delegate_keys": {
+    "/mhub2/v1/delegate_keys": {
       "get": {
         "operationId": "Query_DelegateKeys",
         "responses": {
@@ -523,7 +523,7 @@
         ]
       }
     },
-    "/gravity/v1/delegate_keys/external/{external_signer}": {
+    "/mhub2/v1/delegate_keys/external/{external_signer}": {
       "get": {
         "operationId": "Query_DelegateKeysByExternalSigner",
         "responses": {
@@ -559,7 +559,7 @@
         ]
       }
     },
-    "/gravity/v1/delegate_keys/orchestrator/{orchestrator_address}": {
+    "/mhub2/v1/delegate_keys/orchestrator/{orchestrator_address}": {
       "get": {
         "operationId": "Query_DelegateKeysByOrchestrator",
         "responses": {
@@ -595,7 +595,7 @@
         ]
       }
     },
-    "/gravity/v1/delegate_keys/validator/{validator_address}": {
+    "/mhub2/v1/delegate_keys/validator/{validator_address}": {
       "get": {
         "summary": "delegate keys",
         "operationId": "Query_DelegateKeysByValidator",
@@ -632,7 +632,7 @@
         ]
       }
     },
-    "/gravity/v1/logic_calls/external_signatures": {
+    "/mhub2/v1/logic_calls/external_signatures": {
       "get": {
         "operationId": "Query_ContractCallTxConfirmations",
         "responses": {
@@ -676,7 +676,7 @@
         ]
       }
     },
-    "/gravity/v1/oracle/event_nonce/{address}": {
+    "/mhub2/v1/oracle/event_nonce/{address}": {
       "get": {
         "operationId": "Query_LastSubmittedExternalEvent",
         "responses": {
@@ -712,7 +712,7 @@
         ]
       }
     },
-    "/gravity/v1/params": {
+    "/mhub2/v1/params": {
       "get": {
         "summary": "Module parameters query",
         "operationId": "Query_Params",
@@ -735,7 +735,7 @@
         ]
       }
     },
-    "/gravity/v1/query_batched_send_to_ext": {
+    "/mhub2/v1/query_batched_send_to_ext": {
       "get": {
         "summary": "Query for batch send to externals",
         "operationId": "Query_BatchedSendToExternals",
@@ -772,7 +772,7 @@
         ]
       }
     },
-    "/gravity/v1/query_unbatched_send_to_ext": {
+    "/mhub2/v1/query_unbatched_send_to_ext": {
       "get": {
         "summary": "Query for unbatched send to externals",
         "operationId": "Query_UnbatchedSendToExternals",
@@ -847,7 +847,7 @@
         ]
       }
     },
-    "/gravity/v1/signer_set": {
+    "/mhub2/v1/signer_set": {
       "get": {
         "summary": "get info on individual outgoing data",
         "operationId": "Query_SignerSetTx",
@@ -885,7 +885,7 @@
         ]
       }
     },
-    "/gravity/v1/signer_set/latest": {
+    "/mhub2/v1/signer_set/latest": {
       "get": {
         "operationId": "Query_LatestSignerSetTx",
         "responses": {
@@ -915,7 +915,7 @@
         ]
       }
     },
-    "/gravity/v1/signer_sets": {
+    "/mhub2/v1/signer_sets": {
       "get": {
         "summary": "get collections of outgoing traffic from the bridge",
         "operationId": "Query_SignerSetTxs",
@@ -984,7 +984,7 @@
         ]
       }
     },
-    "/gravity/v1/signer_sets/external_signatures": {
+    "/mhub2/v1/signer_sets/external_signatures": {
       "get": {
         "summary": "TODO: can/should we group these into one endpoint?",
         "operationId": "Query_SignerSetTxConfirmations",

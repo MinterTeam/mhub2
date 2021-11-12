@@ -534,7 +534,10 @@ func (m *Prices) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthPrices
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthPrices
 			}
 			if (iNdEx + skippy) > l {
@@ -650,7 +653,10 @@ func (m *Price) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthPrices
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthPrices
 			}
 			if (iNdEx + skippy) > l {
@@ -734,7 +740,10 @@ func (m *Holders) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthPrices
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthPrices
 			}
 			if (iNdEx + skippy) > l {
@@ -850,7 +859,10 @@ func (m *Holder) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthPrices
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthPrices
 			}
 			if (iNdEx + skippy) > l {

@@ -11,7 +11,7 @@
     "application/json"
   ],
   "paths": {
-    "/oracle/v1beta/epoch/current": {
+    "/oracle/v1/epoch/current": {
       "get": {
         "operationId": "Query_CurrentEpoch",
         "responses": {
@@ -33,7 +33,7 @@
         ]
       }
     },
-    "/oracle/v1beta/eth_fee": {
+    "/oracle/v1/eth_fee": {
       "get": {
         "operationId": "Query_EthFee",
         "responses": {
@@ -55,7 +55,7 @@
         ]
       }
     },
-    "/oracle/v1beta/holders": {
+    "/oracle/v1/holders": {
       "get": {
         "operationId": "Query_Holders",
         "responses": {
@@ -77,7 +77,7 @@
         ]
       }
     },
-    "/oracle/v1beta/prices": {
+    "/oracle/v1/prices": {
       "get": {
         "operationId": "Query_Prices",
         "responses": {

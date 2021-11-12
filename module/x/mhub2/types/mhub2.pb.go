@@ -10,9 +10,9 @@ import (
 	types1 "github.com/cosmos/cosmos-sdk/types"
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
+	_ "github.com/golang/protobuf/ptypes/timestamp"
 	_ "github.com/regen-network/cosmos-proto"
 	github_com_tendermint_tendermint_libs_bytes "github.com/tendermint/tendermint/libs/bytes"
-	_ "google.golang.org/protobuf/types/known/timestamppb"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -2215,7 +2215,10 @@ func (m *ExternalEventVoteRecord) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthMhub2
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthMhub2
 			}
 			if (iNdEx + skippy) > l {
@@ -2303,7 +2306,10 @@ func (m *LatestBlockHeight) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthMhub2
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthMhub2
 			}
 			if (iNdEx + skippy) > l {
@@ -2404,7 +2410,10 @@ func (m *ExternalSigner) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthMhub2
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthMhub2
 			}
 			if (iNdEx + skippy) > l {
@@ -2545,7 +2554,10 @@ func (m *SignerSetTx) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthMhub2
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthMhub2
 			}
 			if (iNdEx + skippy) > l {
@@ -2737,7 +2749,10 @@ func (m *BatchTx) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthMhub2
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthMhub2
 			}
 			if (iNdEx + skippy) > l {
@@ -3116,7 +3131,10 @@ func (m *SendToExternal) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthMhub2
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthMhub2
 			}
 			if (iNdEx + skippy) > l {
@@ -3410,7 +3428,10 @@ func (m *ContractCallTx) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthMhub2
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthMhub2
 			}
 			if (iNdEx + skippy) > l {
@@ -3545,7 +3566,10 @@ func (m *ExternalToken) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthMhub2
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthMhub2
 			}
 			if (iNdEx + skippy) > l {
@@ -3762,7 +3786,10 @@ func (m *TokenInfo) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthMhub2
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthMhub2
 			}
 			if (iNdEx + skippy) > l {
@@ -3846,7 +3873,10 @@ func (m *TokenInfos) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthMhub2
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthMhub2
 			}
 			if (iNdEx + skippy) > l {
@@ -3972,7 +4002,10 @@ func (m *IDSet) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthMhub2
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthMhub2
 			}
 			if (iNdEx + skippy) > l {
@@ -4105,7 +4138,10 @@ func (m *TxStatus) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthMhub2
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthMhub2
 			}
 			if (iNdEx + skippy) > l {
@@ -4221,7 +4257,10 @@ func (m *ColdStorageTransferProposal) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthMhub2
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthMhub2
 			}
 			if (iNdEx + skippy) > l {
