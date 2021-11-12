@@ -144,8 +144,14 @@ service Query {
      "/mhub2/v1/delegate_keys";
   }
 
-  rpc TokenInfos(TokenInfosRequest) returns (TokenInfosResponse) {}
-  rpc TransactionStatus(TransactionStatusRequest) returns (TransactionStatusResponse) {}
+  rpc TokenInfos(TokenInfosRequest) returns (TokenInfosResponse) {
+      option (google.api.http).get =
+          "/mhub2/v1/token_infos";
+  }
+  rpc TransactionStatus(TransactionStatusRequest) returns (TransactionStatusResponse) {
+      option (google.api.http).get =
+          "/mhub2/v1/transaction_status/{chain_id}/{tx_hash}";
+  }
 }
 
 message TokenInfosRequest {}

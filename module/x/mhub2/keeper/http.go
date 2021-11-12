@@ -1,16 +1,17 @@
 package keeper
 
 import (
-	"context" // Use "golang.org/x/net/context" for Golang version <= 1.6
 	"net/http"
+
+	mhub2Gw "github.com/MinterTeam/mhub2/module/x/mhub2/types"
+	oracleGw "github.com/MinterTeam/mhub2/module/x/oracle/types"
+	"golang.org/x/net/context"
 
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"google.golang.org/grpc"
-
-	gw "github.com/MinterTeam/mhub2/module/x/mhub2/types" // Update
 )
 
-func Run(httpPort, grpcServerEndpoint string) error {
+func RunHttpServer(httpListenAddr, grpcServerAddr string) error {
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -19,11 +20,14 @@ func Run(httpPort, grpcServerEndpoint string) error {
 	// Note: Make sure the gRPC server is running properly and accessible
 	mux := runtime.NewServeMux()
 	opts := []grpc.DialOption{grpc.WithInsecure()}
-	err := gw.RegisterQueryHandlerFromEndpoint(ctx, mux, grpcServerEndpoint, opts)
-	if err != nil {
+
+	if err := oracleGw.RegisterQueryHandlerFromEndpoint(ctx, mux, grpcServerAddr, opts); err != nil {
+		return err
+	}
+	if err := mhub2Gw.RegisterQueryHandlerFromEndpoint(ctx, mux, grpcServerAddr, opts); err != nil {
 		return err
 	}
 
 	// Start HTTP server (and proxy calls to gRPC server endpoint)
-	return http.ListenAndServe(httpPort, mux)
+	return http.ListenAndServe(httpListenAddr, mux)
 }
