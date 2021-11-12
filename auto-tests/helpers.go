@@ -31,6 +31,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -69,7 +70,12 @@ func sendMinterCoinToHub(privateKeyString string, sender common.Address, multisi
 	}
 }
 
+var minterSenderLock = sync.Mutex{}
+
 func sendMinterCoinToEthereum(privateKeyString string, sender common.Address, multisig string, client *http_client.Client, to string, fee sdk.Int) {
+	minterSenderLock.Lock()
+	defer minterSenderLock.Unlock()
+
 	addr := "Mx" + sender.Hex()[2:]
 	tx, _ := transaction.NewBuilder(transaction.TestNetChainID).NewTransaction(
 		transaction.NewSendData().MustSetTo(multisig).SetCoin(1).SetValue(transaction.BipToPip(big.NewInt(1))),
@@ -91,9 +97,22 @@ func sendMinterCoinToEthereum(privateKeyString string, sender common.Address, mu
 	if response.Code != 0 {
 		panic(response.Log)
 	}
+
+	waitMinterTx(client, response.Hash)
+}
+
+func waitMinterTx(client *http_client.Client, hash string) {
+	_, err := client.Transaction(hash)
+	if err != nil {
+		time.Sleep(time.Millisecond * 200)
+		waitMinterTx(client, hash)
+	}
 }
 
 func fundMinterAddress(to string, privateKeyString string, sender common.Address, client *http_client.Client) {
+	minterSenderLock.Lock()
+	defer minterSenderLock.Unlock()
+
 	addr := "Mx" + sender.Hex()[2:]
 	tx, _ := transaction.NewBuilder(transaction.TestNetChainID).NewTransaction(
 		transaction.NewMultisendData().
@@ -117,9 +136,14 @@ func fundMinterAddress(to string, privateKeyString string, sender common.Address
 	if response.Code != 0 {
 		panic(response.Log)
 	}
+
+	waitMinterTx(client, response.Hash)
 }
 
 func createMinterMultisig(prKey string, ethAddress common.Address, client *http_client.Client) string {
+	minterSenderLock.Lock()
+	defer minterSenderLock.Unlock()
+
 	addr := "Mx" + ethAddress.Hex()[2:]
 	tx, _ := transaction.NewBuilder(transaction.TestNetChainID).NewTransaction(
 		transaction.NewCreateMultisigData().SetThreshold(1).MustAddSigData(addr, 1),
@@ -150,6 +174,8 @@ func createMinterMultisig(prKey string, ethAddress common.Address, client *http_
 
 		break
 	}
+
+	waitMinterTx(client, response.Hash)
 
 	return transaction.MultisigAddress(addr, nonce)
 }
