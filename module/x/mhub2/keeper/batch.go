@@ -81,18 +81,20 @@ func (k Keeper) getBatchTimeoutHeight(ctx sdk.Context, chainId types.ChainID) ui
 // batchTxExecuted is run when the Cosmos chain detects that a batch has been executed on External Chain
 // It deletes all the transactions in the batch, then cancels all earlier batches
 func (k Keeper) batchTxExecuted(ctx sdk.Context, chainId types.ChainID, externalTokenId string, nonce uint64, txHash string, feePaid sdk.Int, feePayer string) {
-	tempSender := sdk.AccAddress{}
+	tempSender := sdk.AccAddress{} // todo
 
 	otx := k.GetOutgoingTx(ctx, chainId, types.MakeBatchTxKey(chainId, externalTokenId, nonce))
 	batchTx, _ := otx.(*types.BatchTx)
-	k.IterateOutgoingTxsByType(ctx, chainId, types.BatchTxPrefixByte, func(key []byte, otx types.OutgoingTx) bool {
-		// If the iterated batches nonce is lower than the one that was just executed, cancel it
-		btx, _ := otx.(*types.BatchTx)
-		if (btx.BatchNonce < batchTx.BatchNonce) && (batchTx.ExternalTokenId == externalTokenId) {
-			k.CancelBatchTx(ctx, chainId, externalTokenId, btx.BatchNonce)
-		}
-		return false
-	})
+	if chainId != "minter" {
+		k.IterateOutgoingTxsByType(ctx, chainId, types.BatchTxPrefixByte, func(key []byte, otx types.OutgoingTx) bool {
+			// If the iterated batches nonce is lower than the one that was just executed, cancel it
+			btx, _ := otx.(*types.BatchTx)
+			if (btx.BatchNonce < batchTx.BatchNonce) && (batchTx.ExternalTokenId == externalTokenId) {
+				k.CancelBatchTx(ctx, chainId, externalTokenId, btx.BatchNonce)
+			}
+			return false
+		})
+	}
 	k.DeleteOutgoingTx(ctx, chainId, batchTx.GetStoreIndex(chainId))
 
 	tokenInfo, err := k.ExternalIdToTokenInfoLookup(ctx, chainId, batchTx.ExternalTokenId)

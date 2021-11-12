@@ -17,7 +17,14 @@ import (
 // based on the events (i.e. orchestrators)
 func BeginBlocker(ctx sdk.Context, k keeper.Keeper) {
 	for _, chainId := range k.GetChains(ctx) {
-		cleanupTimedOutBatchTxs(ctx, chainId, k)
+		if chainId == "hub" {
+			continue
+		}
+
+		if chainId != "minter" {
+			cleanupTimedOutBatchTxs(ctx, chainId, k)
+		}
+
 		cleanupTimedOutContractCallTxs(ctx, chainId, k)
 		createSignerSetTxs(ctx, chainId, k)
 		createBatchTxs(ctx, chainId, k)

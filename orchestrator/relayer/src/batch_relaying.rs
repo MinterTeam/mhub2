@@ -216,8 +216,9 @@ async fn submit_batches(
                 );
 
                 if cost.is_profitable() {
-                    info!("Rejected to submit batch due to low fee");
-                    continue;
+                    // todo:
+                    // info!("Rejected to submit batch due to low fee");
+                    // continue;
                 }
 
                 let res = send_eth_transaction_batch(

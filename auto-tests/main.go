@@ -86,7 +86,7 @@ func main() {
 	minterClient, err := http_client.New("http://localhost:8843/v2")
 	for {
 		if _, err := minterClient.Status(); err != nil {
-			time.Sleep(time.Second)
+			time.Sleep(time.Millisecond * 200)
 			continue
 		}
 
@@ -99,15 +99,35 @@ func main() {
 	populateEthGenesis(ethAddress, ethChainId)
 	populateEthGenesis(ethAddress, bscChainId)
 
-	ethClient, err, ethContract, erc20addr := runEvmChain(ethChainId, wd, ethAddress, ethPrivateKey, "8545")
-	if err != nil {
-		panic(err)
-	}
+	wg := sync.WaitGroup{}
+	var (
+		ethClient   *ethclient.Client
+		ethContract string
+		erc20addr   string
 
-	bscClient, err, bscContract, bep20addr := runEvmChain(bscChainId, wd, ethAddress, ethPrivateKey, "8546")
-	if err != nil {
-		panic(err)
-	}
+		bscClient   *ethclient.Client
+		bscContract string
+		bep20addr   string
+	)
+
+	wg.Add(2)
+	go func() {
+		ethClient, err, ethContract, erc20addr = runEvmChain(ethChainId, wd, ethAddress, ethPrivateKey, "8545")
+		if err != nil {
+			panic(err)
+		}
+		wg.Done()
+	}()
+
+	go func() {
+		bscClient, err, bscContract, bep20addr = runEvmChain(bscChainId, wd, ethAddress, ethPrivateKey, "8546")
+		if err != nil {
+			panic(err)
+		}
+		wg.Done()
+	}()
+
+	wg.Wait()
 
 	// init and run mhub2 testnet
 	runOrPanic("mhub2 init --chain-id=%s validator1", mhubChainId)
@@ -120,8 +140,8 @@ func main() {
 	runOrPanic("mhub2 gentx --keyring-backend test --moniker validator1 --chain-id=%s validator1 1000000000000000000000000%s %s %s 0x00", mhubChainId, denom, ethAddress.Hex(), hubAddress)
 	runOrPanic("mhub2 collect-gentxs test")
 
+	runOrPanic(os.ExpandEnv("cp mhub2-config.toml $HOME/.mhub2/config/config.toml"))
 	go runOrPanic("mhub2 start --trace --p2p.laddr tcp://0.0.0.0:36656")
-	time.Sleep(time.Second)
 
 	cosmosConn, err := grpc.DialContext(context.Background(), "localhost:9090", grpc.WithInsecure(), grpc.WithConnectParams(grpc.ConnectParams{
 		Backoff:           backoff.DefaultConfig,
@@ -275,7 +295,7 @@ func testMinterToEthereumTransfer(ctx *Context) {
 		expectedValue = expectedValue.SubRaw(fee)
 
 		startTime := time.Now()
-		timeout := time.Minute * 2
+		timeout := time.Minute * 5
 
 		hubContract, _ := erc20.NewErc20(common.HexToAddress(ctx.Erc20addr), ctx.EthClient)
 
@@ -331,7 +351,7 @@ func testHubToBSCTransfer(ctx *Context) {
 		expectedValue = expectedValue.SubRaw(fee)
 
 		startTime := time.Now()
-		timeout := time.Minute * 3
+		timeout := time.Minute * 5
 
 		hubContract, _ := erc20.NewErc20(common.HexToAddress(ctx.Bep20addr), ctx.BscClient)
 
@@ -387,7 +407,7 @@ func testHubToEthereumTransfer(ctx *Context) {
 		expectedValue = expectedValue.SubRaw(fee)
 
 		startTime := time.Now()
-		timeout := time.Minute * 3
+		timeout := time.Minute * 5
 
 		hubContract, _ := erc20.NewErc20(common.HexToAddress(ctx.Erc20addr), ctx.EthClient)
 
@@ -597,7 +617,7 @@ func testBSCToEthereumTransfer(ctx *Context) {
 		expectedValue = expectedValue.SubRaw(100 * 1e12)
 
 		startTime := time.Now()
-		timeout := time.Minute * 3
+		timeout := time.Minute * 5
 
 		hubContract, _ := erc20.NewErc20(common.HexToAddress(ctx.Erc20addr), ctx.EthClient)
 
@@ -681,7 +701,7 @@ func testEthereumToBscTransfer(ctx *Context) {
 		expectedValue = expectedValue.SubRaw(100)
 
 		startTime := time.Now()
-		timeout := time.Minute * 3
+		timeout := time.Minute * 5
 
 		hubContract, _ := erc20.NewErc20(common.HexToAddress(ctx.Bep20addr), ctx.BscClient)
 

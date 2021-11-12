@@ -21,6 +21,7 @@ import (
 	"google.golang.org/grpc/backoff"
 	"math"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -102,6 +103,8 @@ func relayBatches(ctx context.Context) {
 			return
 		}
 
+		println("to sign", len(response.GetBatches()))
+
 		var confirms []sdk.Msg
 		for _, batch := range response.GetBatches() {
 			txData := transaction.NewMultisendData()
@@ -144,13 +147,16 @@ func relayBatches(ctx context.Context) {
 	}
 
 	latestBatches, err := cosmosClient.BatchTxs(c.Background(), &types.BatchTxsRequest{
-		Pagination: nil,
-		ChainId:    "minter",
+		ChainId: "minter",
 	})
 	if err != nil {
 		ctx.Logger.Error("Error getting last batches", "err", err.Error())
 		return
 	}
+
+	sort.Slice(latestBatches.Batches, func(i, j int) bool {
+		return latestBatches.Batches[i].Sequence < latestBatches.Batches[j].Sequence
+	})
 
 	var oldestSignedBatch *types.BatchTx
 	var oldestSignatures []*types.BatchTxConfirmation
