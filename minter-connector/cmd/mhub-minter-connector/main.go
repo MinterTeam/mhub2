@@ -103,8 +103,6 @@ func relayBatches(ctx context.Context) {
 			return
 		}
 
-		println("to sign", len(response.GetBatches()))
-
 		var confirms []sdk.Msg
 		for _, batch := range response.GetBatches() {
 			txData := transaction.NewMultisendData()
