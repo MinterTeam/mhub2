@@ -69,7 +69,7 @@ func sendMinterCoinToHub(privateKeyString string, sender common.Address, multisi
 	}
 }
 
-func sendMinterCoinToEthereum(privateKeyString string, sender common.Address, multisig string, client *http_client.Client, to string) {
+func sendMinterCoinToEthereum(privateKeyString string, sender common.Address, multisig string, client *http_client.Client, to string, fee sdk.Int) {
 	addr := "Mx" + sender.Hex()[2:]
 	tx, _ := transaction.NewBuilder(transaction.TestNetChainID).NewTransaction(
 		transaction.NewSendData().MustSetTo(multisig).SetCoin(1).SetValue(transaction.BipToPip(big.NewInt(1))),
@@ -79,7 +79,7 @@ func sendMinterCoinToEthereum(privateKeyString string, sender common.Address, mu
 	if err != nil {
 		panic(err)
 	}
-	signedTransaction, _ := tx.SetNonce(nonce).SetPayload([]byte("{\"recipient\":\"" + to + "\",\"type\":\"send_to_eth\",\"fee\":\"100\"}")).Sign(privateKeyString)
+	signedTransaction, _ := tx.SetNonce(nonce).SetPayload([]byte("{\"recipient\":\"" + to + "\",\"type\":\"send_to_eth\",\"fee\":\"" + fee.String() + "\"}")).Sign(privateKeyString)
 
 	encode, _ := signedTransaction.Encode()
 

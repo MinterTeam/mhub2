@@ -11,6 +11,7 @@ import (
 	oracletypes "github.com/MinterTeam/mhub2/module/x/oracle/types"
 	minterTypes "github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-sdk/v2/api/http_client"
+	"github.com/MinterTeam/minter-go-sdk/v2/api/http_client/models"
 	"github.com/MinterTeam/minter-go-sdk/v2/transaction"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -188,6 +189,7 @@ func main() {
 	testHubToEthereumTransfer(ctx)
 	testHubToBSCTransfer(ctx)
 	testMinterToEthereumTransfer(ctx)
+	testFeeForTransactionRelayer(ctx)
 
 	// tests associated with holders
 	ctx.TestsWg.Add(2)
@@ -203,8 +205,61 @@ func main() {
 	println("All tests are done")
 }
 
+func testFeeForTransactionRelayer(ctx *Context) {
+	ctx.TestsWg.Add(1)
+	randomPk, _ := crypto.GenerateKey()
+	recipient := crypto.PubkeyToAddress(randomPk.PublicKey).Hex()
+	fee := sdk.NewInt(123)
+	sendMinterCoinToEthereum(ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterMultisig, ctx.MinterClient, recipient, fee)
+	minterStatus, err := ctx.MinterClient.Status()
+	if err != nil {
+		panic(err)
+	}
+
+	minterHeight := minterStatus.LatestBlockHeight
+
+	go func() {
+		startTime := time.Now()
+
+		for {
+			if time.Now().Sub(startTime).Seconds() > 180 {
+				panic("Timeout waiting for the fee to arrive to relayer")
+			}
+
+			response, err := ctx.MinterClient.Block(minterHeight)
+			if err != nil {
+				time.Sleep(time.Millisecond * 200)
+				continue
+			}
+
+			for _, transactionResponse := range response.Transactions {
+				if transactionResponse.From != ctx.MinterMultisig {
+					continue
+				}
+
+				if transaction.Type(transactionResponse.Type) == transaction.TypeMultisend {
+					var data models.MultiSendData
+					if err := transactionResponse.Data.UnmarshalTo(&data); err != nil {
+						panic(err)
+					}
+
+					for _, item := range data.List {
+						if item.Coin.ID == 1 && strings.ToLower(ctx.EthAddress.String())[2:] == item.To[2:] && item.Value == fee.String() {
+							println("SUCCESS: test fee for transaction relayer")
+							ctx.TestsWg.Done()
+							return
+						}
+					}
+				}
+			}
+
+			minterHeight++
+		}
+	}()
+}
+
 func testDiscountForHolder(ctx *Context, recipient string) {
-	sendMinterCoinToEthereum(ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterMultisig, ctx.MinterClient, recipient)
+	sendMinterCoinToEthereum(ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterMultisig, ctx.MinterClient, recipient, sdk.NewInt(100))
 
 	fee := int64(100)
 	expectedValue := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(1)))
@@ -286,7 +341,7 @@ func testMinterToEthereumTransfer(ctx *Context) {
 	ctx.TestsWg.Add(1)
 	randomPk, _ := crypto.GenerateKey()
 	recipient := crypto.PubkeyToAddress(randomPk.PublicKey).Hex()
-	sendMinterCoinToEthereum(ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterMultisig, ctx.MinterClient, recipient)
+	sendMinterCoinToEthereum(ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterMultisig, ctx.MinterClient, recipient, sdk.NewInt(100))
 
 	go func() {
 		fee := int64(100)
