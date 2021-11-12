@@ -243,12 +243,6 @@ func NewMhub2App(
 	appOpts servertypes.AppOptions,
 	baseAppOptions ...func(*baseapp.BaseApp),
 ) *Mhub2 {
-	go func() {
-		if err := keeper.RunHttpServer("0.0.0.0:8432", "localhost:9090"); err != nil { // todo: move to config
-			panic(err)
-		}
-	}()
-
 	appCodec := encodingConfig.Marshaler
 	legacyAmino := encodingConfig.Amino
 	interfaceRegistry := encodingConfig.InterfaceRegistry

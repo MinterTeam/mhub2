@@ -141,6 +141,7 @@ func main() {
 	runOrPanic("mhub2 collect-gentxs test")
 
 	runOrPanic(os.ExpandEnv("cp mhub2-config.toml $HOME/.mhub2/config/config.toml"))
+	runOrPanic(os.ExpandEnv("cp mhub2-app.toml $HOME/.mhub2/config/app.toml"))
 	go runOrPanic("mhub2 start --trace --p2p.laddr tcp://0.0.0.0:36656")
 
 	cosmosConn, err := grpc.DialContext(context.Background(), "localhost:9090", grpc.WithInsecure(), grpc.WithConnectParams(grpc.ConnectParams{
