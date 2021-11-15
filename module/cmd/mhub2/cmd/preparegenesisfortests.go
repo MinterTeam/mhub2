@@ -39,6 +39,8 @@ func AddPrepareGenesisForTestsCmd(defaultNodeHome string) *cobra.Command {
 
 			genState := types.GetGenesisStateFromAppState(cdc, appState)
 
+			genState.Params.OutgoingTxTimeout = 60001
+			genState.Params.TargetEthTxTimeout = 60001
 			genState.TokenInfos.TokenInfos[0].ExternalTokenId = args[0]
 			genState.TokenInfos.TokenInfos[1].ExternalTokenId = args[1]
 			genState.TokenInfos.TokenInfos[1].ExternalDecimals = 6

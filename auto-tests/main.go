@@ -8,6 +8,7 @@ import (
 	"github.com/MinterTeam/mhub2/auto-tests/erc20"
 	"github.com/MinterTeam/mhub2/module/app"
 	"github.com/MinterTeam/mhub2/module/x/mhub2/types"
+	mhubtypes "github.com/MinterTeam/mhub2/module/x/mhub2/types"
 	oracletypes "github.com/MinterTeam/mhub2/module/x/oracle/types"
 	minterTypes "github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-sdk/v2/api/http_client"
@@ -22,6 +23,7 @@ import (
 	"github.com/tendermint/tendermint/libs/log"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/backoff"
+	"math"
 	"math/big"
 	"os"
 	"strings"
@@ -179,27 +181,31 @@ func main() {
 	}
 
 	println("Start running tests")
-	testEthereumToMinterTransfer(ctx)
-	testEthereumToBscTransfer(ctx)
-	testBSCToEthereumTransfer(ctx)
-	testEthereumToHubTransfer(ctx)
-	testBSCToHubTransfer(ctx)
-	testMinterToHubTransfer(ctx)
-	testHubToMinterTransfer(ctx)
-	testHubToEthereumTransfer(ctx)
-	testHubToBSCTransfer(ctx)
-	testMinterToEthereumTransfer(ctx)
-	testFeeForTransactionRelayer(ctx)
+	//testEthereumToMinterTransfer(ctx)
+	//testEthereumToBscTransfer(ctx)
+	//testBSCToEthereumTransfer(ctx)
+	//testEthereumToHubTransfer(ctx)
+	//testBSCToHubTransfer(ctx)
+	//testMinterToHubTransfer(ctx)
+	//testHubToMinterTransfer(ctx)
+	//testHubToEthereumTransfer(ctx)
+	//testHubToBSCTransfer(ctx)
+	//testMinterToEthereumTransfer(ctx)
+	//testFeeForTransactionRelayer(ctx)
+	//
+	//// tests associated with holders
+	//ctx.TestsWg.Add(2)
+	//go func() {
+	//	randomPk, _ := crypto.GenerateKey()
+	//	recipient := crypto.PubkeyToAddress(randomPk.PublicKey).Hex()
+	//
+	//	testUpdateHolders(ctx, recipient)
+	//	testDiscountForHolder(ctx, recipient)
+	//}()
+	//ctx.TestsWg.Wait()
 
-	// tests associated with holders
-	ctx.TestsWg.Add(2)
-	go func() {
-		randomPk, _ := crypto.GenerateKey()
-		recipient := crypto.PubkeyToAddress(randomPk.PublicKey).Hex()
-
-		testUpdateHolders(ctx, recipient)
-		testDiscountForHolder(ctx, recipient)
-	}()
+	stopProcess("orchestrator")
+	testTxTimeout(ctx)
 
 	ctx.TestsWg.Wait()
 	println("All tests are done")
@@ -301,8 +307,16 @@ func testDiscountForHolder(ctx *Context, recipient string) {
 
 func testUpdateHolders(ctx *Context, recipient string) {
 	balance := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(100)))
-	HoldersList = map[string]string{
-		recipient: balance.String(),
+	HoldersList = HoldersResult{
+		Data: []struct {
+			Address string `json:"address"`
+			Balance string `json:"balance"`
+		}{
+			{
+				Address: recipient[2:],
+				Balance: balance.String(),
+			},
+		},
 	}
 
 	client := oracletypes.NewQueryClient(ctx.CosmosConn)
@@ -323,7 +337,7 @@ func testUpdateHolders(ctx *Context, recipient string) {
 			continue
 		}
 
-		if response.Holders.List[0].Address != recipient {
+		if response.Holders.List[0].Address != strings.ToLower(recipient[2:]) {
 			continue
 		}
 
@@ -379,6 +393,90 @@ func testMinterToEthereumTransfer(ctx *Context) {
 			println("SUCCESS: test Minter -> Ethereum transfer")
 			ctx.TestsWg.Done()
 			break
+		}
+	}()
+}
+
+func testTxTimeout(ctx *Context) {
+	ctx.TestsWg.Add(1)
+	randomPk, _ := crypto.GenerateKey()
+	recipient := crypto.PubkeyToAddress(randomPk.PublicKey).Hex()
+	value := big.NewInt(1e18)
+	sendMinterCoinToEthereum(ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterMultisig, ctx.MinterClient, recipient, sdk.NewInt(100))
+
+	minterStatus, err := ctx.MinterClient.Status()
+	if err != nil {
+		panic(err)
+	}
+
+	minterHeight := minterStatus.LatestBlockHeight
+
+	addr, priv := cosmos.GetAccount(ctx.CosmosMnemonic)
+
+	mhubServer := mhubtypes.NewQueryClient(ctx.CosmosConn)
+	response, err := mhubServer.LastSubmittedExternalEvent(context.TODO(), &mhubtypes.LastSubmittedExternalEventRequest{
+		Address: addr.String(),
+		ChainId: "ethereum",
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	event, err := mhubtypes.PackEvent(&mhubtypes.SendToHubEvent{
+		EventNonce:     response.EventNonce + 1,
+		ExternalCoinId: ctx.Erc20addr,
+		Amount:         sdk.NewInt(1),
+		Sender:         recipient,
+		CosmosReceiver: addr.String(),
+		ExternalHeight: math.MaxUint64,
+		TxHash:         "Mt...",
+	})
+	if err != nil {
+		panic(err)
+	}
+	cosmos.SendCosmosTx([]sdk.Msg{&mhubtypes.MsgSubmitExternalEvent{
+		Event:   event,
+		Signer:  addr.String(),
+		ChainId: "ethereum",
+	}}, addr, priv, ctx.CosmosConn, log.NewTMLogger(os.Stdout), true)
+
+	go func() {
+		startTime := time.Now()
+		timeout := time.Minute * 5
+
+		for {
+			if time.Now().Sub(startTime).Seconds() > timeout.Seconds() {
+				panic("Timeout waiting for the refund")
+			}
+
+			response, err := ctx.MinterClient.Block(minterHeight)
+			if err != nil {
+				time.Sleep(time.Millisecond * 200)
+				continue
+			}
+
+			for _, transactionResponse := range response.Transactions {
+				if transactionResponse.From != ctx.MinterMultisig {
+					continue
+				}
+
+				if transaction.Type(transactionResponse.Type) == transaction.TypeMultisend {
+					var data models.MultiSendData
+					if err := transactionResponse.Data.UnmarshalTo(&data); err != nil {
+						panic(err)
+					}
+
+					for _, item := range data.List {
+						if item.Coin.ID == 1 && strings.ToLower(ctx.EthAddress.String())[2:] == item.To[2:] && item.Value == value.String() { // todo???
+							println("SUCCESS: test refunds")
+							ctx.TestsWg.Done()
+							return
+						}
+					}
+				}
+			}
+
+			minterHeight++
 		}
 	}()
 }

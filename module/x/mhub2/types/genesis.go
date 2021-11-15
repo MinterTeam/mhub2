@@ -68,7 +68,8 @@ var (
 	//  ParamStoreUnbondSlashingSignerSetTxsWindow stores unbond slashing valset window
 	ParamStoreUnbondSlashingSignerSetTxsWindow = []byte("UnbondSlashingSignerSetTxsWindow")
 
-	ParamChains = []byte("Chains")
+	ParamChains            = []byte("Chains")
+	ParamOutgoingTxTimeout = []byte("OutgoingTxTimeout")
 
 	// Ensure that params implements the proper interface
 	_ paramtypes.ParamSet = &Params{}
@@ -176,6 +177,7 @@ func DefaultParams() *Params {
 		SlashFractionConflictingEthereumSignature: sdk.NewDec(1).Quo(sdk.NewDec(1000)),
 		UnbondSlashingSignerSetTxsWindow:          10000,
 		Chains:                                    []string{"ethereum", "minter", "bsc", "hub"},
+		OutgoingTxTimeout:                         43200000 - 1,
 	}
 }
 
@@ -257,6 +259,7 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(ParamsStoreSlashFractionEthereumSignature, &p.SlashFractionEthereumSignature, validateSlashFractionEthereumSignature),
 		paramtypes.NewParamSetPair(ParamsStoreSlashFractionConflictingEthereumSignature, &p.SlashFractionConflictingEthereumSignature, validateSlashFractionConflictingEthereumSignature),
 		paramtypes.NewParamSetPair(ParamStoreUnbondSlashingSignerSetTxsWindow, &p.UnbondSlashingSignerSetTxsWindow, validateUnbondSlashingSignerSetTxsWindow),
+		paramtypes.NewParamSetPair(ParamOutgoingTxTimeout, &p.OutgoingTxTimeout, validateOutgoingTxTimeout),
 		paramtypes.NewParamSetPair(ParamChains, &p.Chains, validateChains),
 	}
 }
@@ -359,6 +362,14 @@ func validateChains(i interface{}) error {
 }
 
 func validateUnbondSlashingSignerSetTxsWindow(i interface{}) error {
+	// TODO: do we want to set some bounds on this value?
+	if _, ok := i.(uint64); !ok {
+		return fmt.Errorf("invalid parameter type: %T", i)
+	}
+	return nil
+}
+
+func validateOutgoingTxTimeout(i interface{}) error {
 	// TODO: do we want to set some bounds on this value?
 	if _, ok := i.(uint64); !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)

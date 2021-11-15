@@ -470,6 +470,17 @@ func runOrPanic(cmdString string, args ...interface{}) string {
 	return out
 }
 
+var processes = make(map[string][]*os.Process)
+var processLock = sync.Mutex{}
+
+func stopProcess(cmd string) {
+	processLock.Lock()
+	defer processLock.Unlock()
+	for _, p := range processes[cmd] {
+		p.Kill()
+	}
+}
+
 func run(cmdString string, args ...interface{}) (string, error) {
 	cmdArgs := strings.Split(cmdString, " ")
 	for i, arg := range cmdArgs {
@@ -489,8 +500,16 @@ func run(cmdString string, args ...interface{}) (string, error) {
 	cmd.Stderr = buffer
 	//cmd.Env = append(os.Environ(), "RUST_LOG=debug")
 
-	if err := cmd.Run(); err != nil {
+	if err := cmd.Start(); err != nil {
 		return "", err
+	}
+	processLock.Lock()
+	processes[cmdArgs[0]] = append(processes[cmdString], cmd.Process)
+	processLock.Unlock()
+	if err := cmd.Wait(); err != nil {
+		if err.Error() != "signal: killed" {
+			panic(err)
+		}
 	}
 
 	return buffer.String(), nil

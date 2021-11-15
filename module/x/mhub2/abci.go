@@ -44,7 +44,7 @@ func EndBlocker(ctx sdk.Context, k keeper.Keeper) {
 func refundExpiredTxs(ctx sdk.Context, chainId types.ChainID, k keeper.Keeper) {
 	if ctx.BlockHeight()%3 == 0 { // todo: make the period configurable ?
 		k.IterateUnbatchedSendToExternals(ctx, chainId, func(ste *types.SendToExternal) bool {
-			if time.Unix(int64(ste.CreatedAt), 0).Add(time.Hour).Before(ctx.BlockTime()) { // todo: make timeout configurable
+			if time.Unix(int64(ste.CreatedAt), 0).Add(k.GetOutgoingTxTimeout(ctx)).Before(ctx.BlockTime()) {
 				k.OnOutgoingTransactionTimeouts(ctx, chainId, ste.Id, ste.Sender)
 			}
 			return false

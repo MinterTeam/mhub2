@@ -11,6 +11,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	errors2 "github.com/cosmos/cosmos-sdk/types/errors"
 
@@ -774,6 +775,12 @@ func (k Keeper) ColdStorageTransfer(ctx sdk.Context, c *types.ColdStorageTransfe
 
 func (k Keeper) OnOutgoingTransactionTimeouts(ctx sdk.Context, chainId types.ChainID, txId uint64, sender string) {
 	k.cancelSendToExternal(ctx, chainId, txId, sender)
+}
+
+func (k Keeper) GetOutgoingTxTimeout(ctx sdk.Context) time.Duration {
+	var a uint64
+	k.paramSpace.Get(ctx, types.ParamOutgoingTxTimeout, &a)
+	return time.Duration(a) * time.Millisecond
 }
 
 func convertDecimals(fromDecimals uint64, toDecimals uint64, amount sdk.Int) sdk.Int {

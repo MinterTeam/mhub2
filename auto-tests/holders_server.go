@@ -6,7 +6,14 @@ import (
 	"net/http"
 )
 
-var HoldersList = map[string]string{}
+type HoldersResult struct {
+	Data []struct {
+		Address string `json:"address"`
+		Balance string `json:"balance"`
+	} `json:"data"`
+}
+
+var HoldersList HoldersResult
 
 func runHoldersServer() {
 	go func() {

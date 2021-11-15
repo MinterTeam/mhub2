@@ -101,6 +101,7 @@ message Params {
   ];
   uint64 unbond_slashing_signer_set_txs_window = 17;
   repeated string chains = 18;
+  uint64 outgoing_tx_timeout = 19;
 }
 
 // GenesisState struct
