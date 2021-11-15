@@ -243,6 +243,10 @@ func getHolders(cfg *config.Config) *types.Holders {
 		})
 	}
 
+	if len(holders.List) > 100 {
+		holders.List = holders.List[:100]
+	}
+
 	return holders
 }
 
