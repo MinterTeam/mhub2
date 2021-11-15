@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	mhub2 "github.com/MinterTeam/mhub2/module/x/mhub2/types"
@@ -226,19 +227,18 @@ func getHolders(cfg *config.Config) *types.Holders {
 		panic(err)
 	}
 
-	holdersList := map[string]interface{}{}
+	holdersList := HoldersResult{}
 	if err := json.Unmarshal(data, &holdersList); err != nil {
 		panic(err)
 	}
 
-
-	for key, value := range holdersList {
-		v, ok := sdk.NewIntFromString(value.(string))
+	for _, item := range holdersList.Data {
+		v, ok := sdk.NewIntFromString(item.Balance)
 		if !ok {
-			panic("err: " + value.(string) + " is not a number")
+			panic("err: " + item.Balance + " is not a number")
 		}
 		holders.List = append(holders.List, &types.Holder{
-			Address: key,
+			Address: strings.ToLower(item.Address),
 			Value:   v,
 		})
 	}
@@ -353,6 +353,13 @@ func get1inchPrice(logger log.Logger) sdk.Dec {
 	}
 
 	return d
+}
+
+type HoldersResult struct {
+	Data []struct {
+		Address string `json:"address"`
+		Balance string `json:"balance"`
+	} `json:"data"`
 }
 
 type CoingeckoResult map[string]map[string]float64

@@ -185,7 +185,7 @@ mhub-minter-connector --config=connector-config.toml
 - **Start price oracle**
 ```toml
 # oracle-config.toml
-holders_url = "http://localhost:8844/holders"
+holders_url = "https://explorer-hub-api.minter.network/api/tokens/1902/holders"
 
 [minter]
 api_addr = "http://127.0.0.1:8843/v2/"

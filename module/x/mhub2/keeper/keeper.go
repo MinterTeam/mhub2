@@ -677,6 +677,9 @@ func (k Keeper) ConvertToExternalValue(ctx sdk.Context, chainId types.ChainID, e
 func (k Keeper) GetCommissionForHolder(ctx sdk.Context, addresses []string, commission sdk.Dec) sdk.Dec {
 	maxValue := sdk.NewInt(0)
 	for _, address := range addresses {
+		if len(address) > 2 && address[:2] == "0x" {
+			address = address[2:]
+		}
 		maxValue = sdk.MaxInt(k.oracleKeeper.GetHolderValue(ctx, address), maxValue)
 	}
 
