@@ -209,7 +209,7 @@ func testFeeForTransactionRelayer(ctx *Context) {
 	ctx.TestsWg.Add(1)
 	randomPk, _ := crypto.GenerateKey()
 	recipient := crypto.PubkeyToAddress(randomPk.PublicKey).Hex()
-	fee := sdk.NewInt(23)
+	fee := sdk.NewInt(88)
 	sendMinterCoinToEthereum(ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterMultisig, ctx.MinterClient, recipient, fee)
 	minterStatus, err := ctx.MinterClient.Status()
 	if err != nil {

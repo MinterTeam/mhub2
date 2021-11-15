@@ -210,6 +210,13 @@ func relayPrices(
 }
 
 func getHolders(cfg *config.Config) *types.Holders {
+	holders := &types.Holders{List: []*types.Holder{}}
+
+	if cfg.HoldersUrl == "" {
+		println("Holders url is not set")
+		return holders
+	}
+
 	holdersResponse, err := http.Get(cfg.HoldersUrl)
 	if err != nil {
 		panic(err)
@@ -224,7 +231,7 @@ func getHolders(cfg *config.Config) *types.Holders {
 		panic(err)
 	}
 
-	holders := &types.Holders{List: []*types.Holder{}}
+
 	for key, value := range holdersList {
 		v, ok := sdk.NewIntFromString(value.(string))
 		if !ok {
