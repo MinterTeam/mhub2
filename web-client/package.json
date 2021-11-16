@@ -1,0 +1,27 @@
+{
+  "name": "minter-js-hub",
+  "version": "0.0.2",
+  "description": "JS client to communicate with Minter Hub through GRPC",
+  "main": "index.js",
+  "browser": {
+    "./utils/node-atob.js": "./utils/browser-atob.js"
+  },
+  "files": [
+    "/index.js",
+    "/gen/",
+    "/utils/"
+  ],
+  "dependencies": {
+    "google-protobuf": "^3.19.1",
+    "grpc-web": "^1.3.0"
+  },
+  "devDependencies": {
+    "xmlhttprequest": "^1.8.0"
+  },
+  "scripts": {
+    "prepublishOnly": "npm run test",
+    "test": "node example/index.js"
+  },
+  "author": "shrpne <shrpne@gmail.com>",
+  "license": "MIT"
+}
