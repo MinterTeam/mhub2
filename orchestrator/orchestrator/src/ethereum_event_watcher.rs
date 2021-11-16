@@ -113,8 +113,8 @@ pub async fn check_for_events(
 
         for deposit in deposits.iter() {
             info!(
-                    "Oracle observed deposit with ethereum sender {}, receiver {}, amount {}, and event nonce {}",
-                    deposit.sender, deposit.destination, deposit.amount, deposit.event_nonce
+                "Oracle observed deposit with ethereum sender {}, receiver {}, amount {}, fee {}, and event nonce {}",
+                deposit.sender, deposit.destination, deposit.amount, deposit.fee, deposit.event_nonce
             );
         }
 

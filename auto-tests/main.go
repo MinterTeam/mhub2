@@ -198,6 +198,7 @@ func main() {
 	testHubToBSCTransfer(ctx)
 	testMinterToEthereumTransfer(ctx)
 	testFeeForTransactionRelayer(ctx)
+	testValidatorsCommissions(ctx)
 
 	// tests associated with holders
 	ctx.TestsWg.Add(2)
@@ -311,7 +312,6 @@ func testBSCMultisigChanges(ctx *Context) {
 			}
 
 			checkpointStr := fmt.Sprintf("%x", checkpoint)
-
 			if checkpointStr == targetCheckpointStr {
 				println("SUCCESS: test bsc multisig changes")
 				ctx.TestsWg.Done()
@@ -518,8 +518,6 @@ func testTxTimeout(ctx *Context) {
 	if err != nil {
 		panic(err)
 	}
-
-	// todo: wait for unbatched
 
 	mhubClient := mhubtypes.NewQueryClient(ctx.CosmosConn)
 	for {
@@ -965,6 +963,63 @@ func testEthereumToMinterTransfer(ctx *Context) {
 			println("SUCCESS: test Eth -> Minter transfer")
 			ctx.TestsWg.Done()
 			break
+		}
+	}()
+}
+
+func testValidatorsCommissions(ctx *Context) {
+	ctx.TestsWg.Add(1)
+	randomPk, _ := crypto.GenerateKey()
+	recipient := crypto.PubkeyToAddress(randomPk.PublicKey).Hex()
+	toSend := transaction.BipToPip(big.NewInt(999))
+	sendERC20ToAnotherChain(ctx.EthPrivateKey, ctx.EthClient, ctx.EthContract, ctx.Erc20addr, recipient, ethChainId, "minter", toSend)
+
+	go func() {
+		expectedValue := sdk.NewIntFromBigInt(toSend)
+		expectedValue = expectedValue.ToDec().Mul(bridgeCommission).TruncateInt()
+		startTime := time.Now()
+
+		minterStatus, err := ctx.MinterClient.Status()
+		if err != nil {
+			panic(err)
+		}
+
+		minterHeight := minterStatus.LatestBlockHeight
+		timeout := time.Minute * 5
+
+		for {
+			if time.Now().Sub(startTime).Seconds() > timeout.Seconds() {
+				panic("Timeout waiting for the commission to arrive to validator")
+			}
+
+			response, err := ctx.MinterClient.Block(minterHeight)
+			if err != nil {
+				time.Sleep(time.Millisecond * 200)
+				continue
+			}
+
+			for _, transactionResponse := range response.Transactions {
+				if transactionResponse.From != ctx.MinterMultisig {
+					continue
+				}
+
+				if transaction.Type(transactionResponse.Type) == transaction.TypeMultisend {
+					var data api_pb.MultiSendData
+					if err := transactionResponse.Data.UnmarshalTo(&data); err != nil {
+						panic(err)
+					}
+
+					for _, item := range data.List {
+						if item.Coin.Id == 1 && strings.ToLower(ctx.EthAddress.String())[2:] == item.To[2:] && item.Value == expectedValue.String() {
+							println("SUCCESS: test commission for validator")
+							ctx.TestsWg.Done()
+							return
+						}
+					}
+				}
+			}
+
+			minterHeight++
 		}
 	}()
 }
