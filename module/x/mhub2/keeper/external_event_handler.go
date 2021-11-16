@@ -79,7 +79,7 @@ func (a ExternalEventProcessor) Handle(ctx sdk.Context, chainId types.ChainID, e
 		commissionValue := a.keeper.GetCommissionForHolder(ctx, []string{event.Sender, event.ExternalReceiver}, receiverChainTokenInfo.Commission).Mul(totalAmount.ToDec()).TruncateInt()
 		fee := sdk.NewCoin(receiverChainTokenInfo.Denom, convertedFee)
 		commission := sdk.NewCoin(receiverChainTokenInfo.Denom, commissionValue)
-		amount := sdk.NewCoin(receiverChainTokenInfo.Denom, convertedAmount).Sub(commission)
+		amount := sdk.NewCoin(receiverChainTokenInfo.Denom, convertedAmount).Sub(commission).Sub(fee)
 
 		txID, err := a.keeper.createSendToExternal(ctx, types.ChainID(event.ReceiverChainId), tempReceiver, event.ExternalReceiver, amount, fee, commission, event.TxHash, chainId, event.Sender)
 		if err != nil {
