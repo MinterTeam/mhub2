@@ -59,6 +59,8 @@ type Context struct {
 	CosmosMnemonic      string
 }
 
+var bridgeCommission, _ = sdk.NewDecFromStr("0.01")
+
 func main() {
 	wd := getWd()
 
@@ -181,28 +183,28 @@ func main() {
 	}
 
 	println("Start running tests")
-	//testEthereumToMinterTransfer(ctx)
-	//testEthereumToBscTransfer(ctx)
-	//testBSCToEthereumTransfer(ctx)
-	//testEthereumToHubTransfer(ctx)
-	//testBSCToHubTransfer(ctx)
-	//testMinterToHubTransfer(ctx)
-	//testHubToMinterTransfer(ctx)
-	//testHubToEthereumTransfer(ctx)
-	//testHubToBSCTransfer(ctx)
-	//testMinterToEthereumTransfer(ctx)
-	//testFeeForTransactionRelayer(ctx)
-	//
-	//// tests associated with holders
-	//ctx.TestsWg.Add(2)
-	//go func() {
-	//	randomPk, _ := crypto.GenerateKey()
-	//	recipient := crypto.PubkeyToAddress(randomPk.PublicKey).Hex()
-	//
-	//	testUpdateHolders(ctx, recipient)
-	//	testDiscountForHolder(ctx, recipient)
-	//}()
-	//ctx.TestsWg.Wait()
+	testEthereumToMinterTransfer(ctx)
+	testEthereumToBscTransfer(ctx)
+	testBSCToEthereumTransfer(ctx)
+	testEthereumToHubTransfer(ctx)
+	testBSCToHubTransfer(ctx)
+	testMinterToHubTransfer(ctx)
+	testHubToMinterTransfer(ctx)
+	testHubToEthereumTransfer(ctx)
+	testHubToBSCTransfer(ctx)
+	testMinterToEthereumTransfer(ctx)
+	testFeeForTransactionRelayer(ctx)
+
+	//tests associated with holders
+	ctx.TestsWg.Add(2)
+	go func() {
+		randomPk, _ := crypto.GenerateKey()
+		recipient := crypto.PubkeyToAddress(randomPk.PublicKey).Hex()
+
+		testUpdateHolders(ctx, recipient)
+		testDiscountForHolder(ctx, recipient)
+	}()
+	ctx.TestsWg.Wait()
 
 	stopProcess("orchestrator")
 	testTxTimeout(ctx)
@@ -270,7 +272,6 @@ func testDiscountForHolder(ctx *Context, recipient string) {
 
 	fee := int64(100)
 	expectedValue := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(1)))
-	expectedValue = expectedValue.AddRaw(fee)
 	expectedValue = expectedValue.Sub(expectedValue.MulRaw(4).QuoRaw(1000))
 	expectedValue = expectedValue.SubRaw(fee)
 
@@ -361,8 +362,7 @@ func testMinterToEthereumTransfer(ctx *Context) {
 	go func() {
 		fee := int64(100)
 		expectedValue := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(1)))
-		expectedValue = expectedValue.AddRaw(fee)
-		expectedValue = expectedValue.Sub(expectedValue.QuoRaw(100))
+		expectedValue = expectedValue.Sub(expectedValue.ToDec().Mul(bridgeCommission).TruncateInt())
 		expectedValue = expectedValue.SubRaw(fee)
 
 		startTime := time.Now()
@@ -409,12 +409,28 @@ func testTxTimeout(ctx *Context) {
 		panic(err)
 	}
 
-	minterHeight := minterStatus.LatestBlockHeight
+	// todo: wait for unbatched
+
+	mhubClient := mhubtypes.NewQueryClient(ctx.CosmosConn)
+	for {
+		response, err := mhubClient.UnbatchedSendToExternals(context.TODO(), &mhubtypes.UnbatchedSendToExternalsRequest{
+			ChainId: "ethereum",
+		})
+		if err != nil {
+			panic(err)
+		}
+
+		if len(response.SendToExternals) > 0 {
+			println("waiting for batch to be created")
+			time.Sleep(time.Second)
+			continue
+		}
+
+		break
+	}
 
 	addr, priv := cosmos.GetAccount(ctx.CosmosMnemonic)
-
-	mhubServer := mhubtypes.NewQueryClient(ctx.CosmosConn)
-	response, err := mhubServer.LastSubmittedExternalEvent(context.TODO(), &mhubtypes.LastSubmittedExternalEventRequest{
+	response, err := mhubClient.LastSubmittedExternalEvent(context.TODO(), &mhubtypes.LastSubmittedExternalEventRequest{
 		Address: addr.String(),
 		ChainId: "ethereum",
 	})
@@ -439,6 +455,8 @@ func testTxTimeout(ctx *Context) {
 		Signer:  addr.String(),
 		ChainId: "ethereum",
 	}}, addr, priv, ctx.CosmosConn, log.NewTMLogger(os.Stdout), true)
+
+	minterHeight := minterStatus.LatestBlockHeight
 
 	go func() {
 		startTime := time.Now()
@@ -501,8 +519,7 @@ func testHubToBSCTransfer(ctx *Context) {
 
 	go func() {
 		expectedValue := sdk.NewInt(1e6)
-		expectedValue = expectedValue.AddRaw(fee)
-		expectedValue = expectedValue.Sub(expectedValue.QuoRaw(100))
+		expectedValue = expectedValue.Sub(expectedValue.ToDec().Mul(bridgeCommission).TruncateInt())
 		expectedValue = expectedValue.SubRaw(fee)
 
 		startTime := time.Now()
@@ -557,8 +574,7 @@ func testHubToEthereumTransfer(ctx *Context) {
 
 	go func() {
 		expectedValue := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(1)))
-		expectedValue = expectedValue.AddRaw(fee)
-		expectedValue = expectedValue.Sub(expectedValue.QuoRaw(100))
+		expectedValue = expectedValue.Sub(expectedValue.ToDec().Mul(bridgeCommission).TruncateInt())
 		expectedValue = expectedValue.SubRaw(fee)
 
 		startTime := time.Now()
@@ -611,7 +627,7 @@ func testHubToMinterTransfer(ctx *Context) {
 
 	go func() {
 		expectedValue := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(1)))
-		expectedValue = expectedValue.Sub(expectedValue.QuoRaw(100))
+		expectedValue = expectedValue.Sub(expectedValue.ToDec().Mul(bridgeCommission).TruncateInt())
 		startTime := time.Now()
 
 		for {
@@ -767,8 +783,7 @@ func testBSCToEthereumTransfer(ctx *Context) {
 
 	go func() {
 		expectedValue := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(1)))
-		expectedValue = expectedValue.AddRaw(100 * 1e12)
-		expectedValue = expectedValue.Sub(expectedValue.QuoRaw(100))
+		expectedValue = expectedValue.Sub(expectedValue.ToDec().Mul(bridgeCommission).TruncateInt())
 		expectedValue = expectedValue.SubRaw(100 * 1e12)
 
 		startTime := time.Now()
@@ -811,8 +826,7 @@ func testEthereumToMinterTransfer(ctx *Context) {
 
 	go func() {
 		expectedValue := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(1)))
-		expectedValue = expectedValue.AddRaw(100)
-		expectedValue = expectedValue.Sub(expectedValue.QuoRaw(100))
+		expectedValue = expectedValue.Sub(expectedValue.ToDec().Mul(bridgeCommission).TruncateInt())
 		expectedValue = expectedValue.SubRaw(100)
 		startTime := time.Now()
 
@@ -851,8 +865,7 @@ func testEthereumToBscTransfer(ctx *Context) {
 
 	go func() {
 		expectedValue := sdk.NewInt(1e6)
-		expectedValue = expectedValue.AddRaw(100)
-		expectedValue = expectedValue.Sub(expectedValue.QuoRaw(100))
+		expectedValue = expectedValue.Sub(expectedValue.ToDec().Mul(bridgeCommission).TruncateInt())
 		expectedValue = expectedValue.SubRaw(100)
 
 		startTime := time.Now()

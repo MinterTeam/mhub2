@@ -69,7 +69,7 @@ func (k Keeper) UnbatchedSendToExternals(c context.Context, req *types.Unbatched
 	pageRes, err := query.FilteredPaginate(prefixStore, req.Pagination, func(key []byte, value []byte, accumulate bool) (bool, error) {
 		var ste types.SendToExternal
 		k.cdc.MustUnmarshal(value, &ste)
-		if ste.Sender == req.SenderAddress {
+		if req.SenderAddress == "" || ste.Sender == req.SenderAddress {
 			res.SendToExternals = append(res.SendToExternals, &ste)
 			return true, nil
 		}

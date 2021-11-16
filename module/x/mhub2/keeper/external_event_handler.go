@@ -75,8 +75,8 @@ func (a ExternalEventProcessor) Handle(ctx sdk.Context, chainId types.ChainID, e
 		convertedAmount := a.keeper.ConvertFromExternalValue(ctx, chainId, event.ExternalCoinId, event.Amount)
 		convertedFee := a.keeper.ConvertFromExternalValue(ctx, chainId, event.ExternalCoinId, event.Fee)
 
-		totalAmount := convertedAmount.Add(convertedFee)
-		commissionValue := a.keeper.GetCommissionForHolder(ctx, []string{event.Sender, event.ExternalReceiver}, receiverChainTokenInfo.Commission).Mul(totalAmount.ToDec()).TruncateInt()
+		commissionValue := a.keeper.GetCommissionForHolder(ctx, []string{event.Sender, event.ExternalReceiver}, receiverChainTokenInfo.Commission).
+			Mul(convertedAmount.ToDec()).TruncateInt()
 		fee := sdk.NewCoin(receiverChainTokenInfo.Denom, convertedFee)
 		commission := sdk.NewCoin(receiverChainTokenInfo.Denom, commissionValue)
 		amount := sdk.NewCoin(receiverChainTokenInfo.Denom, convertedAmount).Sub(commission).Sub(fee)
