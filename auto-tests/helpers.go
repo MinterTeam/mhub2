@@ -10,9 +10,9 @@ import (
 	"github.com/MinterTeam/mhub2/auto-tests/help"
 	"github.com/MinterTeam/mhub2/auto-tests/hub2"
 	minterTypes "github.com/MinterTeam/minter-go-node/coreV2/types"
-	"github.com/MinterTeam/minter-go-sdk/v2/api/http_client"
-	"github.com/MinterTeam/minter-go-sdk/v2/api/http_client/models"
+	"github.com/MinterTeam/minter-go-sdk/v2/api/grpc_client"
 	"github.com/MinterTeam/minter-go-sdk/v2/transaction"
+	"github.com/MinterTeam/node-grpc-gateway/api_pb"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -35,7 +35,7 @@ import (
 	"time"
 )
 
-func getMinterCoinBalance(balances []*models.AddressBalance, coin string) sdk.Int {
+func getMinterCoinBalance(balances []*api_pb.AddressBalance, coin string) sdk.Int {
 	for _, balance := range balances {
 		if balance.Coin.Symbol == coin {
 			b, _ := sdk.NewIntFromString(balance.Value)
@@ -46,7 +46,7 @@ func getMinterCoinBalance(balances []*models.AddressBalance, coin string) sdk.In
 	return sdk.NewInt(0)
 }
 
-func sendMinterCoinToHub(privateKeyString string, sender common.Address, multisig string, client *http_client.Client, to string) {
+func sendMinterCoinToHub(privateKeyString string, sender common.Address, multisig string, client *grpc_client.Client, to string) {
 	addr := "Mx" + sender.Hex()[2:]
 	tx, _ := transaction.NewBuilder(transaction.TestNetChainID).NewTransaction(
 		transaction.NewSendData().MustSetTo(multisig).SetCoin(1).SetValue(transaction.BipToPip(big.NewInt(1))),
@@ -72,7 +72,7 @@ func sendMinterCoinToHub(privateKeyString string, sender common.Address, multisi
 
 var minterSenderLock = sync.Mutex{}
 
-func sendMinterCoinToEthereum(privateKeyString string, sender common.Address, multisig string, client *http_client.Client, to string, fee sdk.Int) {
+func sendMinterCoinToEthereum(privateKeyString string, sender common.Address, multisig string, client *grpc_client.Client, to string, fee sdk.Int) {
 	minterSenderLock.Lock()
 	defer minterSenderLock.Unlock()
 
@@ -101,7 +101,7 @@ func sendMinterCoinToEthereum(privateKeyString string, sender common.Address, mu
 	waitMinterTx(client, response.Hash)
 }
 
-func waitMinterTx(client *http_client.Client, hash string) {
+func waitMinterTx(client *grpc_client.Client, hash string) {
 	_, err := client.Transaction(hash)
 	if err != nil {
 		time.Sleep(time.Millisecond * 200)
@@ -109,7 +109,7 @@ func waitMinterTx(client *http_client.Client, hash string) {
 	}
 }
 
-func fundMinterAddress(to string, privateKeyString string, sender common.Address, client *http_client.Client) {
+func fundMinterAddress(to string, privateKeyString string, sender common.Address, client *grpc_client.Client) {
 	minterSenderLock.Lock()
 	defer minterSenderLock.Unlock()
 
@@ -140,7 +140,7 @@ func fundMinterAddress(to string, privateKeyString string, sender common.Address
 	waitMinterTx(client, response.Hash)
 }
 
-func createMinterMultisig(prKey string, ethAddress common.Address, client *http_client.Client) string {
+func createMinterMultisig(prKey string, ethAddress common.Address, client *grpc_client.Client) string {
 	minterSenderLock.Lock()
 	defer minterSenderLock.Unlock()
 
@@ -725,7 +725,7 @@ func deployContractsAndMultisig(prKeyString string) {
 		println("bsc", contract)
 	}
 
-	minterClient, _ := http_client.New("https://node-api.taconet.minter.network/v2")
+	minterClient, _ := grpc_client.New("https://node-api.taconet.minter.network/v2")
 	minterMultisig := createMinterMultisig(ethPrivateKeyString, ethAddress, minterClient)
 
 	println("minter", minterMultisig)

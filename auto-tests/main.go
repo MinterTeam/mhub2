@@ -6,14 +6,15 @@ import (
 	"fmt"
 	"github.com/MinterTeam/mhub2/auto-tests/cosmos"
 	"github.com/MinterTeam/mhub2/auto-tests/erc20"
+	"github.com/MinterTeam/mhub2/auto-tests/hub2"
 	"github.com/MinterTeam/mhub2/module/app"
 	"github.com/MinterTeam/mhub2/module/x/mhub2/types"
 	mhubtypes "github.com/MinterTeam/mhub2/module/x/mhub2/types"
 	oracletypes "github.com/MinterTeam/mhub2/module/x/oracle/types"
 	minterTypes "github.com/MinterTeam/minter-go-node/coreV2/types"
-	"github.com/MinterTeam/minter-go-sdk/v2/api/http_client"
-	"github.com/MinterTeam/minter-go-sdk/v2/api/http_client/models"
+	"github.com/MinterTeam/minter-go-sdk/v2/api/grpc_client"
 	"github.com/MinterTeam/minter-go-sdk/v2/transaction"
+	"github.com/MinterTeam/node-grpc-gateway/api_pb"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -49,7 +50,7 @@ type Context struct {
 	Bep20addr           string
 	Erc20addr           string
 	BscContract         string
-	MinterClient        *http_client.Client
+	MinterClient        *grpc_client.Client
 	EthContract         string
 	BscClient           *ethclient.Client
 	EthPrivateKeyString string
@@ -88,7 +89,7 @@ func main() {
 	populateMinterGenesis(minterTypes.HexToPubkey("Mp582a2ed384d44ab3bf6d4bf751a515b62907fb54cdf496c02bcd1e3f6809b933"), ethAddress)
 	go runOrPanic("minter node --testnet --home-dir=%s/data/minter", wd)
 
-	minterClient, err := http_client.New("http://localhost:8843/v2")
+	minterClient, err := grpc_client.New("localhost:8842")
 	for {
 		if _, err := minterClient.Status(); err != nil {
 			time.Sleep(time.Millisecond * 200)
@@ -183,6 +184,9 @@ func main() {
 	}
 
 	println("Start running tests")
+	testMinterMultisigChanges(ctx)
+	testEthereumMultisigChanges(ctx)
+	testBSCMultisigChanges(ctx)
 	testEthereumToMinterTransfer(ctx)
 	testEthereumToBscTransfer(ctx)
 	testBSCToEthereumTransfer(ctx)
@@ -212,6 +216,111 @@ func main() {
 
 	ctx.TestsWg.Wait()
 	println("All tests are done")
+}
+
+func testMinterMultisigChanges(ctx *Context) {
+	ctx.TestsWg.Add(1)
+	go func() {
+		startTime := time.Now()
+		timeout := time.Minute * 1
+
+		for {
+			if time.Now().Sub(startTime).Seconds() > timeout.Seconds() {
+				panic("Timeout waiting for the minter multisig to change")
+			}
+
+			response, err := ctx.MinterClient.Address(ctx.MinterMultisig)
+			if err != nil {
+				panic(err)
+			}
+
+			if strings.ToLower(response.Multisig.Addresses[0][2:]) == strings.ToLower(ctx.EthAddress.Hex()[2:]) && response.Multisig.Weights[0] == 1000 {
+				println("SUCCESS: test minter multisig changes")
+				ctx.TestsWg.Done()
+				return
+			}
+
+			time.Sleep(time.Second)
+		}
+	}()
+}
+
+func testEthereumMultisigChanges(ctx *Context) {
+	ctx.TestsWg.Add(1)
+
+	client, err := hub2.NewHub2(common.HexToAddress(ctx.EthContract), ctx.EthClient)
+	if err != nil {
+		panic(err)
+	}
+
+	mhubClient := mhubtypes.NewQueryClient(ctx.CosmosConn)
+	response, err := mhubClient.LatestSignerSetTx(context.TODO(), &mhubtypes.LatestSignerSetTxRequest{ChainId: "ethereum"})
+	targetCheckpointStr := fmt.Sprintf("%x", response.SignerSet.GetCheckpoint([]byte("defaultgravityid")))
+
+	go func() {
+		startTime := time.Now()
+		timeout := time.Minute * 1
+
+		for {
+			if time.Now().Sub(startTime).Seconds() > timeout.Seconds() {
+				panic("Timeout waiting for the ethereum multisig to change")
+			}
+
+			checkpoint, err := client.StateLastValsetCheckpoint(nil)
+			if err != nil {
+				panic(err)
+			}
+
+			checkpointStr := fmt.Sprintf("%x", checkpoint)
+
+			if checkpointStr == targetCheckpointStr {
+				println("SUCCESS: test ethereum multisig changes")
+				ctx.TestsWg.Done()
+				return
+			}
+
+			time.Sleep(time.Second)
+		}
+	}()
+}
+
+func testBSCMultisigChanges(ctx *Context) {
+	ctx.TestsWg.Add(1)
+
+	client, err := hub2.NewHub2(common.HexToAddress(ctx.BscContract), ctx.BscClient)
+	if err != nil {
+		panic(err)
+	}
+
+	mhubClient := mhubtypes.NewQueryClient(ctx.CosmosConn)
+	response, err := mhubClient.LatestSignerSetTx(context.TODO(), &mhubtypes.LatestSignerSetTxRequest{ChainId: "bsc"})
+	targetCheckpointStr := fmt.Sprintf("%x", response.SignerSet.GetCheckpoint([]byte("defaultgravityid")))
+
+	go func() {
+		startTime := time.Now()
+		timeout := time.Minute * 1
+
+		for {
+			if time.Now().Sub(startTime).Seconds() > timeout.Seconds() {
+				panic("Timeout waiting for the bsc multisig to change")
+			}
+
+			checkpoint, err := client.StateLastValsetCheckpoint(nil)
+			if err != nil {
+				panic(err)
+			}
+
+			checkpointStr := fmt.Sprintf("%x", checkpoint)
+
+			if checkpointStr == targetCheckpointStr {
+				println("SUCCESS: test bsc multisig changes")
+				ctx.TestsWg.Done()
+				return
+			}
+
+			time.Sleep(time.Second)
+		}
+	}()
 }
 
 func testFeeForTransactionRelayer(ctx *Context) {
@@ -248,13 +357,13 @@ func testFeeForTransactionRelayer(ctx *Context) {
 				}
 
 				if transaction.Type(transactionResponse.Type) == transaction.TypeMultisend {
-					var data models.MultiSendData
+					var data api_pb.MultiSendData
 					if err := transactionResponse.Data.UnmarshalTo(&data); err != nil {
 						panic(err)
 					}
 
 					for _, item := range data.List {
-						if item.Coin.ID == 1 && strings.ToLower(ctx.EthAddress.String())[2:] == item.To[2:] && strings.HasSuffix(item.Value, fee.String()) { // todo???
+						if item.Coin.Id == 1 && strings.ToLower(ctx.EthAddress.String())[2:] == item.To[2:] && strings.HasSuffix(item.Value, fee.String()) { // todo???
 							println("SUCCESS: test fee for transaction relayer")
 							ctx.TestsWg.Done()
 							return
@@ -480,13 +589,13 @@ func testTxTimeout(ctx *Context) {
 				}
 
 				if transaction.Type(transactionResponse.Type) == transaction.TypeMultisend {
-					var data models.MultiSendData
+					var data api_pb.MultiSendData
 					if err := transactionResponse.Data.UnmarshalTo(&data); err != nil {
 						panic(err)
 					}
 
 					for _, item := range data.List {
-						if item.Coin.ID == 1 && strings.ToLower(ctx.EthAddress.String())[2:] == item.To[2:] && item.Value == value.String() { // todo???
+						if item.Coin.Id == 1 && strings.ToLower(ctx.EthAddress.String())[2:] == item.To[2:] && item.Value == value.String() { // todo???
 							println("SUCCESS: test refunds")
 							ctx.TestsWg.Done()
 							return
