@@ -195,7 +195,7 @@ func main() {
 	testMinterToEthereumTransfer(ctx)
 	testFeeForTransactionRelayer(ctx)
 
-	//tests associated with holders
+	// tests associated with holders
 	ctx.TestsWg.Add(2)
 	go func() {
 		randomPk, _ := crypto.GenerateKey()
@@ -206,6 +206,7 @@ func main() {
 	}()
 	ctx.TestsWg.Wait()
 
+	println("Killing orchestrator")
 	stopProcess("orchestrator")
 	testTxTimeout(ctx)
 
@@ -518,9 +519,10 @@ func testHubToBSCTransfer(ctx *Context) {
 	}, addr, priv, ctx.CosmosConn, log.NewTMLogger(os.Stdout), true)
 
 	go func() {
-		expectedValue := sdk.NewInt(1e6)
+		expectedValue := sdk.NewInt(1e18)
 		expectedValue = expectedValue.Sub(expectedValue.ToDec().Mul(bridgeCommission).TruncateInt())
 		expectedValue = expectedValue.SubRaw(fee)
+		expectedValue = expectedValue.QuoRaw(1e12)
 
 		startTime := time.Now()
 		timeout := time.Minute * 5
@@ -574,6 +576,7 @@ func testHubToEthereumTransfer(ctx *Context) {
 
 	go func() {
 		expectedValue := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(1)))
+		expectedValue = expectedValue.AddRaw(fee)
 		expectedValue = expectedValue.Sub(expectedValue.ToDec().Mul(bridgeCommission).TruncateInt())
 		expectedValue = expectedValue.SubRaw(fee)
 
@@ -864,9 +867,10 @@ func testEthereumToBscTransfer(ctx *Context) {
 	sendERC20ToAnotherChain(ctx.EthPrivateKey, ctx.EthClient, ctx.EthContract, ctx.Erc20addr, recipient, ethChainId, "bsc", big.NewInt(1e18))
 
 	go func() {
-		expectedValue := sdk.NewInt(1e6)
+		expectedValue := sdk.NewInt(1e18)
 		expectedValue = expectedValue.Sub(expectedValue.ToDec().Mul(bridgeCommission).TruncateInt())
 		expectedValue = expectedValue.SubRaw(100)
+		expectedValue = expectedValue.QuoRaw(1e12)
 
 		startTime := time.Now()
 		timeout := time.Minute * 5
