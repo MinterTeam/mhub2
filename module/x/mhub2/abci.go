@@ -35,7 +35,7 @@ func BeginBlocker(ctx sdk.Context, k keeper.Keeper) {
 // EndBlocker is called at the end of every block
 func EndBlocker(ctx sdk.Context, k keeper.Keeper) {
 	for _, chainId := range k.GetChains(ctx) {
-		outgoingTxSlashing(ctx, chainId, k)
+		//outgoingTxSlashing(ctx, chainId, k)
 		eventVoteRecordTally(ctx, chainId, k)
 		refundExpiredTxs(ctx, chainId, k)
 	}

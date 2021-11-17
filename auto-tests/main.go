@@ -260,7 +260,7 @@ func testEthereumMultisigChanges(ctx *Context) {
 
 	go func() {
 		startTime := time.Now()
-		timeout := time.Minute * 1
+		timeout := time.Minute * 5
 
 		for {
 			if time.Now().Sub(startTime).Seconds() > timeout.Seconds() {
@@ -273,7 +273,6 @@ func testEthereumMultisigChanges(ctx *Context) {
 			}
 
 			checkpointStr := fmt.Sprintf("%x", checkpoint)
-
 			if checkpointStr == targetCheckpointStr {
 				println("SUCCESS: test ethereum multisig changes")
 				ctx.TestsWg.Done()
@@ -299,7 +298,7 @@ func testBSCMultisigChanges(ctx *Context) {
 
 	go func() {
 		startTime := time.Now()
-		timeout := time.Minute * 1
+		timeout := time.Minute * 5
 
 		for {
 			if time.Now().Sub(startTime).Seconds() > timeout.Seconds() {
@@ -632,7 +631,7 @@ func testHubToBSCTransfer(ctx *Context) {
 		expectedValue = expectedValue.QuoRaw(1e12)
 
 		startTime := time.Now()
-		timeout := time.Minute * 5
+		timeout := time.Minute * 10
 
 		hubContract, _ := erc20.NewErc20(common.HexToAddress(ctx.Bep20addr), ctx.BscClient)
 
@@ -897,7 +896,7 @@ func testBSCToEthereumTransfer(ctx *Context) {
 		expectedValue = expectedValue.SubRaw(100 * 1e12)
 
 		startTime := time.Now()
-		timeout := time.Minute * 5
+		timeout := time.Minute * 10
 
 		hubContract, _ := erc20.NewErc20(common.HexToAddress(ctx.Erc20addr), ctx.EthClient)
 
@@ -985,7 +984,7 @@ func testValidatorsCommissions(ctx *Context) {
 		}
 
 		minterHeight := minterStatus.LatestBlockHeight
-		timeout := time.Minute * 5
+		timeout := time.Minute * 10
 
 		for {
 			if time.Now().Sub(startTime).Seconds() > timeout.Seconds() {
@@ -1037,7 +1036,7 @@ func testEthereumToBscTransfer(ctx *Context) {
 		expectedValue = expectedValue.QuoRaw(1e12)
 
 		startTime := time.Now()
-		timeout := time.Minute * 5
+		timeout := time.Minute * 10
 
 		hubContract, _ := erc20.NewErc20(common.HexToAddress(ctx.Bep20addr), ctx.BscClient)
 
