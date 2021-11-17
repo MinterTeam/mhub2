@@ -120,8 +120,8 @@ pub async fn check_for_events(
 
         for batch in batches.iter() {
             info!(
-                "Oracle observed batch with batch_nonce {}, erc20 {}, and event_nonce {}",
-                batch.batch_nonce, batch.erc20, batch.event_nonce
+                "Oracle observed batch with batch_nonce {}, fee {}, erc20 {}, and event_nonce {}",
+                batch.batch_nonce, batch.fee, batch.erc20, batch.event_nonce
             );
         }
 
@@ -229,7 +229,7 @@ pub async fn get_block_delay(web3: &Web3) -> Uint256 {
         1 | 3 | 7 => 6u8.into(),
         // Rinkeby, Goerli, Dev, our own Gravity Ethereum testnet, and Kotti respectively
         // all non-pow chains
-        4 | 5 | 2018 | 15 | 6 => 0u8.into(),
+        4 | 5 | 2018 | 15 | 16 | 6 => 0u8.into(),
         // assume the safe option (POW) where we don't know
         _ => 6u8.into(),
     }

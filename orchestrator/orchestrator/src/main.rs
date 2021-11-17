@@ -46,12 +46,13 @@ struct Args {
     flag_contract_address: String,
     flag_fees: String,
     flag_chain_id: String,
+    flag_eth_fee_calculator_url: Option<String>,
     flag_metrics_listen: String,
 }
 
 lazy_static! {
     pub static ref USAGE: String = format!(
-    "Usage: {} --chain-id=<id> --cosmos-phrase=<key> --ethereum-key=<key> --cosmos-grpc=<url> --address-prefix=<prefix> --ethereum-rpc=<url> --fees=<denom> --contract-address=<addr> --metrics-listen=<addr>
+    "Usage: {} --chain-id=<id> --eth-fee-calculator-url=<url> --cosmos-phrase=<key> --ethereum-key=<key> --cosmos-grpc=<url> --address-prefix=<prefix> --ethereum-rpc=<url> --fees=<denom> --contract-address=<addr> --metrics-listen=<addr>
         Options:
             -h --help                    Show this screen.
             --cosmos-phrase=<ckey>       The mnenmonic of the Cosmos account key of the validator
@@ -99,8 +100,8 @@ async fn main() {
         .expect("Invalid metrics listen address!");
 
     let fee_denom = args.flag_fees;
-
     let chain_id = args.flag_chain_id;
+    let eth_fee_calculator_url = args.flag_eth_fee_calculator_url;
 
     let timeout = min(
         min(ETH_SIGNER_LOOP_SPEED, ETH_ORACLE_LOOP_SPEED),
@@ -159,6 +160,7 @@ async fn main() {
         contract_address,
         (1f64, fee_denom.to_owned()),
         chain_id.clone(),
+        eth_fee_calculator_url.clone(),
         &metrics_listen,
     )
     .await;

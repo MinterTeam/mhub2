@@ -18,9 +18,9 @@ import (
 
 func AddPrepareGenesisForTestsCmd(defaultNodeHome string) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "prepare-genesis-for-tests [external-addr] [external-addr-2]",
+		Use:   "prepare-genesis-for-tests [external-addr] [external-addr-2] [external-addr-3]",
 		Short: "Prepare genesis for tests",
-		Args:  cobra.ExactArgs(2),
+		Args:  cobra.ExactArgs(3),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx := client.GetClientContextFromCmd(cmd)
 			depCdc := clientCtx.Codec
@@ -42,6 +42,7 @@ func AddPrepareGenesisForTestsCmd(defaultNodeHome string) *cobra.Command {
 			genState.Params.OutgoingTxTimeout = 60000
 			genState.TokenInfos.TokenInfos[0].ExternalTokenId = args[0]
 			genState.TokenInfos.TokenInfos[1].ExternalTokenId = args[1]
+			genState.TokenInfos.TokenInfos[2].ExternalTokenId = args[2]
 			genState.TokenInfos.TokenInfos[1].ExternalDecimals = 6
 
 			genStateJson, err := cdc.MarshalJSON(genState)

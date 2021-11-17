@@ -33,7 +33,7 @@ func (k Keeper) BuildBatchTx(ctx sdk.Context, chainId types.ChainID, externalTok
 	k.iterateUnbatchedSendToExternalsByCoin(ctx, chainId, externalTokenId, func(ste *types.SendToExternal) bool {
 		selectedStes = append(selectedStes, ste)
 		k.deleteUnbatchedSendToExternal(ctx, chainId, ste.Id, ste.Fee)
-		k.SetTxStatus(ctx, chainId, ste.TxHash, types.TX_STATUS_BATCH_CREATED, "")
+		k.SetTxStatus(ctx, ste.TxHash, types.TX_STATUS_BATCH_CREATED, "")
 		return len(selectedStes) == maxElements
 	})
 
@@ -58,7 +58,7 @@ func (k Keeper) BuildBatchTx(ctx sdk.Context, chainId types.ChainID, externalTok
 	return batch
 }
 
-// This gets the batch timeout height in External blocks. todo: what about minter?
+// This gets the batch timeout height in External blocks.
 func (k Keeper) getBatchTimeoutHeight(ctx sdk.Context, chainId types.ChainID) uint64 {
 	params := k.GetParams(ctx)
 	currentCosmosHeight := ctx.BlockHeight()
@@ -107,7 +107,7 @@ func (k Keeper) batchTxExecuted(ctx sdk.Context, chainId types.ChainID, external
 	for _, tx := range batchTx.Transactions {
 		totalValCommission.Amount = totalValCommission.Amount.Add(tx.ValCommission.Amount)
 		totalFee.Amount = totalFee.Amount.Add(tx.Fee.Amount)
-		k.SetTxStatus(ctx, chainId, tx.TxHash, types.TX_STATUS_BATCH_EXECUTED, txHash)
+		k.SetTxStatus(ctx, tx.TxHash, types.TX_STATUS_BATCH_EXECUTED, txHash)
 	}
 
 	// pay val's commissions
@@ -166,7 +166,7 @@ func (k Keeper) batchTxExecuted(ctx sdk.Context, chainId types.ChainID, external
 				averageFeePaid := fee.Amount.QuoRaw(int64(len(batchTx.Transactions)))
 				for _, tx := range batchTx.Transactions {
 					toRefund := tx.Fee.Amount.Sub(averageFeePaid)
-					_, err = k.createSendToExternal(ctx, "minter", tempSender, tx.Sender, sdk.NewCoin(fee.Denom, toRefund), sdk.NewInt64Coin(fee.Denom, 0), sdk.NewInt64Coin(fee.Denom, 0), "#fee", "", "")
+					_, err = k.createSendToExternal(ctx, "minter", tempSender, tx.RefundAddress, sdk.NewCoin(fee.Denom, toRefund), sdk.NewInt64Coin(fee.Denom, 0), sdk.NewInt64Coin(fee.Denom, 0), "#fee", "", "")
 					if err != nil {
 						panic(err)
 					}

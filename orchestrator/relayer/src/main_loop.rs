@@ -21,6 +21,7 @@ pub async fn relayer_main_loop(
     grpc_client: GravityQueryClient<Channel>,
     gravity_contract_address: EthAddress,
     chain_id: String,
+    eth_fee_calculator_url: Option<String>,
 ) {
     let mut grpc_client = grpc_client;
     loop {
@@ -70,6 +71,7 @@ pub async fn relayer_main_loop(
             gravity_id.clone(),
             LOOP_SPEED,
             chain_id.clone(),
+            eth_fee_calculator_url.clone(),
         )
         .await;
 

@@ -1276,17 +1276,6 @@ func request_Query_TransactionStatus_0(ctx context.Context, marshaler runtime.Ma
 		_   = err
 	)
 
-	val, ok = pathParams["chain_id"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "chain_id")
-	}
-
-	protoReq.ChainId, err = runtime.String(val)
-
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "chain_id", err)
-	}
-
 	val, ok = pathParams["tx_hash"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "tx_hash")
@@ -1313,17 +1302,6 @@ func local_request_Query_TransactionStatus_0(ctx context.Context, marshaler runt
 		err error
 		_   = err
 	)
-
-	val, ok = pathParams["chain_id"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "chain_id")
-	}
-
-	protoReq.ChainId, err = runtime.String(val)
-
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "chain_id", err)
-	}
 
 	val, ok = pathParams["tx_hash"]
 	if !ok {
@@ -2560,7 +2538,7 @@ var (
 
 	pattern_Query_TokenInfos_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"mhub2", "v1", "token_infos"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_Query_TransactionStatus_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 1, 0, 4, 1, 5, 4}, []string{"mhub2", "v1", "transaction_status", "chain_id", "tx_hash"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_TransactionStatus_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"mhub2", "v1", "transaction_status", "tx_hash"}, "", runtime.AssumeColonVerbOpt(true)))
 )
 
 var (

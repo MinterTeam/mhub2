@@ -63,6 +63,7 @@ type Context struct {
 var bridgeCommission, _ = sdk.NewDecFromStr("0.01")
 
 func main() {
+
 	wd := getWd()
 
 	ethPrivateKey, _ := crypto.GenerateKey()
@@ -79,6 +80,7 @@ func main() {
 	runOrPanic(os.ExpandEnv("rm -rf $HOME/.mhub2"))
 
 	runHoldersServer()
+	runEthFeeCalculatorServer()
 
 	// minter node
 	runOrPanic("mkdir %s/data/minter", wd)
@@ -118,7 +120,7 @@ func main() {
 
 	wg.Add(2)
 	go func() {
-		ethClient, err, ethContract, erc20addr = runEvmChain(ethChainId, wd, ethAddress, ethPrivateKey, "8545")
+		ethClient, err, ethContract, erc20addr = runEvmChain(ethChainId, wd, ethAddress, ethPrivateKey, ethPrivateKeyString, "8545")
 		if err != nil {
 			panic(err)
 		}
@@ -126,7 +128,7 @@ func main() {
 	}()
 
 	go func() {
-		bscClient, err, bscContract, bep20addr = runEvmChain(bscChainId, wd, ethAddress, ethPrivateKey, "8546")
+		bscClient, err, bscContract, bep20addr = runEvmChain(bscChainId, wd, ethAddress, ethPrivateKey, ethPrivateKeyString, "8546")
 		if err != nil {
 			panic(err)
 		}
@@ -141,7 +143,7 @@ func main() {
 	hubAddress := strings.Trim(runOrPanic("mhub2 keys show validator1 -a --keyring-backend test"), "\n")
 
 	runOrPanic("mhub2 add-genesis-account --keyring-backend test validator1 100000000000000000000000000%s,100000000000000000000000000hub", denom)
-	runOrPanic("mhub2 prepare-genesis-for-tests %s %s", erc20addr, bep20addr)
+	runOrPanic("mhub2 prepare-genesis-for-tests %s %s %s", erc20addr, bep20addr, "1")
 
 	runOrPanic("mhub2 gentx --keyring-backend test --moniker validator1 --chain-id=%s validator1 1000000000000000000000000%s %s %s 0x00", mhubChainId, denom, ethAddress.Hex(), hubAddress)
 	runOrPanic("mhub2 collect-gentxs test")
@@ -159,12 +161,14 @@ func main() {
 	}
 
 	time.Sleep(time.Second * 10)
-	go runOrPanic("mhub-oracle --config=oracle-config.toml --cosmos-mnemonic=%s", cosmosMnemonic)
+	go runOrPanic("mhub-oracle --test-env --config=oracle-config.toml --cosmos-mnemonic=%s", cosmosMnemonic)
 	go runOrPanic("mhub-minter-connector --config=connector-config.toml --cosmos-mnemonic=%s --minter-private-key=%s --minter-multisig-addr=%s", cosmosMnemonic, ethPrivateKeyString, minterMultisig)
-	go runOrPanic("orchestrator --chain-id=ethereum --cosmos-phrase=%s --ethereum-key=%s --cosmos-grpc=%s --ethereum-rpc=%s --contract-address=%s --fees=%s --address-prefix=hub --metrics-listen=127.0.0.1:3000", cosmosMnemonic, ethPrivateKeyString, "http://localhost:9090", "http://localhost:8545", ethContract, denom)
-	go runOrPanic("orchestrator --chain-id=bsc --cosmos-phrase=%s --ethereum-key=%s --cosmos-grpc=%s --ethereum-rpc=%s --contract-address=%s --fees=%s --address-prefix=hub --metrics-listen=127.0.0.1:3001", cosmosMnemonic, ethPrivateKeyString, "http://localhost:9090", "http://localhost:8546", bscContract, denom)
+	go runOrPanic("orchestrator --chain-id=ethereum --eth-fee-calculator-url=http://localhost:8840 --cosmos-phrase=%s --ethereum-key=%s --cosmos-grpc=%s --ethereum-rpc=%s --contract-address=%s --fees=%s --address-prefix=hub --metrics-listen=127.0.0.1:3000", cosmosMnemonic, ethPrivateKeyString, "http://localhost:9090", "http://localhost:8545", ethContract, denom)
+	go runOrPanic("orchestrator --chain-id=bsc --eth-fee-calculator-url=http://localhost:8840 --cosmos-phrase=%s --ethereum-key=%s --cosmos-grpc=%s --ethereum-rpc=%s --contract-address=%s --fees=%s --address-prefix=hub --metrics-listen=127.0.0.1:3001", cosmosMnemonic, ethPrivateKeyString, "http://localhost:9090", "http://localhost:8546", bscContract, denom)
 	approveERC20ToHub(ethPrivateKey, ethClient, ethContract, erc20addr, ethChainId)
 	approveERC20ToHub(ethPrivateKey, bscClient, bscContract, bep20addr, bscChainId)
+
+	time.Sleep(time.Second * 10)
 
 	ctx := &Context{
 		TestsWg:             &sync.WaitGroup{},
@@ -199,6 +203,7 @@ func main() {
 	testMinterToEthereumTransfer(ctx)
 	testFeeForTransactionRelayer(ctx)
 	testValidatorsCommissions(ctx)
+	testFeeRefund(ctx)
 
 	// tests associated with holders
 	ctx.TestsWg.Add(2)
@@ -260,7 +265,7 @@ func testEthereumMultisigChanges(ctx *Context) {
 
 	go func() {
 		startTime := time.Now()
-		timeout := time.Minute * 1
+		timeout := time.Minute * 5
 
 		for {
 			if time.Now().Sub(startTime).Seconds() > timeout.Seconds() {
@@ -273,7 +278,6 @@ func testEthereumMultisigChanges(ctx *Context) {
 			}
 
 			checkpointStr := fmt.Sprintf("%x", checkpoint)
-
 			if checkpointStr == targetCheckpointStr {
 				println("SUCCESS: test ethereum multisig changes")
 				ctx.TestsWg.Done()
@@ -299,7 +303,7 @@ func testBSCMultisigChanges(ctx *Context) {
 
 	go func() {
 		startTime := time.Now()
-		timeout := time.Minute * 1
+		timeout := time.Minute * 5
 
 		for {
 			if time.Now().Sub(startTime).Seconds() > timeout.Seconds() {
@@ -328,7 +332,7 @@ func testFeeForTransactionRelayer(ctx *Context) {
 	randomPk, _ := crypto.GenerateKey()
 	recipient := crypto.PubkeyToAddress(randomPk.PublicKey).Hex()
 	fee := sdk.NewInt(88)
-	sendMinterCoinToEthereum(ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterMultisig, ctx.MinterClient, recipient, fee)
+	sendMinterCoinToEthereum(ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterMultisig, ctx.MinterClient, recipient, sdk.NewInt(1e18), fee)
 	minterStatus, err := ctx.MinterClient.Status()
 	if err != nil {
 		panic(err)
@@ -378,7 +382,7 @@ func testFeeForTransactionRelayer(ctx *Context) {
 }
 
 func testDiscountForHolder(ctx *Context, recipient string) {
-	sendMinterCoinToEthereum(ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterMultisig, ctx.MinterClient, recipient, sdk.NewInt(100))
+	sendMinterCoinToEthereum(ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterMultisig, ctx.MinterClient, recipient, sdk.NewInt(1e18), sdk.NewInt(100))
 
 	fee := int64(100)
 	expectedValue := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(1)))
@@ -467,7 +471,7 @@ func testMinterToEthereumTransfer(ctx *Context) {
 	ctx.TestsWg.Add(1)
 	randomPk, _ := crypto.GenerateKey()
 	recipient := crypto.PubkeyToAddress(randomPk.PublicKey).Hex()
-	sendMinterCoinToEthereum(ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterMultisig, ctx.MinterClient, recipient, sdk.NewInt(100))
+	sendMinterCoinToEthereum(ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterMultisig, ctx.MinterClient, recipient, sdk.NewInt(1e18), sdk.NewInt(100))
 
 	go func() {
 		fee := int64(100)
@@ -512,7 +516,7 @@ func testTxTimeout(ctx *Context) {
 	randomPk, _ := crypto.GenerateKey()
 	recipient := crypto.PubkeyToAddress(randomPk.PublicKey).Hex()
 	value := big.NewInt(1e18)
-	sendMinterCoinToEthereum(ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterMultisig, ctx.MinterClient, recipient, sdk.NewInt(100))
+	sendMinterCoinToEthereum(ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterMultisig, ctx.MinterClient, recipient, sdk.NewInt(1e18), sdk.NewInt(100))
 
 	minterStatus, err := ctx.MinterClient.Status()
 	if err != nil {
@@ -632,7 +636,7 @@ func testHubToBSCTransfer(ctx *Context) {
 		expectedValue = expectedValue.QuoRaw(1e12)
 
 		startTime := time.Now()
-		timeout := time.Minute * 5
+		timeout := time.Minute * 10
 
 		hubContract, _ := erc20.NewErc20(common.HexToAddress(ctx.Bep20addr), ctx.BscClient)
 
@@ -897,7 +901,7 @@ func testBSCToEthereumTransfer(ctx *Context) {
 		expectedValue = expectedValue.SubRaw(100 * 1e12)
 
 		startTime := time.Now()
-		timeout := time.Minute * 5
+		timeout := time.Minute * 10
 
 		hubContract, _ := erc20.NewErc20(common.HexToAddress(ctx.Erc20addr), ctx.EthClient)
 
@@ -985,7 +989,7 @@ func testValidatorsCommissions(ctx *Context) {
 		}
 
 		minterHeight := minterStatus.LatestBlockHeight
-		timeout := time.Minute * 5
+		timeout := time.Minute * 10
 
 		for {
 			if time.Now().Sub(startTime).Seconds() > timeout.Seconds() {
@@ -1024,6 +1028,66 @@ func testValidatorsCommissions(ctx *Context) {
 	}()
 }
 
+func testFeeRefund(ctx *Context) {
+	ctx.TestsWg.Add(1)
+	randomPk, _ := crypto.GenerateKey()
+	randomPkString := fmt.Sprintf("%x", crypto.FromECDSA(randomPk))
+	recipient := crypto.PubkeyToAddress(randomPk.PublicKey).Hex()
+	value := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(50)))
+	fee := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(10)))
+	fundMinterAddress("Mx"+recipient[2:], ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterClient)
+
+	sendMinterCoinToEthereum(randomPkString, common.HexToAddress(recipient), ctx.MinterMultisig, ctx.MinterClient, recipient, value, fee)
+
+	go func() {
+		expectedValue := sdk.NewInt(3602620000000000000) // todo: calculate this value somehow
+		startTime := time.Now()
+
+		minterStatus, err := ctx.MinterClient.Status()
+		if err != nil {
+			panic(err)
+		}
+
+		minterHeight := minterStatus.LatestBlockHeight
+		timeout := time.Minute * 10
+
+		for {
+			if time.Now().Sub(startTime).Seconds() > timeout.Seconds() {
+				panic("Timeout waiting for the fee refund to arrive")
+			}
+
+			response, err := ctx.MinterClient.Block(minterHeight)
+			if err != nil {
+				time.Sleep(time.Millisecond * 200)
+				continue
+			}
+
+			for _, transactionResponse := range response.Transactions {
+				if transactionResponse.From != ctx.MinterMultisig {
+					continue
+				}
+
+				if transaction.Type(transactionResponse.Type) == transaction.TypeMultisend {
+					var data api_pb.MultiSendData
+					if err := transactionResponse.Data.UnmarshalTo(&data); err != nil {
+						panic(err)
+					}
+
+					for _, item := range data.List {
+						if item.Coin.Id == 1 && strings.ToLower(recipient)[2:] == item.To[2:] && item.Value == expectedValue.String() {
+							println("SUCCESS: test fee refund")
+							ctx.TestsWg.Done()
+							return
+						}
+					}
+				}
+			}
+
+			minterHeight++
+		}
+	}()
+}
+
 func testEthereumToBscTransfer(ctx *Context) {
 	ctx.TestsWg.Add(1)
 	randomPk, _ := crypto.GenerateKey()
@@ -1037,7 +1101,7 @@ func testEthereumToBscTransfer(ctx *Context) {
 		expectedValue = expectedValue.QuoRaw(1e12)
 
 		startTime := time.Now()
-		timeout := time.Minute * 5
+		timeout := time.Minute * 10
 
 		hubContract, _ := erc20.NewErc20(common.HexToAddress(ctx.Bep20addr), ctx.BscClient)
 

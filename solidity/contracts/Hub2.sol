@@ -544,7 +544,6 @@ contract Hub2 is ReentrancyGuard {
 	}
 
 	function transferETHToChain(
-		address _tokenContract,
 		bytes32 _destinationChain,
 		bytes32 _destination,
 		uint256 _fee
@@ -552,7 +551,7 @@ contract Hub2 is ReentrancyGuard {
 		IWETH(wethAddress).deposit{value: msg.value}();
 		state_lastEventNonce = state_lastEventNonce.add(1);
 		emit TransferToChainEvent(
-			_tokenContract,
+			wethAddress,
 			msg.sender,
 			_destinationChain,
 			_destination,

@@ -38,6 +38,7 @@ pub async fn relay_batches(
     gravity_id: String,
     timeout: Duration,
     chain_id: String,
+    eth_fee_calculator_url: Option<String>,
 ) {
     let possible_batches = get_batches_and_signatures(
         current_valset.clone(),
@@ -57,6 +58,8 @@ pub async fn relay_batches(
         gravity_id,
         timeout,
         possible_batches,
+        eth_fee_calculator_url,
+        chain_id.clone(),
     )
     .await;
 }
@@ -145,6 +148,8 @@ async fn submit_batches(
     gravity_id: String,
     timeout: Duration,
     possible_batches: HashMap<EthAddress, Vec<SubmittableBatch>>,
+    eth_fee_calculator_url: Option<String>,
+    chain_id: String,
 ) {
     let our_ethereum_address = ethereum_key.to_public_key().unwrap();
     let ethereum_block_height = if let Ok(bn) = web3.eth_block_number().await {
@@ -199,6 +204,8 @@ async fn submit_batches(
                     gravity_contract_address,
                     gravity_id.clone(),
                     ethereum_key,
+                    eth_fee_calculator_url.clone(),
+                    chain_id.clone(),
                 )
                 .await;
                 if cost.is_err() {
@@ -215,10 +222,13 @@ async fn submit_batches(
                         / downcast_to_u128(one_eth()).unwrap() as f32
                 );
 
-                if cost.is_profitable() {
-                    // todo:
-                    // info!("Rejected to submit batch due to low fee");
-                    // continue;
+                if !cost.is_profitable() {
+                    info!(
+                        "Rejected to submit batch due to low fee. Wanted {}, has {}",
+                        cost.get_total(),
+                        cost.total_fee_eth
+                    );
+                    continue;
                 }
 
                 let res = send_eth_transaction_batch(

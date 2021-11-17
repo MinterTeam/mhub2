@@ -94,6 +94,8 @@ pub async fn estimate_tx_batch_cost(
     gravity_contract_address: EthAddress,
     gravity_id: String,
     our_eth_key: EthPrivateKey,
+    eth_fee_calculator_url: Option<String>,
+    chain_id: String,
 ) -> Result<GasCost, GravityError> {
     let our_eth_address = our_eth_key.to_public_key().unwrap();
     let our_balance = web3.eth_get_balance(our_eth_address).await?;
@@ -116,15 +118,26 @@ pub async fn estimate_tx_batch_cost(
     Ok(GasCost {
         gas: val,
         gas_price,
-        total_fee_eth: get_total_batch_fee_in_eth(batch),
+        total_fee_eth: if eth_fee_calculator_url.is_some() {
+            get_total_batch_fee_in_eth(eth_fee_calculator_url.unwrap(), batch, chain_id)
+        } else {
+            0u64.into()
+        },
     })
 }
 
-fn get_total_batch_fee_in_eth(batch: TransactionBatch) -> Uint256 {
-    let mut url: String = "https://estimate.minter.network/to_eth?contract=".to_owned();
+fn get_total_batch_fee_in_eth(
+    base_url: String,
+    batch: TransactionBatch,
+    chain_id: String,
+) -> Uint256 {
+    let mut url: String = base_url.to_owned();
+    url.push_str("?contract=".into());
     url.push_str(batch.total_fee.token_contract_address.to_string().as_str());
     url.push_str("&value=".into());
     url.push_str(batch.total_fee.amount.to_string().as_str());
+    url.push_str("&chain_id=".into());
+    url.push_str(&*chain_id.clone());
     let data = reqwest::blocking::get(url)
         .unwrap()
         .json::<HashMap<String, String>>()

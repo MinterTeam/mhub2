@@ -124,14 +124,14 @@ service Query {
       option (google.api.http).get = "/mhub2/v1/token_infos";
   }
   rpc TransactionStatus(TransactionStatusRequest) returns (TransactionStatusResponse) {
-      option (google.api.http).get = "/mhub2/v1/transaction_status/{chain_id}/{tx_hash}";
+      option (google.api.http).get = "/mhub2/v1/transaction_status/{tx_hash}";
   }
 }
 
 message TokenInfosRequest {}
 message TokenInfosResponse { TokenInfos list = 1 [ (gogoproto.nullable) = false ]; }
 
-message TransactionStatusRequest { string chain_id = 1; string tx_hash = 2; }
+message TransactionStatusRequest { string tx_hash = 1; }
 message TransactionStatusResponse { TxStatus status = 1 [ (gogoproto.nullable) = true ]; }
 
 //  rpc Params

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -28,16 +29,14 @@ import (
 const usdteCoinId = 1993
 
 var pipInBip = sdk.NewInt(1000000000000000000)
+var testEnv = flag.Bool("test-env", false, "")
 
 func main() {
 	logger := log.NewTMLogger(os.Stdout)
-
 	cfg := config.Get()
-
 	cosmos.Setup(cfg)
 
 	orcAddress, orcPriv := cosmos.GetAccount(cfg.Cosmos.Mnemonic)
-
 	logger.Info("Orc address", "address", orcAddress.String())
 
 	minterClient, err := http_client.New(cfg.Minter.ApiAddr)
@@ -62,13 +61,13 @@ func main() {
 	}
 
 	for {
-		relayPrices(cfg, minterClient, ethGasPrice, cosmosConn, orcAddress, orcPriv, logger)
+		relayPricesAndHolders(cfg, minterClient, ethGasPrice, cosmosConn, orcAddress, orcPriv, logger)
 
 		time.Sleep(1 * time.Second)
 	}
 }
 
-func relayPrices(
+func relayPricesAndHolders(
 	cfg *config.Config,
 	minterClient *http_client.Client,
 	ethGasPrice *gasprice.Service,
@@ -103,8 +102,15 @@ func relayPrices(
 
 	prices := &types.Prices{List: []*types.Price{}}
 
-	basecoinPrice := getBasecoinPrice(logger, minterClient)
-	ethPrice := getEthPrice(logger)
+	basecoinPrice := sdk.NewDecWithPrec(1, 1)
+	if !*testEnv {
+		basecoinPrice = getBasecoinPrice(logger, minterClient)
+	}
+
+	ethPrice := sdk.NewDec(4000)
+	if !*testEnv {
+		ethPrice = getEthPrice(logger)
+	}
 
 	for _, coin := range coins.List.TokenInfos {
 		if coin.ChainId != "minter" {
@@ -251,7 +257,6 @@ func getHolders(cfg *config.Config) *types.Holders {
 }
 
 func getBasecoinPrice(logger log.Logger, client *http_client.Client) sdk.Dec {
-	return sdk.NewDecWithPrec(1, 1) // todo
 	response, err := client.EstimateCoinIDSell(usdteCoinId, 0, pipInBip.String(), 0)
 	if err != nil {
 		_, payload, err := http_client.ErrorBody(err)
