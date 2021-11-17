@@ -204,7 +204,6 @@ func main() {
 	testHubToEthereumTransfer(ctx)
 	testHubToBSCTransfer(ctx)
 	testMinterToEthereumTransfer(ctx)
-	testFeeForTransactionRelayer(ctx)
 	testValidatorsCommissions(ctx)
 	testFeeRefund(ctx)
 
@@ -219,11 +218,15 @@ func main() {
 	}()
 	ctx.TestsWg.Wait()
 
+	println("Running test for transaction relayer fee")
+	testFeeForTransactionRelayer(ctx)
+	ctx.TestsWg.Wait()
+
 	println("Killing orchestrator")
 	stopProcess("orchestrator")
 	testTxTimeout(ctx)
-
 	ctx.TestsWg.Wait()
+
 	println("All tests are done")
 }
 
@@ -334,7 +337,7 @@ func testFeeForTransactionRelayer(ctx *Context) {
 	ctx.TestsWg.Add(1)
 	randomPk, _ := crypto.GenerateKey()
 	recipient := crypto.PubkeyToAddress(randomPk.PublicKey).Hex()
-	fee := sdk.NewInt(88)
+	fee := sdk.NewInt(8888)
 	sendMinterCoinToEthereum(ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterMultisig, ctx.MinterClient, recipient, sdk.NewInt(1e18), fee)
 	minterStatus, err := ctx.MinterClient.Status()
 	if err != nil {
@@ -1043,7 +1046,7 @@ func testFeeRefund(ctx *Context) {
 	sendMinterCoinToEthereum(randomPkString, common.HexToAddress(recipient), ctx.MinterMultisig, ctx.MinterClient, recipient, value, fee)
 
 	go func() {
-		expectedValue, _ := sdk.NewIntFromString("14360118013104783360000") // todo: calculate this value somehow
+		expectedValue := fee // todo: calculate this value somehow
 		startTime := time.Now()
 
 		minterStatus, err := ctx.MinterClient.Status()
@@ -1081,7 +1084,8 @@ func testFeeRefund(ctx *Context) {
 							continue
 						}
 
-						if item.Value == expectedValue.String() {
+						itemValue, _ := sdk.NewIntFromString(item.Value)
+						if itemValue.LTE(expectedValue) && itemValue.IsPositive() {
 							println("SUCCESS: test fee refund")
 							ctx.TestsWg.Done()
 							return

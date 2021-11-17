@@ -122,9 +122,9 @@ async fn get_batches_and_signatures(
     }
     // reverse the list so that it is oldest first, we want to submit
     // older batches so that we don't invalidate newer batches
-    for (_key, value) in possible_batches.iter_mut() {
-        value.reverse();
-    }
+    // for (_key, value) in possible_batches.iter_mut() {
+    //     value.reverse();
+    // }
     return possible_batches;
 }
 
