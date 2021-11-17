@@ -166,7 +166,7 @@ func (k Keeper) batchTxExecuted(ctx sdk.Context, chainId types.ChainID, external
 				averageFeePaid := fee.Amount.QuoRaw(int64(len(batchTx.Transactions)))
 				for _, tx := range batchTx.Transactions {
 					toRefund := tx.Fee.Amount.Sub(averageFeePaid)
-					_, err = k.createSendToExternal(ctx, "minter", tempSender, tx.Sender, sdk.NewCoin(fee.Denom, toRefund), sdk.NewInt64Coin(fee.Denom, 0), sdk.NewInt64Coin(fee.Denom, 0), "#fee", "", "")
+					_, err = k.createSendToExternal(ctx, "minter", tempSender, tx.RefundAddress, sdk.NewCoin(fee.Denom, toRefund), sdk.NewInt64Coin(fee.Denom, 0), sdk.NewInt64Coin(fee.Denom, 0), "#fee", "", "")
 					if err != nil {
 						panic(err)
 					}

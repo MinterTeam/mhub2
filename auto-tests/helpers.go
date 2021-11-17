@@ -72,13 +72,13 @@ func sendMinterCoinToHub(privateKeyString string, sender common.Address, multisi
 
 var minterSenderLock = sync.Mutex{}
 
-func sendMinterCoinToEthereum(privateKeyString string, sender common.Address, multisig string, client *grpc_client.Client, to string, fee sdk.Int) {
+func sendMinterCoinToEthereum(privateKeyString string, sender common.Address, multisig string, client *grpc_client.Client, to string, value, fee sdk.Int) {
 	minterSenderLock.Lock()
 	defer minterSenderLock.Unlock()
 
 	addr := "Mx" + sender.Hex()[2:]
 	tx, _ := transaction.NewBuilder(transaction.TestNetChainID).NewTransaction(
-		transaction.NewSendData().MustSetTo(multisig).SetCoin(1).SetValue(transaction.BipToPip(big.NewInt(1))),
+		transaction.NewSendData().MustSetTo(multisig).SetCoin(1).SetValue(value.BigInt()),
 	)
 
 	nonce, err := client.Nonce(addr)
@@ -553,7 +553,7 @@ func populateEthGenesis(address common.Address, chainId int) {
 			PetersburgBlock:     big.NewInt(0),
 			IstanbulBlock:       big.NewInt(0),
 			Clique: &params.CliqueConfig{
-				Period: 5,
+				Period: 3,
 				Epoch:  30000,
 			},
 		},

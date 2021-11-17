@@ -107,6 +107,7 @@ func relayBatches(ctx context.Context) {
 		for _, batch := range response.GetBatches() {
 			txData := transaction.NewMultisendData()
 			for _, out := range batch.Transactions {
+				println(out.ExternalRecipient)
 				txData.AddItem(transaction.NewSendData().SetCoin(parseCoinId(out.Token.ExternalTokenId)).MustSetTo("Mx" + out.ExternalRecipient[2:]).SetValue(out.Token.Amount.BigInt()))
 			}
 

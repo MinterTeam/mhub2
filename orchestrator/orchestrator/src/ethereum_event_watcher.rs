@@ -120,8 +120,8 @@ pub async fn check_for_events(
 
         for batch in batches.iter() {
             info!(
-                "Oracle observed batch with batch_nonce {}, erc20 {}, and event_nonce {}",
-                batch.batch_nonce, batch.erc20, batch.event_nonce
+                "Oracle observed batch with batch_nonce {}, fee {}, erc20 {}, and event_nonce {}",
+                batch.batch_nonce, batch.fee, batch.erc20, batch.event_nonce
             );
         }
 

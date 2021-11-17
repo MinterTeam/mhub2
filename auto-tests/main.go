@@ -167,6 +167,8 @@ func main() {
 	approveERC20ToHub(ethPrivateKey, ethClient, ethContract, erc20addr, ethChainId)
 	approveERC20ToHub(ethPrivateKey, bscClient, bscContract, bep20addr, bscChainId)
 
+	time.Sleep(time.Second * 10)
+
 	ctx := &Context{
 		TestsWg:             &sync.WaitGroup{},
 		EthPrivateKey:       ethPrivateKey,
@@ -200,6 +202,7 @@ func main() {
 	testMinterToEthereumTransfer(ctx)
 	testFeeForTransactionRelayer(ctx)
 	testValidatorsCommissions(ctx)
+	testFeeRefund(ctx)
 
 	// tests associated with holders
 	ctx.TestsWg.Add(2)
@@ -328,7 +331,7 @@ func testFeeForTransactionRelayer(ctx *Context) {
 	randomPk, _ := crypto.GenerateKey()
 	recipient := crypto.PubkeyToAddress(randomPk.PublicKey).Hex()
 	fee := sdk.NewInt(88)
-	sendMinterCoinToEthereum(ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterMultisig, ctx.MinterClient, recipient, fee)
+	sendMinterCoinToEthereum(ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterMultisig, ctx.MinterClient, recipient, sdk.NewInt(1e18), fee)
 	minterStatus, err := ctx.MinterClient.Status()
 	if err != nil {
 		panic(err)
@@ -378,7 +381,7 @@ func testFeeForTransactionRelayer(ctx *Context) {
 }
 
 func testDiscountForHolder(ctx *Context, recipient string) {
-	sendMinterCoinToEthereum(ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterMultisig, ctx.MinterClient, recipient, sdk.NewInt(100))
+	sendMinterCoinToEthereum(ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterMultisig, ctx.MinterClient, recipient, sdk.NewInt(1e18), sdk.NewInt(100))
 
 	fee := int64(100)
 	expectedValue := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(1)))
@@ -467,7 +470,7 @@ func testMinterToEthereumTransfer(ctx *Context) {
 	ctx.TestsWg.Add(1)
 	randomPk, _ := crypto.GenerateKey()
 	recipient := crypto.PubkeyToAddress(randomPk.PublicKey).Hex()
-	sendMinterCoinToEthereum(ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterMultisig, ctx.MinterClient, recipient, sdk.NewInt(100))
+	sendMinterCoinToEthereum(ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterMultisig, ctx.MinterClient, recipient, sdk.NewInt(1e18), sdk.NewInt(100))
 
 	go func() {
 		fee := int64(100)
@@ -512,7 +515,7 @@ func testTxTimeout(ctx *Context) {
 	randomPk, _ := crypto.GenerateKey()
 	recipient := crypto.PubkeyToAddress(randomPk.PublicKey).Hex()
 	value := big.NewInt(1e18)
-	sendMinterCoinToEthereum(ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterMultisig, ctx.MinterClient, recipient, sdk.NewInt(100))
+	sendMinterCoinToEthereum(ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterMultisig, ctx.MinterClient, recipient, sdk.NewInt(1e18), sdk.NewInt(100))
 
 	minterStatus, err := ctx.MinterClient.Status()
 	if err != nil {
@@ -1012,6 +1015,66 @@ func testValidatorsCommissions(ctx *Context) {
 					for _, item := range data.List {
 						if item.Coin.Id == 1 && strings.ToLower(ctx.EthAddress.String())[2:] == item.To[2:] && item.Value == expectedValue.String() {
 							println("SUCCESS: test commission for validator")
+							ctx.TestsWg.Done()
+							return
+						}
+					}
+				}
+			}
+
+			minterHeight++
+		}
+	}()
+}
+
+func testFeeRefund(ctx *Context) {
+	ctx.TestsWg.Add(1)
+	randomPk, _ := crypto.GenerateKey()
+	randomPkString := fmt.Sprintf("%x", crypto.FromECDSA(randomPk))
+	recipient := crypto.PubkeyToAddress(randomPk.PublicKey).Hex()
+	value := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(50)))
+	fee := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(10)))
+	fundMinterAddress("Mx"+recipient[2:], ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterClient)
+
+	sendMinterCoinToEthereum(randomPkString, common.HexToAddress(recipient), ctx.MinterMultisig, ctx.MinterClient, recipient, value, fee)
+
+	go func() {
+		expectedValue := sdk.NewInt(3602620000000000000) // todo: calculate this value somehow
+		startTime := time.Now()
+
+		minterStatus, err := ctx.MinterClient.Status()
+		if err != nil {
+			panic(err)
+		}
+
+		minterHeight := minterStatus.LatestBlockHeight
+		timeout := time.Minute * 5
+
+		for {
+			if time.Now().Sub(startTime).Seconds() > timeout.Seconds() {
+				panic("Timeout waiting for the fee refund to arrive")
+			}
+
+			response, err := ctx.MinterClient.Block(minterHeight)
+			if err != nil {
+				time.Sleep(time.Millisecond * 200)
+				continue
+			}
+
+			for _, transactionResponse := range response.Transactions {
+				if transactionResponse.From != ctx.MinterMultisig {
+					continue
+				}
+
+				if transaction.Type(transactionResponse.Type) == transaction.TypeMultisend {
+					var data api_pb.MultiSendData
+					if err := transactionResponse.Data.UnmarshalTo(&data); err != nil {
+						panic(err)
+					}
+
+					for _, item := range data.List {
+						if item.Coin.Id == 1 && strings.ToLower(recipient)[2:] == item.To[2:] && item.Value == expectedValue.String() {
+							println("SUCCESS: test fee refund")
 							ctx.TestsWg.Done()
 							return
 						}
