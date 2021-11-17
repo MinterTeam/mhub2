@@ -63,6 +63,7 @@ type Context struct {
 var bridgeCommission, _ = sdk.NewDecFromStr("0.01")
 
 func main() {
+
 	wd := getWd()
 
 	ethPrivateKey, _ := crypto.GenerateKey()
