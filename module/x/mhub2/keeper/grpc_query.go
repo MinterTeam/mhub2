@@ -19,7 +19,7 @@ import (
 var _ types.QueryServer = Keeper{}
 
 func (k Keeper) TransactionStatus(ctx context.Context, request *types.TransactionStatusRequest) (*types.TransactionStatusResponse, error) {
-	return &types.TransactionStatusResponse{Status: k.GetTxStatus(sdk.UnwrapSDKContext(ctx), types.ChainID(request.ChainId), request.TxHash)}, nil
+	return &types.TransactionStatusResponse{Status: k.GetTxStatus(sdk.UnwrapSDKContext(ctx), request.TxHash)}, nil
 }
 
 func (k Keeper) TokenInfos(ctx context.Context, _ *types.TokenInfosRequest) (*types.TokenInfosResponse, error) {

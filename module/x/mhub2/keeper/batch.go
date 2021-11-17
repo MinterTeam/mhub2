@@ -33,7 +33,7 @@ func (k Keeper) BuildBatchTx(ctx sdk.Context, chainId types.ChainID, externalTok
 	k.iterateUnbatchedSendToExternalsByCoin(ctx, chainId, externalTokenId, func(ste *types.SendToExternal) bool {
 		selectedStes = append(selectedStes, ste)
 		k.deleteUnbatchedSendToExternal(ctx, chainId, ste.Id, ste.Fee)
-		k.SetTxStatus(ctx, chainId, ste.TxHash, types.TX_STATUS_BATCH_CREATED, "")
+		k.SetTxStatus(ctx, ste.TxHash, types.TX_STATUS_BATCH_CREATED, "")
 		return len(selectedStes) == maxElements
 	})
 
@@ -107,7 +107,7 @@ func (k Keeper) batchTxExecuted(ctx sdk.Context, chainId types.ChainID, external
 	for _, tx := range batchTx.Transactions {
 		totalValCommission.Amount = totalValCommission.Amount.Add(tx.ValCommission.Amount)
 		totalFee.Amount = totalFee.Amount.Add(tx.Fee.Amount)
-		k.SetTxStatus(ctx, chainId, tx.TxHash, types.TX_STATUS_BATCH_EXECUTED, txHash)
+		k.SetTxStatus(ctx, tx.TxHash, types.TX_STATUS_BATCH_EXECUTED, txHash)
 	}
 
 	// pay val's commissions

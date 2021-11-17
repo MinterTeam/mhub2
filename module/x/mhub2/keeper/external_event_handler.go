@@ -124,7 +124,7 @@ func (a ExternalEventProcessor) Handle(ctx sdk.Context, chainId types.ChainID, e
 			return err
 		}
 		a.keeper.AfterSendToHubEvent(ctx, *event)
-		a.keeper.SetTxStatus(ctx, chainId, event.TxHash, types.TX_STATUS_DEPOSIT_RECEIVED, "")
+		a.keeper.SetTxStatus(ctx, event.TxHash, types.TX_STATUS_DEPOSIT_RECEIVED, "")
 
 		return nil
 

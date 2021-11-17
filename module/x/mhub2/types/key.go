@@ -149,6 +149,6 @@ func MakeContractCallTxKey(chainId ChainID, invalscope []byte, invalnonce uint64
 	return bytes.Join([][]byte{{ContractCallTxPrefixByte}, chainId.Bytes(), invalscope, sdk.Uint64ToBigEndian(invalnonce)}, []byte{})
 }
 
-func GetTxStatusKey(chainId ChainID, inTxHash string) []byte {
-	return bytes.Join([][]byte{{TxStatusKey}, chainId.Bytes(), []byte(inTxHash)}, []byte{})
+func GetTxStatusKey(inTxHash string) []byte {
+	return bytes.Join([][]byte{{TxStatusKey}, []byte(inTxHash)}, []byte{})
 }

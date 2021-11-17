@@ -117,7 +117,7 @@ func (k Keeper) cancelSendToExternal(ctx sdk.Context, chainId types.ChainID, id 
 		}
 	}
 
-	k.SetTxStatus(ctx, chainId, send.TxHash, types.TX_STATUS_REFUNDED, "")
+	k.SetTxStatus(ctx, send.TxHash, types.TX_STATUS_REFUNDED, "")
 
 	k.deleteUnbatchedSendToExternal(ctx, chainId, send.Id, send.Fee)
 	return nil
