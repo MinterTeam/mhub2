@@ -60,10 +60,12 @@ func createBatchTxs(ctx sdk.Context, chainId types.ChainID, k keeper.Keeper) {
 			return false
 		})
 
-		var ids []string // todo: sort
+		var ids []string
 		for k := range coinIds {
 			ids = append(ids, k)
 		}
+
+		sort.Strings(ids)
 
 		for _, id := range ids {
 			// NOTE: this doesn't emit events which would be helpful for client processes

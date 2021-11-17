@@ -58,7 +58,7 @@ func (k Keeper) BuildBatchTx(ctx sdk.Context, chainId types.ChainID, externalTok
 	return batch
 }
 
-// This gets the batch timeout height in External blocks. todo: what about minter?
+// This gets the batch timeout height in External blocks.
 func (k Keeper) getBatchTimeoutHeight(ctx sdk.Context, chainId types.ChainID) uint64 {
 	params := k.GetParams(ctx)
 	currentCosmosHeight := ctx.BlockHeight()
