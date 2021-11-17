@@ -80,6 +80,7 @@ func main() {
 	runOrPanic(os.ExpandEnv("rm -rf $HOME/.mhub2"))
 
 	runHoldersServer()
+	runEthFeeCalculatorServer()
 
 	// minter node
 	runOrPanic("mkdir %s/data/minter", wd)
@@ -162,8 +163,8 @@ func main() {
 	time.Sleep(time.Second * 10)
 	go runOrPanic("mhub-oracle --test-env --config=oracle-config.toml --cosmos-mnemonic=%s", cosmosMnemonic)
 	go runOrPanic("mhub-minter-connector --config=connector-config.toml --cosmos-mnemonic=%s --minter-private-key=%s --minter-multisig-addr=%s", cosmosMnemonic, ethPrivateKeyString, minterMultisig)
-	go runOrPanic("orchestrator --chain-id=ethereum --cosmos-phrase=%s --ethereum-key=%s --cosmos-grpc=%s --ethereum-rpc=%s --contract-address=%s --fees=%s --address-prefix=hub --metrics-listen=127.0.0.1:3000", cosmosMnemonic, ethPrivateKeyString, "http://localhost:9090", "http://localhost:8545", ethContract, denom)
-	go runOrPanic("orchestrator --chain-id=bsc --cosmos-phrase=%s --ethereum-key=%s --cosmos-grpc=%s --ethereum-rpc=%s --contract-address=%s --fees=%s --address-prefix=hub --metrics-listen=127.0.0.1:3001", cosmosMnemonic, ethPrivateKeyString, "http://localhost:9090", "http://localhost:8546", bscContract, denom)
+	go runOrPanic("orchestrator --chain-id=ethereum --eth-fee-calculator-url=http://localhost:8840 --cosmos-phrase=%s --ethereum-key=%s --cosmos-grpc=%s --ethereum-rpc=%s --contract-address=%s --fees=%s --address-prefix=hub --metrics-listen=127.0.0.1:3000", cosmosMnemonic, ethPrivateKeyString, "http://localhost:9090", "http://localhost:8545", ethContract, denom)
+	go runOrPanic("orchestrator --chain-id=bsc --eth-fee-calculator-url=http://localhost:8840 --cosmos-phrase=%s --ethereum-key=%s --cosmos-grpc=%s --ethereum-rpc=%s --contract-address=%s --fees=%s --address-prefix=hub --metrics-listen=127.0.0.1:3001", cosmosMnemonic, ethPrivateKeyString, "http://localhost:9090", "http://localhost:8546", bscContract, denom)
 	approveERC20ToHub(ethPrivateKey, ethClient, ethContract, erc20addr, ethChainId)
 	approveERC20ToHub(ethPrivateKey, bscClient, bscContract, bep20addr, bscChainId)
 
@@ -1048,7 +1049,7 @@ func testFeeRefund(ctx *Context) {
 		}
 
 		minterHeight := minterStatus.LatestBlockHeight
-		timeout := time.Minute * 5
+		timeout := time.Minute * 10
 
 		for {
 			if time.Now().Sub(startTime).Seconds() > timeout.Seconds() {
