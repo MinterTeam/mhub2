@@ -725,7 +725,7 @@ func deployContractsAndMultisig(prKeyString string) {
 		println("bsc", contract)
 	}
 
-	minterClient, _ := grpc_client.New("https://node-api.taconet.minter.network/v2")
+	minterClient, _ := grpc_client.New("node-api.taconet.minter.network:8842")
 	minterMultisig := createMinterMultisig(ethPrivateKeyString, ethAddress, minterClient)
 
 	println("minter", minterMultisig)
