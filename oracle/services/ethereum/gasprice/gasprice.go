@@ -3,6 +3,7 @@ package gasprice
 import (
 	"errors"
 	"fmt"
+	"github.com/MinterTeam/mhub2/oracle/services/ethereum/gasprice/providers/test"
 	"time"
 
 	"github.com/MinterTeam/mhub2/oracle/config"
@@ -33,6 +34,9 @@ func NewService(cfg *config.Config, logger log.Logger) (*Service, error) {
 			break
 		case "etherchain":
 			p = etherchain.New()
+			break
+		case "test":
+			p = test.New()
 			break
 		default:
 			return nil, errors.New(fmt.Sprintf(
