@@ -135,7 +135,12 @@ func (k Keeper) batchTxExecuted(ctx sdk.Context, chainId types.ChainID, external
 	}
 
 	if totalFee.IsPositive() {
-		amount := feePaid.ToDec().Mul(k.oracleKeeper.MustGetTokenPrice(ctx, "eth")).Quo(k.oracleKeeper.MustGetTokenPrice(ctx, tokenInfo.Denom)).Mul(sdk.NewDecWithPrec(15, 1)).TruncateInt()
+		amount := feePaid.ToDec().
+			Mul(k.oracleKeeper.MustGetTokenPrice(ctx, "eth")).
+			Quo(k.oracleKeeper.MustGetTokenPrice(ctx, tokenInfo.Denom)).
+			MulInt64(150).
+			QuoInt64(100).
+			TruncateInt()
 		fee := sdk.NewCoin(tokenInfo.Denom, amount)
 		if fee.IsGTE(totalFee) {
 			fee = totalFee
@@ -164,11 +169,28 @@ func (k Keeper) batchTxExecuted(ctx sdk.Context, chainId types.ChainID, external
 				}
 
 				averageFeePaid := fee.Amount.QuoRaw(int64(len(batchTx.Transactions)))
+				totalGoodFeePaid := sdk.NewInt(0)
 				for _, tx := range batchTx.Transactions {
-					toRefund := tx.Fee.Amount.Sub(averageFeePaid)
-					_, err = k.createSendToExternal(ctx, "minter", tempSender, tx.RefundAddress, sdk.NewCoin(fee.Denom, toRefund), sdk.NewInt64Coin(fee.Denom, 0), sdk.NewInt64Coin(fee.Denom, 0), "#fee", "", "")
-					if err != nil {
-						panic(err)
+					if tx.Fee.Amount.GTE(averageFeePaid) {
+						totalGoodFeePaid = totalGoodFeePaid.Add(tx.Fee.Amount)
+					}
+				}
+
+				for _, tx := range batchTx.Transactions {
+					if tx.Fee.Amount.LT(averageFeePaid) {
+						continue
+					}
+
+					toRefund := feeLeft.Amount.Mul(tx.Fee.Amount).Quo(totalGoodFeePaid)
+					if tx.RefundChainId != "minter" { // we only can refund fee to minter
+						continue
+					}
+
+					if toRefund.IsPositive() {
+						_, err = k.createSendToExternal(ctx, "minter", tempSender, tx.RefundAddress, sdk.NewCoin(fee.Denom, toRefund), sdk.NewInt64Coin(fee.Denom, 0), sdk.NewInt64Coin(fee.Denom, 0), "#fee", "", "")
+						if err != nil {
+							panic(err)
+						}
 					}
 				}
 			}

@@ -186,7 +186,7 @@ func runEvmChain(chainId int, wd string, ethAddress common.Address, privateKey *
 		panic(err)
 	}
 	runOrPanic("geth --networkid %d --datadir %s/data/eth-%d account import --password=eth-password.txt data/private-key-%d.txt", chainId, wd, chainId, chainId)
-	go runOrPanic("geth --port %d --maxpeers 0 --allow-insecure-unlock --http --http.port %s --networkid %d --unlock %s --password=eth-password.txt --mine --datadir %s/data/eth-%d", 30303+chainId, port, chainId, ethAddress.Hex(), wd, chainId)
+	go runOrPanic("geth --miner.gasprice 100000000000 --port %d --maxpeers 0 --allow-insecure-unlock --http --http.port %s --networkid %d --unlock %s --password=eth-password.txt --mine --datadir %s/data/eth-%d", 30303+chainId, port, chainId, ethAddress.Hex(), wd, chainId)
 	client, err := ethclient.Dial("http://localhost:" + port)
 	if err != nil {
 		panic(err)
@@ -436,7 +436,7 @@ func fundContractWithErc20(privateKey *ecdsa.PrivateKey, client *ethclient.Clien
 		panic(err)
 	}
 
-	response, err := erc20Instance.Transfer(auth, common.HexToAddress(hub2Addr), transaction.BipToPip(big.NewInt(100)))
+	response, err := erc20Instance.Transfer(auth, common.HexToAddress(hub2Addr), transaction.BipToPip(big.NewInt(100000)))
 	if err != nil {
 		panic(err)
 	}
@@ -553,7 +553,7 @@ func populateEthGenesis(address common.Address, chainId int) {
 			PetersburgBlock:     big.NewInt(0),
 			IstanbulBlock:       big.NewInt(0),
 			Clique: &params.CliqueConfig{
-				Period: 3,
+				Period: 5,
 				Epoch:  30000,
 			},
 		},

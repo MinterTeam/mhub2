@@ -167,7 +167,6 @@ func main() {
 	go runOrPanic("orchestrator --chain-id=bsc --eth-fee-calculator-url=http://localhost:8840 --cosmos-phrase=%s --ethereum-key=%s --cosmos-grpc=%s --ethereum-rpc=%s --contract-address=%s --fees=%s --address-prefix=hub --metrics-listen=127.0.0.1:3001", cosmosMnemonic, ethPrivateKeyString, "http://localhost:9090", "http://localhost:8546", bscContract, denom)
 	approveERC20ToHub(ethPrivateKey, ethClient, ethContract, erc20addr, ethChainId)
 	approveERC20ToHub(ethPrivateKey, bscClient, bscContract, bep20addr, bscChainId)
-
 	time.Sleep(time.Second * 10)
 
 	ctx := &Context{
@@ -636,7 +635,7 @@ func testHubToBSCTransfer(ctx *Context) {
 		expectedValue = expectedValue.QuoRaw(1e12)
 
 		startTime := time.Now()
-		timeout := time.Minute * 10
+		timeout := time.Minute * 5
 
 		hubContract, _ := erc20.NewErc20(common.HexToAddress(ctx.Bep20addr), ctx.BscClient)
 
@@ -901,7 +900,7 @@ func testBSCToEthereumTransfer(ctx *Context) {
 		expectedValue = expectedValue.SubRaw(100 * 1e12)
 
 		startTime := time.Now()
-		timeout := time.Minute * 10
+		timeout := time.Minute * 5
 
 		hubContract, _ := erc20.NewErc20(common.HexToAddress(ctx.Erc20addr), ctx.EthClient)
 
@@ -989,7 +988,7 @@ func testValidatorsCommissions(ctx *Context) {
 		}
 
 		minterHeight := minterStatus.LatestBlockHeight
-		timeout := time.Minute * 10
+		timeout := time.Minute * 5
 
 		for {
 			if time.Now().Sub(startTime).Seconds() > timeout.Seconds() {
@@ -1033,14 +1032,14 @@ func testFeeRefund(ctx *Context) {
 	randomPk, _ := crypto.GenerateKey()
 	randomPkString := fmt.Sprintf("%x", crypto.FromECDSA(randomPk))
 	recipient := crypto.PubkeyToAddress(randomPk.PublicKey).Hex()
-	value := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(50)))
-	fee := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(10)))
+	value := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(16000)))
+	fee := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(15000)))
 	fundMinterAddress("Mx"+recipient[2:], ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterClient)
 
 	sendMinterCoinToEthereum(randomPkString, common.HexToAddress(recipient), ctx.MinterMultisig, ctx.MinterClient, recipient, value, fee)
 
 	go func() {
-		expectedValue := sdk.NewInt(3602620000000000000) // todo: calculate this value somehow
+		expectedValue, _ := sdk.NewIntFromString("14360118013104783360000") // todo: calculate this value somehow
 		startTime := time.Now()
 
 		minterStatus, err := ctx.MinterClient.Status()
@@ -1049,7 +1048,7 @@ func testFeeRefund(ctx *Context) {
 		}
 
 		minterHeight := minterStatus.LatestBlockHeight
-		timeout := time.Minute * 10
+		timeout := time.Minute * 5
 
 		for {
 			if time.Now().Sub(startTime).Seconds() > timeout.Seconds() {
@@ -1074,7 +1073,11 @@ func testFeeRefund(ctx *Context) {
 					}
 
 					for _, item := range data.List {
-						if item.Coin.Id == 1 && strings.ToLower(recipient)[2:] == item.To[2:] && item.Value == expectedValue.String() {
+						if item.Coin.Id != 1 || strings.ToLower(recipient)[2:] != item.To[2:] {
+							continue
+						}
+
+						if item.Value == expectedValue.String() {
 							println("SUCCESS: test fee refund")
 							ctx.TestsWg.Done()
 							return
@@ -1101,7 +1104,7 @@ func testEthereumToBscTransfer(ctx *Context) {
 		expectedValue = expectedValue.QuoRaw(1e12)
 
 		startTime := time.Now()
-		timeout := time.Minute * 10
+		timeout := time.Minute * 5
 
 		hubContract, _ := erc20.NewErc20(common.HexToAddress(ctx.Bep20addr), ctx.BscClient)
 

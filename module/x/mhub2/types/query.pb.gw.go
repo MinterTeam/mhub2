@@ -348,12 +348,30 @@ func local_request_Query_SignerSetTxs_0(ctx context.Context, marshaler runtime.M
 }
 
 var (
-	filter_Query_BatchTxs_0 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
+	filter_Query_BatchTxs_0 = &utilities.DoubleArray{Encoding: map[string]int{"chain_id": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
 )
 
 func request_Query_BatchTxs_0(ctx context.Context, marshaler runtime.Marshaler, client QueryClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq BatchTxsRequest
 	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["chain_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "chain_id")
+	}
+
+	protoReq.ChainId, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "chain_id", err)
+	}
 
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
@@ -370,6 +388,24 @@ func request_Query_BatchTxs_0(ctx context.Context, marshaler runtime.Marshaler, 
 func local_request_Query_BatchTxs_0(ctx context.Context, marshaler runtime.Marshaler, server QueryServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq BatchTxsRequest
 	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["chain_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "chain_id")
+	}
+
+	protoReq.ChainId, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "chain_id", err)
+	}
 
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
@@ -2500,7 +2536,7 @@ var (
 
 	pattern_Query_SignerSetTxs_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"mhub2", "v1", "signer_sets"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_Query_BatchTxs_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"mhub2", "v1", "batch", "batch_txs"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_BatchTxs_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"mhub2", "v1", "batch", "batch_txs", "chain_id"}, "", runtime.AssumeColonVerbOpt(true)))
 
 	pattern_Query_ContractCallTxs_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"mhub2", "v1", "batch", "contract_call_txs"}, "", runtime.AssumeColonVerbOpt(true)))
 

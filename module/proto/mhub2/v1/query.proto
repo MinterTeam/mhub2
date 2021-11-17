@@ -38,7 +38,7 @@ service Query {
      option (google.api.http).get = "/mhub2/v1/signer_sets";
   }
   rpc BatchTxs(BatchTxsRequest) returns (BatchTxsResponse) {
-     option (google.api.http).get = "/mhub2/v1/batch/batch_txs";
+     option (google.api.http).get = "/mhub2/v1/batch/batch_txs/{chain_id}";
   }
   rpc ContractCallTxs(ContractCallTxsRequest) returns (ContractCallTxsResponse) {
      option (google.api.http).get = "/mhub2/v1/batch/contract_call_txs";
