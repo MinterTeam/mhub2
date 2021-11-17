@@ -31,13 +31,12 @@ function MinterHub(hostname) {
     }
 
     /**
-     * @param {string} chainId
      * @param {string} txHash
      * @return {Promise<TxStatus.AsObject>}
      */
-    this.getTxStatus = function(chainId, txHash) {
+    this.getTxStatus = function(txHash) {
         return new Promise((resolve, reject) => {
-            hubService.transactionStatus(new TransactionStatusRequest([chainId, txHash]), {}, function(err, response) {
+            hubService.transactionStatus(new TransactionStatusRequest([txHash]), {}, function(err, response) {
                 if (err) {
                     reject(err);
                 } else {

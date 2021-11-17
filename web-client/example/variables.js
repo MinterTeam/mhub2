@@ -1,2 +1,2 @@
-module.exports.TX_HASH = 'Mtf26ace0e67ec606251b71a7e349375c438a51282a2c0dd6c72013221762c9dba';
-module.exports.TX_CHAIN_ID = 'ethereum';
+module.exports.TX_HASH = 'Mt5481afbbd99afca47f41357692c3d81461784007ffaeed24ba173f0c0b9061ae';
+module.exports.GRPC_APU_URL = 'http://46.101.215.17:9091';
