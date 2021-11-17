@@ -186,10 +186,14 @@ func main() {
 		CosmosMnemonic:      cosmosMnemonic,
 	}
 
-	println("Start running tests")
+	println("Start running preparation tests")
 	testMinterMultisigChanges(ctx)
 	testEthereumMultisigChanges(ctx)
 	testBSCMultisigChanges(ctx)
+	ctx.TestsWg.Wait()
+	time.Sleep(time.Second * 20) // todo: wait for all of networks to confirm valset updates
+
+	println("Start real tests")
 	testEthereumToMinterTransfer(ctx)
 	testEthereumToBscTransfer(ctx)
 	testBSCToEthereumTransfer(ctx)
