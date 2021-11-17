@@ -180,10 +180,17 @@ func createMinterMultisig(prKey string, ethAddress common.Address, client *grpc_
 	return transaction.MultisigAddress(addr, nonce)
 }
 
-func runEvmChain(chainId int, wd string, ethAddress common.Address, privateKey *ecdsa.PrivateKey, port string) (*ethclient.Client, error, string, string) {
+func runEvmChain(chainId int, wd string, ethAddress common.Address, privateKey *ecdsa.PrivateKey, privateKeyString string, port string) (*ethclient.Client, error, string, string) {
 	runOrPanic("geth --networkid %d --datadir %s/data/eth-%d init data/eth-genesis-%d.json", chainId, wd, chainId, chainId)
-	go runOrPanic("geth --port %d --maxpeers 0 --http --http.port %s --networkid %d --miner.threads=1 --mine --miner.etherbase %s --datadir %s/data/eth-%d", 30303+chainId, port, chainId, ethAddress.Hex(), wd, chainId)
+	if err := os.WriteFile(fmt.Sprintf("data/private-key-%d.txt", chainId), []byte(privateKeyString), os.ModePerm); err != nil {
+		panic(err)
+	}
+	runOrPanic("geth --networkid %d --datadir %s/data/eth-%d account import --password=eth-password.txt data/private-key-%d.txt", chainId, wd, chainId, chainId)
+	go runOrPanic("geth --port %d --maxpeers 0 --allow-insecure-unlock --http --http.port %s --networkid %d --unlock %s --password=eth-password.txt --mine --datadir %s/data/eth-%d", 30303+chainId, port, chainId, ethAddress.Hex(), wd, chainId)
 	client, err := ethclient.Dial("http://localhost:" + port)
+	if err != nil {
+		panic(err)
+	}
 
 	for {
 		if _, err := client.ChainID(context.TODO()); err != nil {
@@ -282,7 +289,7 @@ func deployERC20(privateKey *ecdsa.PrivateKey, client *ethclient.Client, chainId
 
 func sendERC20ToAnotherChain(privateKey *ecdsa.PrivateKey, client *ethclient.Client, hub2Addr string, erc20addr string, to string, chainId int64, destChain string, value *big.Int) {
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
-	nonce, err := client.NonceAt(context.TODO(), addr, nil)
+	nonce, err := client.PendingNonceAt(context.TODO(), addr)
 	if err != nil {
 		panic(err)
 	}
@@ -327,7 +334,7 @@ func sendERC20ToAnotherChain(privateKey *ecdsa.PrivateKey, client *ethclient.Cli
 
 func approveERC20ToHub(privateKey *ecdsa.PrivateKey, client *ethclient.Client, hub2Addr string, erc20addr string, chainId int64) {
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
-	nonce, err := client.NonceAt(context.TODO(), addr, nil)
+	nonce, err := client.PendingNonceAt(context.TODO(), addr)
 	if err != nil {
 		panic(err)
 	}
@@ -360,7 +367,7 @@ func approveERC20ToHub(privateKey *ecdsa.PrivateKey, client *ethclient.Client, h
 
 func sendERC20ToHub(privateKey *ecdsa.PrivateKey, client *ethclient.Client, hub2Addr string, erc20addr string, to string, chainId int64, value *big.Int) {
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
-	nonce, err := client.NonceAt(context.TODO(), addr, nil)
+	nonce, err := client.PendingNonceAt(context.TODO(), addr)
 	if err != nil {
 		panic(err)
 	}
@@ -545,9 +552,17 @@ func populateEthGenesis(address common.Address, chainId int) {
 			ConstantinopleBlock: big.NewInt(0),
 			PetersburgBlock:     big.NewInt(0),
 			IstanbulBlock:       big.NewInt(0),
-			Ethash:              &params.EthashConfig{},
+			Clique: &params.CliqueConfig{
+				Period: 5,
+				Epoch:  30000,
+			},
 		},
-		ExtraData: make([]byte, 32),
+	}
+
+	var signers = []common.Address{address}
+	genesis.ExtraData = make([]byte, 32+len(signers)*common.AddressLength+65)
+	for i, signer := range signers {
+		copy(genesis.ExtraData[32+i*common.AddressLength:], signer[:])
 	}
 
 	jsonGenesis, err := genesis.MarshalJSON()

@@ -119,7 +119,7 @@ func main() {
 
 	wg.Add(2)
 	go func() {
-		ethClient, err, ethContract, erc20addr = runEvmChain(ethChainId, wd, ethAddress, ethPrivateKey, "8545")
+		ethClient, err, ethContract, erc20addr = runEvmChain(ethChainId, wd, ethAddress, ethPrivateKey, ethPrivateKeyString, "8545")
 		if err != nil {
 			panic(err)
 		}
@@ -127,7 +127,7 @@ func main() {
 	}()
 
 	go func() {
-		bscClient, err, bscContract, bep20addr = runEvmChain(bscChainId, wd, ethAddress, ethPrivateKey, "8546")
+		bscClient, err, bscContract, bep20addr = runEvmChain(bscChainId, wd, ethAddress, ethPrivateKey, ethPrivateKeyString, "8546")
 		if err != nil {
 			panic(err)
 		}
@@ -142,7 +142,7 @@ func main() {
 	hubAddress := strings.Trim(runOrPanic("mhub2 keys show validator1 -a --keyring-backend test"), "\n")
 
 	runOrPanic("mhub2 add-genesis-account --keyring-backend test validator1 100000000000000000000000000%s,100000000000000000000000000hub", denom)
-	runOrPanic("mhub2 prepare-genesis-for-tests %s %s", erc20addr, bep20addr)
+	runOrPanic("mhub2 prepare-genesis-for-tests %s %s %s", erc20addr, bep20addr, "1")
 
 	runOrPanic("mhub2 gentx --keyring-backend test --moniker validator1 --chain-id=%s validator1 1000000000000000000000000%s %s %s 0x00", mhubChainId, denom, ethAddress.Hex(), hubAddress)
 	runOrPanic("mhub2 collect-gentxs test")
@@ -160,7 +160,7 @@ func main() {
 	}
 
 	time.Sleep(time.Second * 10)
-	go runOrPanic("mhub-oracle --config=oracle-config.toml --cosmos-mnemonic=%s", cosmosMnemonic)
+	go runOrPanic("mhub-oracle --test-env --config=oracle-config.toml --cosmos-mnemonic=%s", cosmosMnemonic)
 	go runOrPanic("mhub-minter-connector --config=connector-config.toml --cosmos-mnemonic=%s --minter-private-key=%s --minter-multisig-addr=%s", cosmosMnemonic, ethPrivateKeyString, minterMultisig)
 	go runOrPanic("orchestrator --chain-id=ethereum --cosmos-phrase=%s --ethereum-key=%s --cosmos-grpc=%s --ethereum-rpc=%s --contract-address=%s --fees=%s --address-prefix=hub --metrics-listen=127.0.0.1:3000", cosmosMnemonic, ethPrivateKeyString, "http://localhost:9090", "http://localhost:8545", ethContract, denom)
 	go runOrPanic("orchestrator --chain-id=bsc --cosmos-phrase=%s --ethereum-key=%s --cosmos-grpc=%s --ethereum-rpc=%s --contract-address=%s --fees=%s --address-prefix=hub --metrics-listen=127.0.0.1:3001", cosmosMnemonic, ethPrivateKeyString, "http://localhost:9090", "http://localhost:8546", bscContract, denom)
