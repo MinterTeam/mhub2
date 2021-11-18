@@ -723,11 +723,11 @@ func (k Keeper) GetCommissionForHolder(ctx sdk.Context, addresses []string, comm
 func (k Keeper) GetColdStorageAddr(ctx sdk.Context, chainId types.ChainID) string {
 	switch chainId {
 	case "minter":
-		return "Mx..." // todo
+		return "Mx0000000000000000000000000000000000000000" // todo
 	case "ethereum":
-		return "0x..." // todo
+		return "0x0000000000000000000000000000000000000000" // todo
 	case "bsc":
-		return "0x..." // todo
+		return "0x0000000000000000000000000000000000000000" // todo
 	}
 
 	panic("unknown network")
@@ -737,19 +737,17 @@ func (k Keeper) ColdStorageTransfer(ctx sdk.Context, c *types.ColdStorageTransfe
 	chainId := types.ChainID(c.ChainId)
 	coldStorageAddr := k.GetColdStorageAddr(ctx, chainId)
 
-	var defaultSender = sdk.AccAddress{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0} // todo
-
 	for _, coin := range c.Amount {
 		vouchers := sdk.Coins{coin}
 		if err := k.bankKeeper.MintCoins(ctx, types.ModuleName, vouchers); err != nil {
 			return errors2.Wrapf(err, "mint vouchers coins: %s", vouchers)
 		}
 
-		if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, defaultSender, vouchers); err != nil {
+		if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, types.TempAddress, vouchers); err != nil {
 			return errors2.Wrap(err, "transfer vouchers")
 		}
 
-		txID, err := k.createSendToExternal(ctx, chainId, defaultSender, coldStorageAddr, coin, sdk.NewCoin(coin.Denom, sdk.NewInt(0)), sdk.NewCoin(coin.Denom, sdk.NewInt(0)), fmt.Sprintf("%x", sha256.Sum256(ctx.TxBytes())), "hub", defaultSender.String())
+		txID, err := k.createSendToExternal(ctx, chainId, types.TempAddress, coldStorageAddr, coin, sdk.NewCoin(coin.Denom, sdk.NewInt(0)), sdk.NewCoin(coin.Denom, sdk.NewInt(0)), fmt.Sprintf("%x", sha256.Sum256(ctx.TxBytes())), "hub", types.TempAddress.String())
 		if err != nil {
 			return err
 		}

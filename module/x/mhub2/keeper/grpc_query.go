@@ -45,12 +45,14 @@ func (k Keeper) LastSubmittedExternalEvent(c context.Context, req *types.LastSub
 
 func (k Keeper) BatchedSendToExternals(c context.Context, req *types.BatchedSendToExternalsRequest) (*types.BatchedSendToExternalsResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)
-	res := &types.BatchedSendToExternalsResponse{}
+	res := &types.BatchedSendToExternalsResponse{
+		ChainId: req.ChainId,
+	}
 
 	k.IterateOutgoingTxsByType(ctx, types.ChainID(req.ChainId), types.BatchTxPrefixByte, func(_ []byte, outgoing types.OutgoingTx) bool {
 		batchTx := outgoing.(*types.BatchTx)
 		for _, ste := range batchTx.Transactions {
-			if ste.Sender == req.SenderAddress {
+			if req.SenderAddress == "" || ste.Sender == req.SenderAddress {
 				res.SendToExternals = append(res.SendToExternals, ste)
 			}
 		}
@@ -63,7 +65,9 @@ func (k Keeper) BatchedSendToExternals(c context.Context, req *types.BatchedSend
 
 func (k Keeper) UnbatchedSendToExternals(c context.Context, req *types.UnbatchedSendToExternalsRequest) (*types.UnbatchedSendToExternalsResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)
-	res := &types.UnbatchedSendToExternalsResponse{}
+	res := &types.UnbatchedSendToExternalsResponse{
+		ChainId: req.ChainId,
+	}
 
 	prefixStore := prefix.NewStore(ctx.KVStore(k.storeKey), bytes.Join([][]byte{{types.SendToExternalKey}, types.ChainID(req.ChainId).Bytes()}, []byte{}))
 	pageRes, err := query.FilteredPaginate(prefixStore, req.Pagination, func(key []byte, value []byte, accumulate bool) (bool, error) {

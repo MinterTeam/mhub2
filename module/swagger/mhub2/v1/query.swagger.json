@@ -11,7 +11,7 @@
     "application/json"
   ],
   "paths": {
-    "/mhub2/v1/ContractCallTxs/{address}/pending": {
+    "/mhub2/v1/ContractCallTxs/{address}/pending/{chain_id}": {
       "get": {
         "operationId": "Query_UnsignedContractCallTxs",
         "responses": {
@@ -37,8 +37,8 @@
           },
           {
             "name": "chain_id",
-            "in": "query",
-            "required": false,
+            "in": "path",
+            "required": true,
             "type": "string"
           }
         ],
@@ -47,7 +47,7 @@
         ]
       }
     },
-    "/mhub2/v1/SignerSetTxs/{address}/pending": {
+    "/mhub2/v1/SignerSetTxs/{address}/pending/{chain_id}": {
       "get": {
         "summary": "pending external signature queries for orchestrators to figure out which\nsignatures they are missing\nTODO: can/should we group this into one endpoint?",
         "operationId": "Query_UnsignedSignerSetTxs",
@@ -75,8 +75,8 @@
           },
           {
             "name": "chain_id",
-            "in": "query",
-            "required": false,
+            "in": "path",
+            "required": true,
             "type": "string"
           }
         ],
@@ -153,7 +153,7 @@
         ]
       }
     },
-    "/mhub2/v1/batch/contract_call_txs": {
+    "/mhub2/v1/batch/contract_call_txs/{chain_id}": {
       "get": {
         "operationId": "Query_ContractCallTxs",
         "responses": {
@@ -171,6 +171,12 @@
           }
         },
         "parameters": [
+          {
+            "name": "chain_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
           {
             "name": "pagination.key",
             "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set.",
@@ -208,12 +214,6 @@
             "in": "query",
             "required": false,
             "type": "boolean"
-          },
-          {
-            "name": "chain_id",
-            "in": "query",
-            "required": false,
-            "type": "string"
           }
         ],
         "tags": [
@@ -221,7 +221,7 @@
         ]
       }
     },
-    "/mhub2/v1/batch_txs/external_signatures": {
+    "/mhub2/v1/batch_txs/external_signatures/{chain_id}": {
       "get": {
         "operationId": "Query_BatchTxConfirmations",
         "responses": {
@@ -240,6 +240,12 @@
         },
         "parameters": [
           {
+            "name": "chain_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
             "name": "batch_nonce",
             "in": "query",
             "required": false,
@@ -251,12 +257,6 @@
             "in": "query",
             "required": false,
             "type": "string"
-          },
-          {
-            "name": "chain_id",
-            "in": "query",
-            "required": false,
-            "type": "string"
           }
         ],
         "tags": [
@@ -264,7 +264,7 @@
         ]
       }
     },
-    "/mhub2/v1/batch_txs/{external_token_id}/{batch_nonce}": {
+    "/mhub2/v1/batch_txs/{chain_id}/{external_token_id}/{batch_nonce}": {
       "get": {
         "operationId": "Query_BatchTx",
         "responses": {
@@ -283,6 +283,12 @@
         },
         "parameters": [
           {
+            "name": "chain_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
             "name": "external_token_id",
             "in": "path",
             "required": true,
@@ -294,12 +300,6 @@
             "required": true,
             "type": "string",
             "format": "uint64"
-          },
-          {
-            "name": "chain_id",
-            "in": "query",
-            "required": false,
-            "type": "string"
           }
         ],
         "tags": [
@@ -307,7 +307,7 @@
         ]
       }
     },
-    "/mhub2/v1/batches/fees": {
+    "/mhub2/v1/batches/fees/{chain_id}": {
       "get": {
         "summary": "Queries the fees for all pending batches, results are returned in sdk.Coin\n(fee_amount_int)(contract_address) style",
         "operationId": "Query_BatchTxFees",
@@ -328,8 +328,8 @@
         "parameters": [
           {
             "name": "chain_id",
-            "in": "query",
-            "required": false,
+            "in": "path",
+            "required": true,
             "type": "string"
           }
         ],
@@ -338,7 +338,7 @@
         ]
       }
     },
-    "/mhub2/v1/batches/{address}/pending": {
+    "/mhub2/v1/batches/{address}/pending/{chain_id}": {
       "get": {
         "operationId": "Query_UnsignedBatchTxs",
         "responses": {
@@ -365,8 +365,8 @@
           },
           {
             "name": "chain_id",
-            "in": "query",
-            "required": false,
+            "in": "path",
+            "required": true,
             "type": "string"
           }
         ],
@@ -375,7 +375,7 @@
         ]
       }
     },
-    "/mhub2/v1/contract_call_txs/{invalidation_scope}/{invalidation_nonce}": {
+    "/mhub2/v1/contract_call_txs/{chain_id}/{invalidation_scope}/{invalidation_nonce}": {
       "get": {
         "operationId": "Query_ContractCallTx",
         "responses": {
@@ -394,6 +394,12 @@
         },
         "parameters": [
           {
+            "name": "chain_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
             "name": "invalidation_scope",
             "in": "path",
             "required": true,
@@ -406,12 +412,6 @@
             "required": true,
             "type": "string",
             "format": "uint64"
-          },
-          {
-            "name": "chain_id",
-            "in": "query",
-            "required": false,
-            "type": "string"
           }
         ],
         "tags": [
@@ -632,7 +632,7 @@
         ]
       }
     },
-    "/mhub2/v1/logic_calls/external_signatures": {
+    "/mhub2/v1/logic_calls/external_signatures/{chain_id}": {
       "get": {
         "operationId": "Query_ContractCallTxConfirmations",
         "responses": {
@@ -651,6 +651,12 @@
         },
         "parameters": [
           {
+            "name": "chain_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
             "name": "invalidation_scope",
             "in": "query",
             "required": false,
@@ -663,12 +669,6 @@
             "required": false,
             "type": "string",
             "format": "uint64"
-          },
-          {
-            "name": "chain_id",
-            "in": "query",
-            "required": false,
-            "type": "string"
           }
         ],
         "tags": [
@@ -676,7 +676,7 @@
         ]
       }
     },
-    "/mhub2/v1/oracle/event_nonce/{address}": {
+    "/mhub2/v1/oracle/event_nonce/{address}/{chain_id}": {
       "get": {
         "operationId": "Query_LastSubmittedExternalEvent",
         "responses": {
@@ -702,8 +702,8 @@
           },
           {
             "name": "chain_id",
-            "in": "query",
-            "required": false,
+            "in": "path",
+            "required": true,
             "type": "string"
           }
         ],
@@ -735,7 +735,7 @@
         ]
       }
     },
-    "/mhub2/v1/query_batched_send_to_ext": {
+    "/mhub2/v1/query_batched_send_to_ext/{chain_id}": {
       "get": {
         "summary": "Query for batch send to externals",
         "operationId": "Query_BatchedSendToExternals",
@@ -755,13 +755,13 @@
         },
         "parameters": [
           {
-            "name": "sender_address",
-            "in": "query",
-            "required": false,
+            "name": "chain_id",
+            "in": "path",
+            "required": true,
             "type": "string"
           },
           {
-            "name": "chain_id",
+            "name": "sender_address",
             "in": "query",
             "required": false,
             "type": "string"
@@ -772,7 +772,7 @@
         ]
       }
     },
-    "/mhub2/v1/query_unbatched_send_to_ext": {
+    "/mhub2/v1/query_unbatched_send_to_ext/{chain_id}": {
       "get": {
         "summary": "Query for unbatched send to externals",
         "operationId": "Query_UnbatchedSendToExternals",
@@ -792,13 +792,13 @@
         },
         "parameters": [
           {
-            "name": "sender_address",
-            "in": "query",
-            "required": false,
+            "name": "chain_id",
+            "in": "path",
+            "required": true,
             "type": "string"
           },
           {
-            "name": "chain_id",
+            "name": "sender_address",
             "in": "query",
             "required": false,
             "type": "string"
@@ -847,45 +847,7 @@
         ]
       }
     },
-    "/mhub2/v1/signer_set": {
-      "get": {
-        "summary": "get info on individual outgoing data",
-        "operationId": "Query_SignerSetTx",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/v1SignerSetTxResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/runtimeError"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "signer_set_nonce",
-            "in": "query",
-            "required": false,
-            "type": "string",
-            "format": "uint64"
-          },
-          {
-            "name": "chain_id",
-            "in": "query",
-            "required": false,
-            "type": "string"
-          }
-        ],
-        "tags": [
-          "Query"
-        ]
-      }
-    },
-    "/mhub2/v1/signer_set/latest": {
+    "/mhub2/v1/signer_set/latest/{chain_id}": {
       "get": {
         "operationId": "Query_LatestSignerSetTx",
         "responses": {
@@ -905,8 +867,8 @@
         "parameters": [
           {
             "name": "chain_id",
-            "in": "query",
-            "required": false,
+            "in": "path",
+            "required": true,
             "type": "string"
           }
         ],
@@ -915,7 +877,83 @@
         ]
       }
     },
-    "/mhub2/v1/signer_sets": {
+    "/mhub2/v1/signer_set/{chain_id}": {
+      "get": {
+        "summary": "get info on individual outgoing data",
+        "operationId": "Query_SignerSetTx",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1SignerSetTxResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "chain_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "signer_set_nonce",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/mhub2/v1/signer_sets/external_signatures/{chain_id}": {
+      "get": {
+        "summary": "TODO: can/should we group these into one endpoint?",
+        "operationId": "Query_SignerSetTxConfirmations",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1SignerSetTxConfirmationsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "chain_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "signer_set_nonce",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/mhub2/v1/signer_sets/{chain_id}": {
       "get": {
         "summary": "get collections of outgoing traffic from the bridge",
         "operationId": "Query_SignerSetTxs",
@@ -934,6 +972,12 @@
           }
         },
         "parameters": [
+          {
+            "name": "chain_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
           {
             "name": "pagination.key",
             "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set.",
@@ -971,50 +1015,6 @@
             "in": "query",
             "required": false,
             "type": "boolean"
-          },
-          {
-            "name": "chain_id",
-            "in": "query",
-            "required": false,
-            "type": "string"
-          }
-        ],
-        "tags": [
-          "Query"
-        ]
-      }
-    },
-    "/mhub2/v1/signer_sets/external_signatures": {
-      "get": {
-        "summary": "TODO: can/should we group these into one endpoint?",
-        "operationId": "Query_SignerSetTxConfirmations",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/v1SignerSetTxConfirmationsResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/runtimeError"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "signer_set_nonce",
-            "in": "query",
-            "required": false,
-            "type": "string",
-            "format": "uint64"
-          },
-          {
-            "name": "chain_id",
-            "in": "query",
-            "required": false,
-            "type": "string"
           }
         ],
         "tags": [

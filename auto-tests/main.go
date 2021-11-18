@@ -18,6 +18,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -204,8 +205,8 @@ func main() {
 	testHubToEthereumTransfer(ctx)
 	testHubToBSCTransfer(ctx)
 	testMinterToEthereumTransfer(ctx)
-	testValidatorsCommissions(ctx)
 	testFeeRefund(ctx)
+	testColdStorageTransfer(ctx)
 
 	// tests associated with holders
 	ctx.TestsWg.Add(2)
@@ -222,12 +223,136 @@ func main() {
 	testFeeForTransactionRelayer(ctx)
 	ctx.TestsWg.Wait()
 
+	println("Running test for validator's commission")
+	testValidatorsCommissions(ctx)
+	ctx.TestsWg.Wait()
+
 	println("Killing orchestrator")
 	stopProcess("orchestrator")
 	testTxTimeout(ctx)
 	ctx.TestsWg.Wait()
 
 	println("All tests are done")
+}
+
+func testColdStorageTransfer(ctx *Context) {
+	ctx.TestsWg.Add(1)
+	addr, priv := cosmos.GetAccount(ctx.CosmosMnemonic)
+
+	recipient := "0x0000000000000000000000000000000000000000"
+	initialDeposit := sdk.NewCoins(sdk.NewCoin(denom, sdk.NewInt(10000000)))
+
+	proposalEth := &govtypes.MsgSubmitProposal{}
+	proposalEth.SetInitialDeposit(initialDeposit)
+	proposalEth.SetProposer(addr)
+	if err := proposalEth.SetContent(&mhubtypes.ColdStorageTransferProposal{ChainId: "ethereum", Amount: sdk.NewCoins(sdk.NewCoin("hub", sdk.NewInt(1e18)))}); err != nil {
+		panic(err)
+	}
+
+	proposalBsc := &govtypes.MsgSubmitProposal{}
+	proposalBsc.SetInitialDeposit(initialDeposit)
+	proposalBsc.SetProposer(addr)
+	if err := proposalBsc.SetContent(&mhubtypes.ColdStorageTransferProposal{ChainId: "bsc", Amount: sdk.NewCoins(sdk.NewCoin("hub", sdk.NewInt(1e18)))}); err != nil {
+		panic(err)
+	}
+
+	proposalMinter := &govtypes.MsgSubmitProposal{}
+	proposalMinter.SetInitialDeposit(initialDeposit)
+	proposalMinter.SetProposer(addr)
+	if err := proposalMinter.SetContent(&mhubtypes.ColdStorageTransferProposal{ChainId: "minter", Amount: sdk.NewCoins(sdk.NewCoin("hub", sdk.NewInt(1e18)))}); err != nil {
+		panic(err)
+	}
+
+	cosmos.SendCosmosTx([]sdk.Msg{
+		proposalEth,
+		proposalMinter,
+		proposalBsc,
+		govtypes.NewMsgVote(addr, 1, govtypes.OptionYes),
+		govtypes.NewMsgVote(addr, 2, govtypes.OptionYes),
+		govtypes.NewMsgVote(addr, 3, govtypes.OptionYes),
+	}, addr, priv, ctx.CosmosConn, log.NewTMLogger(os.Stdout), true)
+
+	go func() {
+		expectedValue := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(1)))
+
+		startTime := time.Now()
+		timeout := time.Minute * 5
+
+		hubContractEth, _ := erc20.NewErc20(common.HexToAddress(ctx.Erc20addr), ctx.EthClient)
+		hubContractBsc, _ := erc20.NewErc20(common.HexToAddress(ctx.Bep20addr), ctx.BscClient)
+
+		for {
+			// eth
+			{
+				hubBalanceEthInt, err := hubContractEth.BalanceOf(nil, common.HexToAddress(recipient))
+				if err != nil {
+					panic(err)
+				}
+
+				hubBalanceEth := sdk.NewIntFromBigInt(hubBalanceEthInt)
+				if hubBalanceEth.IsZero() {
+					if time.Now().Sub(startTime).Seconds() > timeout.Seconds() {
+						panic("Timeout waiting for the balance to update")
+					}
+
+					time.Sleep(time.Second)
+					continue
+				}
+
+				if !hubBalanceEth.Equal(expectedValue) {
+					panic(fmt.Sprintf("Balance is not equal to expected value. Expected %s, got %s", expectedValue.String(), hubBalanceEth.String()))
+				}
+			}
+
+			// bsc
+			{
+				hubBalanceBscInt, err := hubContractBsc.BalanceOf(nil, common.HexToAddress(recipient))
+				if err != nil {
+					panic(err)
+				}
+
+				hubBalanceBsc := sdk.NewIntFromBigInt(hubBalanceBscInt)
+				if hubBalanceBsc.IsZero() {
+					if time.Now().Sub(startTime).Seconds() > timeout.Seconds() {
+						panic("Timeout waiting for the balance to update")
+					}
+
+					time.Sleep(time.Second)
+					continue
+				}
+
+				if !hubBalanceBsc.Equal(expectedValue) {
+					panic(fmt.Sprintf("Balance is not equal to expected value. Expected %s, got %s", expectedValue.String(), hubBalanceBsc.String()))
+				}
+			}
+
+			// minter
+			{
+				response, err := ctx.MinterClient.Address("Mx" + recipient[2:])
+				if err != nil {
+					panic(err)
+				}
+
+				hubBalance := getMinterCoinBalance(response.Balance, "HUB")
+				if hubBalance.IsZero() {
+					if time.Now().Sub(startTime).Seconds() > 180 {
+						panic("Timeout waiting for the balance to update")
+					}
+
+					time.Sleep(time.Second)
+					continue
+				}
+
+				if !hubBalance.Equal(expectedValue) {
+					panic(fmt.Sprintf("Balance is not equal to expected value. Expected %s, got %s", expectedValue.String(), hubBalance.String()))
+				}
+			}
+
+			println("SUCCESS: test cold storage transfer")
+			ctx.TestsWg.Done()
+			break
+		}
+	}()
 }
 
 func testMinterMultisigChanges(ctx *Context) {

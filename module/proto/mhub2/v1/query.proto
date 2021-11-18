@@ -21,27 +21,27 @@ service Query {
 
   // get info on individual outgoing data
   rpc SignerSetTx(SignerSetTxRequest) returns (SignerSetTxResponse) {
-     option (google.api.http).get = "/mhub2/v1/signer_set";
+     option (google.api.http).get = "/mhub2/v1/signer_set/{chain_id}";
   }
   rpc LatestSignerSetTx(LatestSignerSetTxRequest) returns (SignerSetTxResponse) {
-     option (google.api.http).get = "/mhub2/v1/signer_set/latest";
+     option (google.api.http).get = "/mhub2/v1/signer_set/latest/{chain_id}";
   }
   rpc BatchTx(BatchTxRequest) returns (BatchTxResponse) {
-     option (google.api.http).get = "/mhub2/v1/batch_txs/{external_token_id}/{batch_nonce}";
+     option (google.api.http).get = "/mhub2/v1/batch_txs/{chain_id}/{external_token_id}/{batch_nonce}";
   }
   rpc ContractCallTx(ContractCallTxRequest) returns (ContractCallTxResponse) {
-     option (google.api.http).get = "/mhub2/v1/contract_call_txs/{invalidation_scope}/{invalidation_nonce}";
+     option (google.api.http).get = "/mhub2/v1/contract_call_txs/{chain_id}/{invalidation_scope}/{invalidation_nonce}";
   }
 
   // get collections of outgoing traffic from the bridge
   rpc SignerSetTxs(SignerSetTxsRequest) returns (SignerSetTxsResponse) {
-     option (google.api.http).get = "/mhub2/v1/signer_sets";
+     option (google.api.http).get = "/mhub2/v1/signer_sets/{chain_id}";
   }
   rpc BatchTxs(BatchTxsRequest) returns (BatchTxsResponse) {
      option (google.api.http).get = "/mhub2/v1/batch/batch_txs/{chain_id}";
   }
   rpc ContractCallTxs(ContractCallTxsRequest) returns (ContractCallTxsResponse) {
-     option (google.api.http).get = "/mhub2/v1/batch/contract_call_txs";
+     option (google.api.http).get = "/mhub2/v1/batch/contract_call_txs/{chain_id}";
   }
 
   // external signature queries so validators can construct valid etherum
@@ -50,15 +50,15 @@ service Query {
   // TODO: can/should we group these into one endpoint?
   rpc SignerSetTxConfirmations(SignerSetTxConfirmationsRequest) returns (SignerSetTxConfirmationsResponse) {
      option (google.api.http).get =
-     "/mhub2/v1/signer_sets/external_signatures";
+     "/mhub2/v1/signer_sets/external_signatures/{chain_id}";
   }
   rpc BatchTxConfirmations(BatchTxConfirmationsRequest) returns (BatchTxConfirmationsResponse) {
      option (google.api.http).get =
-     "/mhub2/v1/batch_txs/external_signatures";
+     "/mhub2/v1/batch_txs/external_signatures/{chain_id}";
   }
   rpc ContractCallTxConfirmations(ContractCallTxConfirmationsRequest) returns (ContractCallTxConfirmationsResponse) {
      option (google.api.http).get =
-     "/mhub2/v1/logic_calls/external_signatures";
+     "/mhub2/v1/logic_calls/external_signatures/{chain_id}";
   }
 
   // ^^^^^^^^^^^^ seem okay for now ^^^^^^
@@ -68,23 +68,23 @@ service Query {
   // TODO: can/should we group this into one endpoint?
   rpc UnsignedSignerSetTxs(UnsignedSignerSetTxsRequest) returns (UnsignedSignerSetTxsResponse) {
      option (google.api.http).get =
-     "/mhub2/v1/SignerSetTxs/{address}/pending";
+     "/mhub2/v1/SignerSetTxs/{address}/pending/{chain_id}";
   }
   rpc UnsignedBatchTxs(UnsignedBatchTxsRequest) returns (UnsignedBatchTxsResponse) {
-     option (google.api.http).get = "/mhub2/v1/batches/{address}/pending";
+     option (google.api.http).get = "/mhub2/v1/batches/{address}/pending/{chain_id}";
   }
   rpc UnsignedContractCallTxs(UnsignedContractCallTxsRequest) returns (UnsignedContractCallTxsResponse) {
-     option (google.api.http).get = "/mhub2/v1/ContractCallTxs/{address}/pending";
+     option (google.api.http).get = "/mhub2/v1/ContractCallTxs/{address}/pending/{chain_id}";
   }
 
   rpc LastSubmittedExternalEvent(LastSubmittedExternalEventRequest) returns (LastSubmittedExternalEventResponse) {
-     option (google.api.http).get = "/mhub2/v1/oracle/event_nonce/{address}";
+     option (google.api.http).get = "/mhub2/v1/oracle/event_nonce/{address}/{chain_id}";
   }
 
   // Queries the fees for all pending batches, results are returned in sdk.Coin
   // (fee_amount_int)(contract_address) style
   rpc BatchTxFees(BatchTxFeesRequest) returns (BatchTxFeesResponse) {
-     option (google.api.http).get = "/mhub2/v1/batches/fees";
+     option (google.api.http).get = "/mhub2/v1/batches/fees/{chain_id}";
   }
 
   // Query for info about denoms tracked by mhub2
@@ -98,11 +98,11 @@ service Query {
   }
   // Query for batch send to externals
   rpc BatchedSendToExternals(BatchedSendToExternalsRequest) returns (BatchedSendToExternalsResponse) {
-     option (google.api.http).get = "/mhub2/v1/query_batched_send_to_ext";
+     option (google.api.http).get = "/mhub2/v1/query_batched_send_to_ext/{chain_id}";
   }
   // Query for unbatched send to externals
   rpc UnbatchedSendToExternals(UnbatchedSendToExternalsRequest) returns (UnbatchedSendToExternalsResponse) {
-     option (google.api.http).get = "/mhub2/v1/query_unbatched_send_to_ext";
+     option (google.api.http).get = "/mhub2/v1/query_unbatched_send_to_ext/{chain_id}";
   }
 
   // delegate keys

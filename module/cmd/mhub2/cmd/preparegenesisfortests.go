@@ -3,8 +3,10 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/MinterTeam/mhub2/module/x/mhub2/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 
 	"github.com/spf13/cobra"
 
@@ -51,6 +53,15 @@ func AddPrepareGenesisForTestsCmd(defaultNodeHome string) *cobra.Command {
 			}
 
 			appState[types.ModuleName] = genStateJson
+
+			govState := govtypes.GenesisState{}
+			cdc.MustUnmarshalJSON(appState[govtypes.ModuleName], &govState)
+			govState.VotingParams.VotingPeriod = time.Second * 30
+			govStateJson, err := cdc.MarshalJSON(&govState)
+			if err != nil {
+				return fmt.Errorf("failed to marshal genesis state: %w", err)
+			}
+			appState[govtypes.ModuleName] = govStateJson
 
 			appStateJSON, err := json.Marshal(appState)
 			if err != nil {
