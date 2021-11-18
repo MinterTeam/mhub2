@@ -48,13 +48,12 @@ func (a ExternalEventProcessor) Handle(ctx sdk.Context, chainId types.ChainID, e
 			})
 		}
 
-		tempReceiver, _ := sdk.AccAddressFromBech32("hub1xhaedvjeu88p5hrpgyugyy7stflm3nmqa0jhjc") // todo
 		err := a.Handle(ctx, chainId, &types.SendToHubEvent{
 			EventNonce:     event.EventNonce,
 			ExternalCoinId: event.ExternalCoinId,
 			Amount:         event.Amount.Add(event.Fee),
 			Sender:         event.Sender,
-			CosmosReceiver: tempReceiver.String(),
+			CosmosReceiver: types.TempAddress.String(),
 			ExternalHeight: event.ExternalHeight,
 			TxHash:         event.TxHash,
 		})
@@ -81,7 +80,7 @@ func (a ExternalEventProcessor) Handle(ctx sdk.Context, chainId types.ChainID, e
 		commission := sdk.NewCoin(receiverChainTokenInfo.Denom, commissionValue)
 		amount := sdk.NewCoin(receiverChainTokenInfo.Denom, convertedAmount).Sub(commission).Sub(fee)
 
-		txID, err := a.keeper.createSendToExternal(ctx, types.ChainID(event.ReceiverChainId), tempReceiver, event.ExternalReceiver, amount, fee, commission, event.TxHash, chainId, event.Sender)
+		txID, err := a.keeper.createSendToExternal(ctx, types.ChainID(event.ReceiverChainId), types.TempAddress, event.ExternalReceiver, amount, fee, commission, event.TxHash, chainId, event.Sender)
 		if err != nil {
 			return err
 		}

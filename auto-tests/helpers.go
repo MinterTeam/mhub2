@@ -511,7 +511,7 @@ func run(cmdString string, args ...interface{}) (string, error) {
 		return "", err
 	}
 	processLock.Lock()
-	processes[cmdArgs[0]] = append(processes[cmdString], cmd.Process)
+	processes[cmdArgs[0]] = append(processes[cmdArgs[0]], cmd.Process)
 	processLock.Unlock()
 	if err := cmd.Wait(); err != nil {
 		if err.Error() != "signal: killed" {
@@ -553,7 +553,7 @@ func populateEthGenesis(address common.Address, chainId int) {
 			PetersburgBlock:     big.NewInt(0),
 			IstanbulBlock:       big.NewInt(0),
 			Clique: &params.CliqueConfig{
-				Period: 5,
+				Period: 1,
 				Epoch:  30000,
 			},
 		},

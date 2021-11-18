@@ -104,13 +104,11 @@ func (k Keeper) cancelSendToExternal(ctx sdk.Context, chainId types.ChainID, id 
 				return sdkerrors.Wrap(err, "sending coins from module account")
 			}
 		} else {
-			var defaultSender = sdk.AccAddress{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0} // todo
-
-			if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, defaultSender, totalToRefundCoins); err != nil {
+			if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, types.TempAddress, totalToRefundCoins); err != nil {
 				return sdkerrors.Wrap(err, "sending coins from module account")
 			}
 
-			_, err := k.createSendToExternal(ctx, types.ChainID(send.RefundChainId), defaultSender, send.RefundAddress, totalToRefund, sdk.NewCoin(totalToRefund.Denom, sdk.NewInt(0)), sdk.NewCoin(totalToRefund.Denom, sdk.NewInt(0)), "#", "", "")
+			_, err := k.createSendToExternal(ctx, types.ChainID(send.RefundChainId), types.TempAddress, send.RefundAddress, totalToRefund, sdk.NewCoin(totalToRefund.Denom, sdk.NewInt(0)), sdk.NewCoin(totalToRefund.Denom, sdk.NewInt(0)), "#", "", "")
 			if err != nil {
 				return err
 			}

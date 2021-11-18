@@ -373,7 +373,7 @@ func testFeeForTransactionRelayer(ctx *Context) {
 					}
 
 					for _, item := range data.List {
-						if item.Coin.Id == 1 && strings.ToLower(ctx.EthAddress.String())[2:] == item.To[2:] && strings.HasSuffix(item.Value, fee.String()) { // todo???
+						if item.Coin.Id == 1 && strings.ToLower(ctx.EthAddress.String())[2:] == item.To[2:] && item.Value == fee.String() {
 							println("SUCCESS: test fee for transaction relayer")
 							ctx.TestsWg.Done()
 							return
