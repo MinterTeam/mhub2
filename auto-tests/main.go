@@ -37,6 +37,14 @@ func init() {
 	app.SetAddressConfig()
 }
 
+/// Requirements on local binaries:
+/// 1. minter node - v2.6.0+
+/// 2. geth node - 1.10.11+
+/// 3. oracle - v2
+/// 4. orchestrator - v2
+/// 5. minter-connector - v2
+/// 6. mhub - v2
+
 const (
 	denom       = "stake"
 	mhubChainId = "mhub-test"
