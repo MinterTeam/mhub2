@@ -239,7 +239,7 @@ func testColdStorageTransfer(ctx *Context) {
 	ctx.TestsWg.Add(1)
 	addr, priv := cosmos.GetAccount(ctx.CosmosMnemonic)
 
-	recipient := "0x0000000000000000000000000000000000000000"
+	recipient := "0x0000000000000000000000000000000000000001"
 	initialDeposit := sdk.NewCoins(sdk.NewCoin(denom, sdk.NewInt(10000000)))
 
 	proposalEth := &govtypes.MsgSubmitProposal{}
