@@ -54,7 +54,7 @@ func TestHandleMsgSendToEthereum(t *testing.T) {
 	_, err := h(ctx, msg) // send 55
 	require.NoError(t, err)
 	balance2 := input.BankKeeper.GetAllBalances(ctx, userCosmosAddr)
-	expectedAmount := startingCoinAmount.Sub(sendAmount.Add(feeAmount).QuoRaw(100)).Sub(sendAmount).Sub(feeAmount)
+	expectedAmount := startingCoinAmount.Sub(sendAmount).Sub(feeAmount)
 	require.Equal(t, sdk.Coins{sdk.NewCoin(denom, expectedAmount)}, balance2)
 
 	// do the same thing again and make sure it works twice
@@ -69,7 +69,7 @@ func TestHandleMsgSendToEthereum(t *testing.T) {
 	_, err1 := h(ctx, msg1) // send 55
 	require.NoError(t, err1)
 	balance3 := input.BankKeeper.GetAllBalances(ctx, userCosmosAddr)
-	finalAmount3 := expectedAmount.Sub(sendAmount.Add(feeAmount).QuoRaw(100)).Sub(sendAmount).Sub(feeAmount)
+	finalAmount3 := expectedAmount.Sub(sendAmount).Sub(feeAmount)
 	require.Equal(t, sdk.Coins{sdk.NewCoin(denom, finalAmount3)}, balance3)
 
 	// now we should be out of coins and error
@@ -87,7 +87,7 @@ func TestHandleMsgSendToEthereum(t *testing.T) {
 	require.Equal(t, sdk.Coins{sdk.NewCoin(denom, finalAmount3)}, balance4)
 }
 
-func TestMsgSubmitEthreumEventSendToCosmosSingleValidator(t *testing.T) {
+func TestMsgSubmitEthereumEventSendToCosmosSingleValidator(t *testing.T) {
 	input := keeper.CreateTestEnv(t)
 	ctx := input.Context
 	tokenInfos := input.GravityKeeper.GetTokenInfos(ctx).TokenInfos

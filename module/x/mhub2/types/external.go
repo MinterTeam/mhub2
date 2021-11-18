@@ -44,7 +44,8 @@ func (e ExternalToken) HubCoin(denomResolver func(id uint64) (string, error)) sd
 	return sdk.Coin{Amount: e.Amount, Denom: denom}
 }
 
-func NewSendToExternalTx(id uint64, chainId ChainID, tokenId uint64, externalTokenId string, sender sdk.AccAddress, recipient common.Address, amount, feeAmount, valCommission uint64, txHash string) *SendToExternal {
+func NewSendToExternalTx(id uint64, chainId ChainID, tokenId uint64, externalTokenId string, sender sdk.AccAddress,
+	recipient common.Address, amount, feeAmount, valCommission uint64, txHash string, createdAt uint64) *SendToExternal {
 	return &SendToExternal{
 		Id:                id,
 		Sender:            sender.String(),
@@ -54,5 +55,8 @@ func NewSendToExternalTx(id uint64, chainId ChainID, tokenId uint64, externalTok
 		Fee:               NewExternalToken(feeAmount, tokenId, externalTokenId),
 		TxHash:            txHash,
 		ValCommission:     NewExternalToken(valCommission, tokenId, externalTokenId),
+		CreatedAt:         createdAt,
+		RefundAddress:     sender.String(),
+		RefundChainId:     "hub",
 	}
 }

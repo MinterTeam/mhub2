@@ -19,7 +19,6 @@ func TestBatches(t *testing.T) {
 	ctx := input.Context
 	tokenInfos := input.GravityKeeper.GetTokenInfos(ctx).TokenInfos
 	var (
-		now                 = time.Now().UTC()
 		mySender, _         = sdk.AccAddressFromBech32("cosmos1ahx7f8wyertuus9r20284ej0asrs085case3kn")
 		myReceiver          = common.HexToAddress("0xd041c41EA1bf0F006ADBb6d2c9ef9D425dE5eaD7")
 		myTokenContractAddr = tokenInfos[0].ExternalTokenId
@@ -38,11 +37,13 @@ func TestBatches(t *testing.T) {
 	// CREATE FIRST BATCH
 	// ==================
 
+	ctx = ctx.WithBlockTime(time.Unix(1, 0))
+
 	// add some TX to the pool
 	input.AddSendToEthTxsToPool(t, ctx, chainId, tokenId, myTokenContractAddr, mySender, myReceiver, 2, 3, 2, 1)
 
 	// when
-	ctx = ctx.WithBlockTime(now)
+	ctx = ctx.WithBlockTime(time.Unix(1, 0))
 
 	// tx batch size is 2, so that some of them stay behind
 	firstBatch := input.GravityKeeper.BuildBatchTx(ctx, chainId, myTokenContractAddr, 2)
@@ -55,8 +56,8 @@ func TestBatches(t *testing.T) {
 	expFirstBatch := &types.BatchTx{
 		BatchNonce: 1,
 		Transactions: []*types.SendToExternal{
-			types.NewSendToExternalTx(2, chainId, tokenId, myTokenContractAddr, mySender, myReceiver, 101, 3, 0, "#"),
-			types.NewSendToExternalTx(3, chainId, tokenId, myTokenContractAddr, mySender, myReceiver, 102, 2, 0, "#"),
+			types.NewSendToExternalTx(2, chainId, tokenId, myTokenContractAddr, mySender, myReceiver, 101, 3, 0, "#", 1),
+			types.NewSendToExternalTx(3, chainId, tokenId, myTokenContractAddr, mySender, myReceiver, 102, 2, 0, "#", 1),
 		},
 		ExternalTokenId: myTokenContractAddr,
 		Height:          1234567,
@@ -72,8 +73,8 @@ func TestBatches(t *testing.T) {
 		return false
 	})
 	expUnbatchedTx := []*types.SendToExternal{
-		types.NewSendToExternalTx(1, chainId, tokenId, myTokenContractAddr, mySender, myReceiver, 100, 2, 0, "#"),
-		types.NewSendToExternalTx(4, chainId, tokenId, myTokenContractAddr, mySender, myReceiver, 103, 1, 0, "#"),
+		types.NewSendToExternalTx(1, chainId, tokenId, myTokenContractAddr, mySender, myReceiver, 100, 2, 0, "#", 1),
+		types.NewSendToExternalTx(4, chainId, tokenId, myTokenContractAddr, mySender, myReceiver, 103, 1, 0, "#", 1),
 	}
 	assert.Equal(t, expUnbatchedTx, gotUnbatchedTx)
 
@@ -84,7 +85,7 @@ func TestBatches(t *testing.T) {
 	input.AddSendToEthTxsToPool(t, ctx, chainId, tokenId, myTokenContractAddr, mySender, myReceiver, 4, 5)
 
 	// create the more profitable batch
-	ctx = ctx.WithBlockTime(now)
+	ctx = ctx.WithBlockTime(time.Unix(1, 0))
 	// tx batch size is 2, so that some of them stay behind
 	secondBatch := input.GravityKeeper.BuildBatchTx(ctx, chainId, myTokenContractAddr, 2)
 
@@ -92,8 +93,8 @@ func TestBatches(t *testing.T) {
 	expSecondBatch := &types.BatchTx{
 		BatchNonce: 2,
 		Transactions: []*types.SendToExternal{
-			types.NewSendToExternalTx(6, chainId, tokenId, myTokenContractAddr, mySender, myReceiver, 101, 5, 0, "#"),
-			types.NewSendToExternalTx(5, chainId, tokenId, myTokenContractAddr, mySender, myReceiver, 100, 4, 0, "#"),
+			types.NewSendToExternalTx(6, chainId, tokenId, myTokenContractAddr, mySender, myReceiver, 101, 5, 0, "#", 1),
+			types.NewSendToExternalTx(5, chainId, tokenId, myTokenContractAddr, mySender, myReceiver, 100, 4, 0, "#", 1),
 		},
 		ExternalTokenId: myTokenContractAddr,
 		Height:          1234567,
@@ -119,10 +120,10 @@ func TestBatches(t *testing.T) {
 		return false
 	})
 	expUnbatchedTx = []*types.SendToExternal{
-		types.NewSendToExternalTx(2, chainId, tokenId, myTokenContractAddr, mySender, myReceiver, 101, 3, 0, "#"),
-		types.NewSendToExternalTx(3, chainId, tokenId, myTokenContractAddr, mySender, myReceiver, 102, 2, 0, "#"),
-		types.NewSendToExternalTx(1, chainId, tokenId, myTokenContractAddr, mySender, myReceiver, 100, 2, 0, "#"),
-		types.NewSendToExternalTx(4, chainId, tokenId, myTokenContractAddr, mySender, myReceiver, 103, 1, 0, "#"),
+		types.NewSendToExternalTx(2, chainId, tokenId, myTokenContractAddr, mySender, myReceiver, 101, 3, 0, "#", 1),
+		types.NewSendToExternalTx(3, chainId, tokenId, myTokenContractAddr, mySender, myReceiver, 102, 2, 0, "#", 1),
+		types.NewSendToExternalTx(1, chainId, tokenId, myTokenContractAddr, mySender, myReceiver, 100, 2, 0, "#", 1),
+		types.NewSendToExternalTx(4, chainId, tokenId, myTokenContractAddr, mySender, myReceiver, 103, 1, 0, "#", 1),
 	}
 	assert.Equal(t, expUnbatchedTx, gotUnbatchedTx)
 }
@@ -131,10 +132,10 @@ func TestBatches(t *testing.T) {
 // tests but using much bigger numbers
 func TestBatchesFullCoins(t *testing.T) {
 	input := CreateTestEnv(t)
-	ctx := input.Context
+	ctx := input.Context.WithBlockTime(time.Unix(0, 0))
 	tokenInfos := input.GravityKeeper.GetTokenInfos(ctx).TokenInfos
 	var (
-		now                 = time.Now().UTC()
+		now                 = time.Unix(0, 0)
 		mySender, _         = sdk.AccAddressFromBech32("cosmos1ahx7f8wyertuus9r20284ej0asrs085case3kn")
 		myReceiver          = common.HexToAddress("0xd041c41EA1bf0F006ADBb6d2c9ef9D425dE5eaD7")
 		myTokenContractAddr = tokenInfos[0].ExternalTokenId

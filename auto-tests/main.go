@@ -321,7 +321,7 @@ func testColdStorageTransfer(ctx *Context) {
 					continue
 				}
 
-				if !hubBalanceBsc.Equal(expectedValue) {
+				if !hubBalanceBsc.Equal(expectedValue.QuoRaw(1e12)) {
 					panic(fmt.Sprintf("Balance is not equal to expected value. Expected %s, got %s", expectedValue.String(), hubBalanceBsc.String()))
 				}
 			}

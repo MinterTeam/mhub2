@@ -197,9 +197,8 @@ var (
 		ContractSourceHash:                        "62328f7bc12efb28f86111d08c29b39285680a906ea0e524e0209d6f6657b713",
 		BridgeEthereumAddress:                     "0x8858eeb3dfffa017d4bce9801d340d36cf895ccf",
 		BridgeChainId:                             11,
-		SignedBatchesWindow:                       10,
 		SignedSignerSetTxsWindow:                  10,
-		UnbondSlashingSignerSetTxsWindow:          15,
+		SignedBatchesWindow:                       10,
 		EthereumSignaturesWindow:                  10,
 		TargetEthTxTimeout:                        60001,
 		AverageBlockTime:                          5000,
@@ -208,6 +207,9 @@ var (
 		SlashFractionBatch:                        sdk.NewDecWithPrec(1, 2),
 		SlashFractionEthereumSignature:            sdk.NewDecWithPrec(1, 2),
 		SlashFractionConflictingEthereumSignature: sdk.NewDecWithPrec(1, 2),
+		UnbondSlashingSignerSetTxsWindow:          15,
+		Chains:                                    []string{"ethereum"},
+		OutgoingTxTimeout:                         60001,
 	}
 )
 
@@ -229,7 +231,7 @@ func (input TestInput) AddSendToEthTxsToPool(t *testing.T, ctx sdk.Context, chai
 	for i, id := range ids {
 		amount := types.NewExternalToken(uint64(i+100), tokenId, externalTokenId).HubCoin(testDenomResolver)
 		fee := types.NewExternalToken(id, tokenId, externalTokenId).HubCoin(testDenomResolver)
-		_, err := input.GravityKeeper.createSendToExternal(ctx, chainId, sender, receiver.Hex(), amount, fee, sdk.NewInt64Coin(amount.Denom, 0), "#", "", "")
+		_, err := input.GravityKeeper.createSendToExternal(ctx, chainId, sender, receiver.Hex(), amount, fee, sdk.NewInt64Coin(amount.Denom, 0), "#", "hub", sender.String())
 		require.NoError(t, err)
 	}
 }
@@ -285,6 +287,21 @@ func SetupFiveValChain(t *testing.T) (TestInput, sdk.Context) {
 
 	// Return the test input
 	return input, input.Context
+}
+
+type MockOracleKeeper struct {
+}
+
+func (m MockOracleKeeper) MustGetTokenPrice(ctx sdk.Context, denom string) sdk.Dec {
+	return sdk.NewDec(100)
+}
+
+func (m MockOracleKeeper) GetTokenPrice(ctx sdk.Context, denom string) (sdk.Dec, error) {
+	return sdk.NewDec(100), nil
+}
+
+func (m MockOracleKeeper) GetHolderValue(ctx sdk.Context, address string) sdk.Int {
+	return sdk.NewInt(100)
 }
 
 // CreateTestEnv creates the keeper testing environment for mhub2
@@ -432,7 +449,7 @@ func CreateTestEnv(t *testing.T) TestInput {
 		stakingKeeper,
 		bankKeeper,
 		slashingKeeper,
-		nil,
+		MockOracleKeeper{},
 		sdk.DefaultPowerReduction,
 	)
 

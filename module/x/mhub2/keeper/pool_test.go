@@ -40,10 +40,10 @@ func TestAddToOutgoingPool(t *testing.T) {
 	})
 
 	exp := []*types.SendToExternal{
-		types.NewSendToExternalTx(2, chainId, tokenId, myTokenContractAddr.String(), mySender, myReceiver, 101, 3, 0, "#"),
-		types.NewSendToExternalTx(3, chainId, tokenId, myTokenContractAddr.String(), mySender, myReceiver, 102, 2, 0, "#"),
-		types.NewSendToExternalTx(1, chainId, tokenId, myTokenContractAddr.String(), mySender, myReceiver, 100, 2, 0, "#"),
-		types.NewSendToExternalTx(4, chainId, tokenId, myTokenContractAddr.String(), mySender, myReceiver, 103, 1, 0, "#"),
+		types.NewSendToExternalTx(2, chainId, tokenId, myTokenContractAddr.String(), mySender, myReceiver, 101, 3, 0, "#", uint64(ctx.BlockTime().Unix())),
+		types.NewSendToExternalTx(3, chainId, tokenId, myTokenContractAddr.String(), mySender, myReceiver, 102, 2, 0, "#", uint64(ctx.BlockTime().Unix())),
+		types.NewSendToExternalTx(1, chainId, tokenId, myTokenContractAddr.String(), mySender, myReceiver, 100, 2, 0, "#", uint64(ctx.BlockTime().Unix())),
+		types.NewSendToExternalTx(4, chainId, tokenId, myTokenContractAddr.String(), mySender, myReceiver, 103, 1, 0, "#", uint64(ctx.BlockTime().Unix())),
 	}
 
 	require.Equal(t, exp, got)
