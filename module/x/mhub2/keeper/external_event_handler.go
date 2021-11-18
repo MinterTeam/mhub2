@@ -58,7 +58,7 @@ func (a ExternalEventProcessor) Handle(ctx sdk.Context, chainId types.ChainID, e
 			TxHash:         event.TxHash,
 		})
 		if err != nil {
-			panic(err)
+			return err
 		}
 
 		senderChainTokenInfo, err := a.keeper.ExternalIdToTokenInfoLookup(ctx, chainId, event.ExternalCoinId)
