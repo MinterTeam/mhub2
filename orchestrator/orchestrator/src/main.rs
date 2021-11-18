@@ -52,7 +52,7 @@ struct Args {
 
 lazy_static! {
     pub static ref USAGE: String = format!(
-    "Usage: {} --chain-id=<id> --eth-fee-calculator-url=<url> --cosmos-phrase=<key> --ethereum-key=<key> --cosmos-grpc=<url> --address-prefix=<prefix> --ethereum-rpc=<url> --fees=<denom> --contract-address=<addr> --metrics-listen=<addr>
+    "Usage: {} --chain-id=<id> --cosmos-phrase=<key> --ethereum-key=<key> --cosmos-grpc=<url> --address-prefix=<prefix> --ethereum-rpc=<url> --fees=<denom> --contract-address=<addr> --metrics-listen=<addr>
         Options:
             -h --help                    Show this screen.
             --cosmos-phrase=<ckey>       The mnenmonic of the Cosmos account key of the validator
