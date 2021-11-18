@@ -222,7 +222,7 @@ async fn submit_batches(
                         / downcast_to_u128(one_eth()).unwrap() as f32
                 );
 
-                if !cost.is_profitable() {
+                if eth_fee_calculator_url.is_some() && !cost.is_profitable() {
                     info!(
                         "Rejected to submit batch due to low fee. Wanted {}, has {}",
                         cost.get_total(),
