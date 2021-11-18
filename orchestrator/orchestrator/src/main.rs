@@ -46,32 +46,32 @@ struct Args {
     flag_contract_address: String,
     flag_fees: String,
     flag_chain_id: String,
-    flag_eth_fee_calculator_url: Option<String>,
     flag_metrics_listen: String,
+    flag_eth_fee_calculator_url: Option<String>,
 }
 
 lazy_static! {
     pub static ref USAGE: String = format!(
-    "Usage: {} --chain-id=<id> --cosmos-phrase=<key> --ethereum-key=<key> --cosmos-grpc=<url> --address-prefix=<prefix> --ethereum-rpc=<url> --fees=<denom> --contract-address=<addr> --metrics-listen=<addr>
-        Options:
-            -h --help                    Show this screen.
-            --cosmos-phrase=<ckey>       The mnenmonic of the Cosmos account key of the validator
-            --ethereum-key=<ekey>        The Ethereum private key of the validator
-            --cosmos-grpc=<gurl>         The Cosmos gRPC url, usually the validator
-            --address-prefix=<prefix>    The prefix for addresses on this Cosmos chain
-            --ethereum-rpc=<eurl>        The Ethereum RPC url, should be a self hosted node
-            --fees=<denom>               The Cosmos Denom in which to pay Cosmos chain fees
-            --contract-address=<addr>    The Ethereum contract address for Gravity, this is temporary
-            --metrics-listen=<addr>      The address metrics server listens on [default: 127.0.0.1:3000].
-        About:
-            The Validator companion binary for Minter Hub 2. This must be run by all Minter Hub 2 chain validators
-            and is a mix of a relayer + oracle + external signing infrastructure
-            Written By: {}
-            Version {}",
-            env!("CARGO_PKG_NAME"),
-            env!("CARGO_PKG_AUTHORS"),
-            env!("CARGO_PKG_VERSION"),
-        );
+    "Usage: {} [--eth-fee-calculator-url=<furl>] --chain-id=<id> --cosmos-phrase=<key> --ethereum-key=<key> --cosmos-grpc=<url> --address-prefix=<prefix> --ethereum-rpc=<url> --fees=<denom> --contract-address=<addr> --metrics-listen=<addr>
+    Options:
+        -h --help                           Show this screen.
+        --cosmos-phrase=<ckey>              The mnenmonic of the Cosmos account key of the validator
+        --ethereum-key=<ekey>               The Ethereum private key of the validator
+        --cosmos-grpc=<gurl>                The Cosmos gRPC url, usually the validator
+        --address-prefix=<prefix>           The prefix for addresses on this Cosmos chain
+        --ethereum-rpc=<eurl>               The Ethereum RPC url, should be a self hosted node
+        --fees=<denom>                      The Cosmos Denom in which to pay Cosmos chain fees
+        --contract-address=<addr>           The Ethereum contract address for Gravity, this is temporary
+        --metrics-listen=<addr>             The address metrics server listens on [default: 127.0.0.1:3000]. 
+    About:
+        The Validator companion binary for Minter Hub 2. This must be run by all Minter Hub 2 chain validators
+        and is a mix of a relayer + oracle + external signing infrastructure
+        Written By: {}
+        Version {}",
+        env!("CARGO_PKG_NAME"),
+        env!("CARGO_PKG_AUTHORS"),
+        env!("CARGO_PKG_VERSION"),
+    );
 }
 
 #[actix_rt::main]
