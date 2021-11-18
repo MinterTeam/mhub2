@@ -30,6 +30,7 @@ const usdteCoinId = 1993
 
 var pipInBip = sdk.NewInt(1000000000000000000)
 var testEnv = flag.Bool("test-env", false, "")
+var testnetEnv = flag.Bool("testnet", false, "")
 
 func main() {
 	logger := log.NewTMLogger(os.Stdout)
@@ -103,7 +104,7 @@ func relayPricesAndHolders(
 	prices := &types.Prices{List: []*types.Price{}}
 
 	basecoinPrice := sdk.NewDecWithPrec(1, 1)
-	if !*testEnv {
+	if !*testEnv && !*testnetEnv {
 		basecoinPrice = getBasecoinPrice(logger, minterClient)
 	}
 

@@ -454,7 +454,7 @@ func waitEthTx(hash common.Hash, client *ethclient.Client) {
 		if !pending {
 			receipt, err := client.TransactionReceipt(context.TODO(), hash)
 			if err != nil {
-				panic(err)
+				println(err.Error())
 			}
 
 			if receipt.Status == ethTypes.ReceiptStatusFailed {
@@ -718,6 +718,13 @@ func deployContractsAndMultisig(prKeyString string) {
 	ethPrivateKeyString := fmt.Sprintf("%x", crypto.FromECDSA(pk))
 	ethAddress := crypto.PubkeyToAddress(pk.PublicKey)
 
+	minterClient, _ := grpc_client.New("node-api.taconet.minter.network:8842")
+	minterMultisig := createMinterMultisig(ethPrivateKeyString, ethAddress, minterClient)
+
+	println("minter", minterMultisig)
+
+	os.Exit(0)
+
 	{
 		client, err := ethclient.Dial("https://ropsten.infura.io/v3/c2f9dc16ef8d4897a1bd6f9270e38914")
 		if err != nil {
@@ -739,9 +746,4 @@ func deployContractsAndMultisig(prKeyString string) {
 
 		println("bsc", contract)
 	}
-
-	minterClient, _ := grpc_client.New("node-api.taconet.minter.network:8842")
-	minterMultisig := createMinterMultisig(ethPrivateKeyString, ethAddress, minterClient)
-
-	println("minter", minterMultisig)
 }
