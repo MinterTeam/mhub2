@@ -16,9 +16,9 @@ import (
 const ethSignaturePrefix = "\x19Ethereum Signed Message:\n32"
 
 func main() {
-	if len(os.Args) == 3 && os.Args[0] == "make_delegate_sign" {
-		ethPrivateKey := os.Args[1]
-		cosmosAddr := os.Args[2]
+	if len(os.Args) == 4 && os.Args[1] == "make_delegate_sign" {
+		ethPrivateKey := os.Args[2]
+		cosmosAddr := os.Args[3]
 
 		valAddress, err := sdk.AccAddressFromBech32(cosmosAddr)
 		if err != nil {
