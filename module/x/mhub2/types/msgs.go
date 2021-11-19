@@ -86,7 +86,7 @@ func (msg *MsgSubmitExternalEvent) ValidateBasic() (err error) {
 	if err != nil {
 		return err
 	}
-	return event.Validate()
+	return event.Validate(ChainID(msg.ChainId))
 }
 
 // GetSignBytes encodes the message for signing

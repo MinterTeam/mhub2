@@ -29,7 +29,7 @@ func InitGenesis(ctx sdk.Context, k Keeper, data types.GenesisState) {
 			if err != nil {
 				panic("couldn't cast to event")
 			}
-			if err := event.Validate(); err != nil {
+			if err := event.Validate(chainId); err != nil {
 				panic("invalid event in genesis")
 			}
 			k.setExternalEventVoteRecord(ctx, chainId, event.GetEventNonce(), event.Hash(), evr)

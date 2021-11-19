@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"fmt"
+	"strconv"
 
 	"github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -110,13 +111,13 @@ func (sse *SignerSetTxExecutedEvent) Hash() tmbytes.HexBytes {
 // Validate //
 //////////////
 
-func (stce *SendToHubEvent) Validate() error {
+func (stce *SendToHubEvent) Validate(chainId ChainID) error {
 	if stce.EventNonce == 0 {
 		return fmt.Errorf("event nonce cannot be 0")
 	}
-	//if !common.IsHexAddress(stce.TokenContract) {
-	//	return sdkerrors.Wrap(ErrInvalid, "ethereum contract address") todo
-	//}
+	if err := validateExternalId(stce.ExternalCoinId, chainId); err != nil {
+		return err
+	}
 	if stce.Amount.IsNegative() {
 		return sdkerrors.Wrap(sdkerrors.ErrInvalidCoins, "amount must be positive")
 	}
@@ -129,13 +130,13 @@ func (stce *SendToHubEvent) Validate() error {
 	return nil
 }
 
-func (ttce *TransferToChainEvent) Validate() error {
+func (ttce *TransferToChainEvent) Validate(chainId ChainID) error {
 	if ttce.EventNonce == 0 {
 		return fmt.Errorf("event nonce cannot be 0")
 	}
-	//if !common.IsHexAddress(stce.TokenContract) {
-	//	return sdkerrors.Wrap(ErrInvalid, "ethereum contract address") todo
-	//}
+	if err := validateExternalId(ttce.ExternalCoinId, chainId); err != nil {
+		return err
+	}
 	if ttce.Amount.IsNegative() {
 		return sdkerrors.Wrap(sdkerrors.ErrInvalidCoins, "amount must be positive")
 	}
@@ -151,24 +152,24 @@ func (ttce *TransferToChainEvent) Validate() error {
 	return nil
 }
 
-func (bee *BatchExecutedEvent) Validate() error {
+func (bee *BatchExecutedEvent) Validate(chainId ChainID) error {
 	if bee.EventNonce == 0 {
 		return fmt.Errorf("event nonce cannot be 0")
 	}
-	//if !common.IsHexAddress(bee.TokenContract) {
-	//	return sdkerrors.Wrap(ErrInvalid, "ethereum contract address") todo
-	//}
+	if err := validateExternalId(bee.ExternalCoinId, chainId); err != nil {
+		return err
+	}
 	return nil
 }
 
-func (ccee *ContractCallExecutedEvent) Validate() error {
+func (ccee *ContractCallExecutedEvent) Validate(chainId ChainID) error {
 	if ccee.EventNonce == 0 {
 		return fmt.Errorf("event nonce cannot be 0")
 	}
 	return nil
 }
 
-func (sse *SignerSetTxExecutedEvent) Validate() error {
+func (sse *SignerSetTxExecutedEvent) Validate(chainId ChainID) error {
 	if sse.EventNonce == 0 {
 		return fmt.Errorf("event nonce cannot be 0")
 	}
@@ -180,5 +181,25 @@ func (sse *SignerSetTxExecutedEvent) Validate() error {
 			return fmt.Errorf("ethereum signer %d error: %w", i, err)
 		}
 	}
+	return nil
+}
+
+func validateExternalId(id string, chainId ChainID) error {
+	switch chainId {
+	case "ethereum", "bsc":
+		if !common.IsHexAddress(id) {
+			return sdkerrors.Wrap(ErrInvalid, "ethereum contract address")
+		}
+	case "minter":
+		coinId, err := strconv.Atoi(id)
+		if err != nil || coinId < 1 {
+			return sdkerrors.Wrap(ErrInvalid, "minter coin id")
+		}
+	case "hub":
+		return sdk.ValidateDenom(id)
+	default:
+		return sdkerrors.Wrap(ErrInvalid, "unknown network")
+	}
+
 	return nil
 }
