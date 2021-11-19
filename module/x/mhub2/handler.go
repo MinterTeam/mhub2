@@ -9,7 +9,7 @@ import (
 	"github.com/MinterTeam/mhub2/module/x/mhub2/types"
 )
 
-// NewHandler returns a handler for "Gravity" type messages.
+// NewHandler returns a handler for "Mhub2" type messages.
 func NewHandler(k keeper.Keeper) sdk.Handler {
 	msgServer := keeper.NewMsgServerImpl(k)
 

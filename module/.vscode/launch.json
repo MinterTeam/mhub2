@@ -5,11 +5,11 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Launch gravityd",
+            "name": "Launch mhub2",
             "type": "go",
             "request": "launch",
             "mode": "exec",
-            "program": "/go/bin/gravityd",
+            "program": "/go/bin/mhub2",
             "showLog": true,
             "args": [
                 "--home",

@@ -10,28 +10,28 @@ import "google/protobuf/any.proto";
 
 option go_package = "github.com/MinterTeam/mhub2/module/x/mhub2/types";
 
-// Msg defines the state transitions possible within gravity
+// Msg defines the state transitions possible within Mhub2
 service Msg {
   rpc SendToExternal(MsgSendToExternal) returns (MsgSendToExternalResponse) {
-    // option (google.api.http).post = "/gravity/v1/send_to_external";
+    // option (google.api.http).post = "/mhub2/v1/send_to_external";
   }
   rpc CancelSendToExternal(MsgCancelSendToExternal)
       returns (MsgCancelSendToExternalResponse) {
-    // option (google.api.http).post = "/gravity/v1/send_to_external/cancel";
+    // option (google.api.http).post = "/mhub2/v1/send_to_external/cancel";
   }
   rpc RequestBatchTx(MsgRequestBatchTx) returns (MsgRequestBatchTxResponse) {
-    // option (google.api.http).post = "/gravity/v1/batchtx/request";
+    // option (google.api.http).post = "/mhub2/v1/batchtx/request";
   }
   rpc SubmitTxConfirmation(MsgSubmitExternalTxConfirmation)
       returns (MsgSubmitTxConfirmationResponse) {
-    // option (google.api.http).post = "/gravity/v1/external_signature";
+    // option (google.api.http).post = "/mhub2/v1/external_signature";
   }
   rpc SubmitExternalEvent(MsgSubmitExternalEvent)
       returns (MsgSubmitExternalEventResponse) {
-    // option (google.api.http).post = "/gravity/v1/external_event";
+    // option (google.api.http).post = "/mhub2/v1/external_event";
   }
   rpc SetDelegateKeys(MsgDelegateKeys) returns (MsgDelegateKeysResponse) {
-    // option (google.api.http).post = "/gravity/v1/delegate_keys";
+    // option (google.api.http).post = "/mhub2/v1/delegate_keys";
   }
 }
 
@@ -149,7 +149,7 @@ message DelegateKeysSignMsg {
 ////////////
 
 // SendToHubEvent is submitted when the SendToHubEvent is emitted by they
-// gravity contract.
+// mhub2 contract.
 message SendToHubEvent {
   option (gogoproto.equal) = true;
 
@@ -166,7 +166,7 @@ message SendToHubEvent {
 }
 
 // TransferToChainEvent is submitted when the TransferToChainEvent is emitted by they
-// gravity contract.
+// mhub2 contract.
 message TransferToChainEvent {
   option (gogoproto.equal) = true;
 

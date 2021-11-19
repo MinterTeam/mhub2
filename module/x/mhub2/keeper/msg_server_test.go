@@ -22,7 +22,7 @@ func TestMsgServer_SubmitEthereumSignature(t *testing.T) {
 	var (
 		env = CreateTestEnv(t)
 		ctx = env.Context
-		gk  = env.GravityKeeper
+		gk  = env.Mhub2Keeper
 
 		orcAddr1, _ = sdk.AccAddressFromBech32("cosmos1dg55rtevlfxh46w88yjpdd08sqhh5cc3xhkcej")
 		valAddr1    = sdk.ValAddress(orcAddr1)
@@ -82,7 +82,7 @@ func TestMsgServer_SendToExternal(t *testing.T) {
 	var (
 		env = CreateTestEnv(t)
 		ctx = env.Context
-		gk  = env.GravityKeeper
+		gk  = env.Mhub2Keeper
 
 		orcAddr1, _ = sdk.AccAddressFromBech32("cosmos1dg55rtevlfxh46w88yjpdd08sqhh5cc3xhkcej")
 		valAddr1    = sdk.ValAddress(orcAddr1)
@@ -144,7 +144,7 @@ func TestMsgServer_CancelSendToExternal(t *testing.T) {
 	var (
 		env = CreateTestEnv(t)
 		ctx = env.Context
-		gk  = env.GravityKeeper
+		gk  = env.Mhub2Keeper
 
 		orcAddr1, _ = sdk.AccAddressFromBech32("cosmos1dg55rtevlfxh46w88yjpdd08sqhh5cc3xhkcej")
 		valAddr1    = sdk.ValAddress(orcAddr1)
@@ -210,7 +210,7 @@ func TestMsgServer_RequestBatchTx(t *testing.T) {
 	var (
 		env = CreateTestEnv(t)
 		ctx = env.Context
-		gk  = env.GravityKeeper
+		gk  = env.Mhub2Keeper
 
 		orcAddr1, _ = sdk.AccAddressFromBech32("cosmos1dg55rtevlfxh46w88yjpdd08sqhh5cc3xhkcej")
 		valAddr1    = sdk.ValAddress(orcAddr1)
@@ -249,7 +249,7 @@ func TestMsgServer_SubmitEthereumEvent(t *testing.T) {
 	var (
 		env = CreateTestEnv(t)
 		ctx = env.Context
-		gk  = env.GravityKeeper
+		gk  = env.Mhub2Keeper
 
 		orcAddr1, _ = sdk.AccAddressFromBech32("cosmos1dg55rtevlfxh46w88yjpdd08sqhh5cc3xhkcej")
 		valAddr1    = sdk.ValAddress(orcAddr1)
@@ -303,7 +303,7 @@ func TestMsgServer_SetDelegateKeys(t *testing.T) {
 	var (
 		env         = CreateTestEnv(t)
 		ctx         = env.Context
-		gk          = env.GravityKeeper
+		gk          = env.Mhub2Keeper
 		orcAddr1, _ = sdk.AccAddressFromBech32("cosmos1dg55rtevlfxh46w88yjpdd08sqhh5cc3xhkcej")
 		valAddr1    = sdk.ValAddress(orcAddr1)
 		ethAddr1    = crypto.PubkeyToAddress(ethPrivKey.PublicKey)

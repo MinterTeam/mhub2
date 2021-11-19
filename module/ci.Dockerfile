@@ -5,6 +5,6 @@ RUN apt get install ca-certificates
 
 EXPOSE 26656 26657 1317 9090
 
-COPY build/gravity /usr/bin/gravity
+COPY build/mhub2 /usr/bin/mhub2
 
-CMD ["gravity", "start"]
+CMD ["mhub2", "start"]

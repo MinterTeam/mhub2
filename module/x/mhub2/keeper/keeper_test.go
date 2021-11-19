@@ -39,10 +39,10 @@ func TestCurrentValsetNormalization(t *testing.T) {
 					Operator: cAddr,
 					Power:    int64(v),
 				}
-				input.GravityKeeper.setValidatorExternalAddress(ctx, cAddr, common.HexToAddress("0xf71402f886b45c134743F4c00750823Bbf5Fd045"))
+				input.Mhub2Keeper.setValidatorExternalAddress(ctx, cAddr, common.HexToAddress("0xf71402f886b45c134743F4c00750823Bbf5Fd045"))
 			}
-			input.GravityKeeper.StakingKeeper = NewStakingKeeperWeightedMock(operators...)
-			r := input.GravityKeeper.CreateSignerSetTx(ctx, chainId)
+			input.Mhub2Keeper.StakingKeeper = NewStakingKeeperWeightedMock(operators...)
+			r := input.Mhub2Keeper.CreateSignerSetTx(ctx, chainId)
 			assert.Equal(t, spec.expPowers, r.Signers.GetPowers())
 		})
 	}
@@ -75,11 +75,11 @@ func TestAttestationIterator(t *testing.T) {
 		Sender:         EthAddrs[0].String(),
 		CosmosReceiver: AccAddrs[0].String(),
 	}
-	input.GravityKeeper.setExternalEventVoteRecord(ctx, chainId, dep1.EventNonce, dep1.Hash(), att1)
-	input.GravityKeeper.setExternalEventVoteRecord(ctx, chainId, dep2.EventNonce, dep2.Hash(), att2)
+	input.Mhub2Keeper.setExternalEventVoteRecord(ctx, chainId, dep1.EventNonce, dep1.Hash(), att1)
+	input.Mhub2Keeper.setExternalEventVoteRecord(ctx, chainId, dep2.EventNonce, dep2.Hash(), att2)
 
 	var atts []*types.ExternalEventVoteRecord
-	input.GravityKeeper.iterateExternalEventVoteRecords(ctx, chainId, func(_ []byte, att *types.ExternalEventVoteRecord) bool {
+	input.Mhub2Keeper.iterateExternalEventVoteRecords(ctx, chainId, func(_ []byte, att *types.ExternalEventVoteRecord) bool {
 		atts = append(atts, att)
 		return false
 	})
@@ -90,7 +90,7 @@ func TestAttestationIterator(t *testing.T) {
 func TestDelegateKeys(t *testing.T) {
 	input := CreateTestEnv(t)
 	ctx := input.Context
-	k := input.GravityKeeper
+	k := input.Mhub2Keeper
 	var (
 		ethAddrs = []common.Address{
 			common.HexToAddress("0x3146D2d6Eed46Afa423969f5dDC3152DfC359b09"),
@@ -133,7 +133,7 @@ func TestDelegateKeys(t *testing.T) {
 
 func TestStoreEventVoteRecord(t *testing.T) {
 	input := CreateTestEnv(t)
-	gk := input.GravityKeeper
+	gk := input.Mhub2Keeper
 	ctx := input.Context
 	stce := &types.SendToHubEvent{
 		EventNonce:     1,
@@ -212,7 +212,7 @@ func TestStoreEventVoteRecord(t *testing.T) {
 
 func TestLastSlashedValsetNonce(t *testing.T) {
 	input := CreateTestEnv(t)
-	k := input.GravityKeeper
+	k := input.Mhub2Keeper
 	ctx := input.Context
 
 	i := 1
@@ -258,7 +258,7 @@ func TestKeeper_GetLatestSignerSetTx(t *testing.T) {
 	t.Run("read before there's one in state", func(t *testing.T) {
 		env := CreateTestEnv(t)
 		ctx := env.Context
-		gk := env.GravityKeeper
+		gk := env.Mhub2Keeper
 
 		got := gk.GetLatestSignerSetTx(ctx, chainId)
 		require.Nil(t, got)
@@ -267,7 +267,7 @@ func TestKeeper_GetLatestSignerSetTx(t *testing.T) {
 	t.Run("read after there's one in state", func(t *testing.T) {
 		env := CreateTestEnv(t)
 		ctx := env.Context
-		gk := env.GravityKeeper
+		gk := env.Mhub2Keeper
 
 		{ // setup
 			gk.SetOutgoingTx(ctx, chainId, &types.SignerSetTx{
@@ -289,7 +289,7 @@ func TestKeeper_GetSignerSetTxs(t *testing.T) {
 	t.Run("read before there's any in state", func(t *testing.T) {
 		env := CreateTestEnv(t)
 		ctx := env.Context
-		gk := env.GravityKeeper
+		gk := env.Mhub2Keeper
 
 		got := gk.GetSignerSetTxs(ctx, chainId)
 		require.Nil(t, got)
@@ -298,7 +298,7 @@ func TestKeeper_GetSignerSetTxs(t *testing.T) {
 	t.Run("read after there's one in state", func(t *testing.T) {
 		env := CreateTestEnv(t)
 		ctx := env.Context
-		gk := env.GravityKeeper
+		gk := env.Mhub2Keeper
 
 		{ // setup
 			gk.SetOutgoingTx(ctx, chainId, &types.SignerSetTx{
@@ -320,7 +320,7 @@ func TestKeeper_GetLastObservedSignerSetTx(t *testing.T) {
 	t.Run("read before there's any in state", func(t *testing.T) {
 		env := CreateTestEnv(t)
 		ctx := env.Context
-		gk := env.GravityKeeper
+		gk := env.Mhub2Keeper
 
 		got := gk.GetLastObservedSignerSetTx(ctx, chainId)
 		require.Nil(t, got)
@@ -329,7 +329,7 @@ func TestKeeper_GetLastObservedSignerSetTx(t *testing.T) {
 	t.Run("read after there's one in state", func(t *testing.T) {
 		env := CreateTestEnv(t)
 		ctx := env.Context
-		gk := env.GravityKeeper
+		gk := env.Mhub2Keeper
 
 		{ // setup
 			gk.setLastObservedSignerSetTx(ctx, chainId, types.SignerSetTx{
@@ -350,7 +350,7 @@ func TestKeeper_GetLastUnbondingBlockHeight(t *testing.T) {
 	t.Run("read before there's any in state", func(t *testing.T) {
 		env := CreateTestEnv(t)
 		ctx := env.Context
-		gk := env.GravityKeeper
+		gk := env.Mhub2Keeper
 
 		got := gk.GetLastUnbondingBlockHeight(ctx)
 		require.Zero(t, got)
@@ -359,7 +359,7 @@ func TestKeeper_GetLastUnbondingBlockHeight(t *testing.T) {
 	t.Run("read after there's one in state", func(t *testing.T) {
 		env := CreateTestEnv(t)
 		ctx := env.Context
-		gk := env.GravityKeeper
+		gk := env.Mhub2Keeper
 
 		{ // setup
 			gk.setLastUnbondingBlockHeight(ctx, 10)
@@ -376,7 +376,7 @@ func TestKeeper_GetEthereumSignatures(t *testing.T) {
 	t.Run("read before there's anything in state", func(t *testing.T) {
 		env := CreateTestEnv(t)
 		ctx := env.Context
-		gk := env.GravityKeeper
+		gk := env.Mhub2Keeper
 
 		storeIndexes := [][]byte{
 			types.MakeSignerSetTxKey(chainId, 1),
@@ -392,7 +392,7 @@ func TestKeeper_GetEthereumSignatures(t *testing.T) {
 	t.Run("read after there's one signer-set-tx-confirmation in state", func(t *testing.T) {
 		env := CreateTestEnv(t)
 		ctx := env.Context
-		gk := env.GravityKeeper
+		gk := env.Mhub2Keeper
 
 		ethAddr := common.HexToAddress("0x3146D2d6Eed46Afa423969f5dDC3152DfC359b09")
 		valAddr, err := sdk.ValAddressFromBech32("cosmosvaloper1jpz0ahls2chajf78nkqczdwwuqcu97w6z3plt4")
@@ -427,7 +427,7 @@ func TestKeeper_GetEthereumSignatures(t *testing.T) {
 	t.Run("read after there's one batch-tx-confirmation in state", func(t *testing.T) {
 		env := CreateTestEnv(t)
 		ctx := env.Context
-		gk := env.GravityKeeper
+		gk := env.Mhub2Keeper
 
 		ethAddr := common.HexToAddress("0x3146D2d6Eed46Afa423969f5dDC3152DfC359b09")
 		valAddr, err := sdk.ValAddressFromBech32("cosmosvaloper1jpz0ahls2chajf78nkqczdwwuqcu97w6z3plt4")
@@ -466,7 +466,7 @@ func TestKeeper_GetEthereumSignatures(t *testing.T) {
 	t.Run("read after there's one contract-call-tx-confirmation in state", func(t *testing.T) {
 		env := CreateTestEnv(t)
 		ctx := env.Context
-		gk := env.GravityKeeper
+		gk := env.Mhub2Keeper
 
 		ethAddr := common.HexToAddress("0x3146D2d6Eed46Afa423969f5dDC3152DfC359b09")
 

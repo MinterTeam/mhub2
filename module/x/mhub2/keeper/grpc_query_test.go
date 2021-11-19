@@ -12,7 +12,7 @@ import (
 func TestKeeper_Params(t *testing.T) {
 	env := CreateTestEnv(t)
 	ctx := sdk.WrapSDKContext(env.Context)
-	gk := env.GravityKeeper
+	gk := env.Mhub2Keeper
 
 	req := &types.ParamsRequest{}
 	res, err := gk.Params(ctx, req)
@@ -24,7 +24,7 @@ func TestKeeper_LatestSignerSetTx(t *testing.T) {
 	t.Run("read before there's anything in state", func(t *testing.T) {
 		env := CreateTestEnv(t)
 		ctx := env.Context
-		gk := env.GravityKeeper
+		gk := env.Mhub2Keeper
 
 		req := &types.LatestSignerSetTxRequest{chainId.String()}
 		res, err := gk.LatestSignerSetTx(sdk.WrapSDKContext(ctx), req)
@@ -34,7 +34,7 @@ func TestKeeper_LatestSignerSetTx(t *testing.T) {
 	t.Run("read after there's something in state", func(t *testing.T) {
 		env := CreateTestEnv(t)
 		ctx := env.Context
-		gk := env.GravityKeeper
+		gk := env.Mhub2Keeper
 		{ // setup
 			sstx := gk.CreateSignerSetTx(env.Context, chainId)
 			require.NotNil(t, sstx)
@@ -52,7 +52,7 @@ func TestKeeper_SignerSetTx(t *testing.T) {
 	t.Run("read after there's something in state", func(t *testing.T) {
 		env := CreateTestEnv(t)
 		ctx := env.Context
-		gk := env.GravityKeeper
+		gk := env.Mhub2Keeper
 
 		var signerSetNonce uint64
 		{ // setup
@@ -74,7 +74,7 @@ func TestKeeper_BatchTx(t *testing.T) {
 	t.Run("read after there's something in state", func(t *testing.T) {
 		env := CreateTestEnv(t)
 		ctx := env.Context
-		gk := env.GravityKeeper
+		gk := env.Mhub2Keeper
 
 		const (
 			batchNonce    = 55
@@ -109,7 +109,7 @@ func TestKeeper_ContractCallTx(t *testing.T) {
 	t.Run("read after there's something in state", func(t *testing.T) {
 		env := CreateTestEnv(t)
 		ctx := env.Context
-		gk := env.GravityKeeper
+		gk := env.Mhub2Keeper
 
 		const (
 			invalidationNonce = 100
@@ -141,7 +141,7 @@ func TestKeeper_SignerSetTxs(t *testing.T) {
 	t.Run("read after there's something in state", func(t *testing.T) {
 		env := CreateTestEnv(t)
 		ctx := env.Context
-		gk := env.GravityKeeper
+		gk := env.Mhub2Keeper
 
 		{ // setup
 			require.NotNil(t, gk.CreateSignerSetTx(env.Context, chainId))
@@ -161,7 +161,7 @@ func TestKeeper_BatchTxs(t *testing.T) {
 	t.Run("read after there's something in state", func(t *testing.T) {
 		env := CreateTestEnv(t)
 		ctx := env.Context
-		gk := env.GravityKeeper
+		gk := env.Mhub2Keeper
 
 		{ // setup
 			gk.SetOutgoingTx(ctx, chainId, &types.BatchTx{
@@ -193,7 +193,7 @@ func TestKeeper_ContractCallTxs(t *testing.T) {
 	t.Run("read after there's something in state", func(t *testing.T) {
 		env := CreateTestEnv(t)
 		ctx := env.Context
-		gk := env.GravityKeeper
+		gk := env.Mhub2Keeper
 
 		{ // setup
 			gk.SetOutgoingTx(ctx, chainId, &types.ContractCallTx{

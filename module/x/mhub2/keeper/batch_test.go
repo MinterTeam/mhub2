@@ -17,7 +17,7 @@ var chainId = types.ChainID("ethereum")
 func TestBatches(t *testing.T) {
 	input := CreateTestEnv(t)
 	ctx := input.Context
-	tokenInfos := input.GravityKeeper.GetTokenInfos(ctx).TokenInfos
+	tokenInfos := input.Mhub2Keeper.GetTokenInfos(ctx).TokenInfos
 	var (
 		mySender, _         = sdk.AccAddressFromBech32("cosmos1ahx7f8wyertuus9r20284ej0asrs085case3kn")
 		myReceiver          = common.HexToAddress("0xd041c41EA1bf0F006ADBb6d2c9ef9D425dE5eaD7")
@@ -46,10 +46,10 @@ func TestBatches(t *testing.T) {
 	ctx = ctx.WithBlockTime(time.Unix(1, 0))
 
 	// tx batch size is 2, so that some of them stay behind
-	firstBatch := input.GravityKeeper.BuildBatchTx(ctx, chainId, myTokenContractAddr, 2)
+	firstBatch := input.Mhub2Keeper.BuildBatchTx(ctx, chainId, myTokenContractAddr, 2)
 
 	// then batch is persisted
-	gotFirstBatch := input.GravityKeeper.GetOutgoingTx(ctx, chainId, firstBatch.GetStoreIndex(chainId))
+	gotFirstBatch := input.Mhub2Keeper.GetOutgoingTx(ctx, chainId, firstBatch.GetStoreIndex(chainId))
 	require.NotNil(t, gotFirstBatch)
 
 	gfb := gotFirstBatch.(*types.BatchTx)
@@ -68,7 +68,7 @@ func TestBatches(t *testing.T) {
 
 	// and verify remaining available Tx in the pool
 	var gotUnbatchedTx []*types.SendToExternal
-	input.GravityKeeper.IterateUnbatchedSendToExternals(ctx, chainId, func(tx *types.SendToExternal) bool {
+	input.Mhub2Keeper.IterateUnbatchedSendToExternals(ctx, chainId, func(tx *types.SendToExternal) bool {
 		gotUnbatchedTx = append(gotUnbatchedTx, tx)
 		return false
 	})
@@ -87,7 +87,7 @@ func TestBatches(t *testing.T) {
 	// create the more profitable batch
 	ctx = ctx.WithBlockTime(time.Unix(1, 0))
 	// tx batch size is 2, so that some of them stay behind
-	secondBatch := input.GravityKeeper.BuildBatchTx(ctx, chainId, myTokenContractAddr, 2)
+	secondBatch := input.Mhub2Keeper.BuildBatchTx(ctx, chainId, myTokenContractAddr, 2)
 
 	// check that the more profitable batch has the right txs in it
 	expSecondBatch := &types.BatchTx{
@@ -107,15 +107,15 @@ func TestBatches(t *testing.T) {
 	// =================================
 
 	// Execute the batch
-	input.GravityKeeper.batchTxExecuted(ctx, chainId, myTokenContractAddr, secondBatch.BatchNonce, "", sdk.NewInt(0), "")
+	input.Mhub2Keeper.batchTxExecuted(ctx, chainId, myTokenContractAddr, secondBatch.BatchNonce, "", sdk.NewInt(0), "")
 
 	// check batch has been deleted
-	gotSecondBatch := input.GravityKeeper.GetOutgoingTx(ctx, chainId, secondBatch.GetStoreIndex(chainId))
+	gotSecondBatch := input.Mhub2Keeper.GetOutgoingTx(ctx, chainId, secondBatch.GetStoreIndex(chainId))
 	require.Nil(t, gotSecondBatch)
 
 	// check that txs from first batch have been freed
 	gotUnbatchedTx = nil
-	input.GravityKeeper.IterateUnbatchedSendToExternals(ctx, chainId, func(tx *types.SendToExternal) bool {
+	input.Mhub2Keeper.IterateUnbatchedSendToExternals(ctx, chainId, func(tx *types.SendToExternal) bool {
 		gotUnbatchedTx = append(gotUnbatchedTx, tx)
 		return false
 	})
@@ -133,7 +133,7 @@ func TestBatches(t *testing.T) {
 func TestBatchesFullCoins(t *testing.T) {
 	input := CreateTestEnv(t)
 	ctx := input.Context.WithBlockTime(time.Unix(0, 0))
-	tokenInfos := input.GravityKeeper.GetTokenInfos(ctx).TokenInfos
+	tokenInfos := input.Mhub2Keeper.GetTokenInfos(ctx).TokenInfos
 	var (
 		now                 = time.Unix(0, 0)
 		mySender, _         = sdk.AccAddressFromBech32("cosmos1ahx7f8wyertuus9r20284ej0asrs085case3kn")
@@ -164,7 +164,7 @@ func TestBatchesFullCoins(t *testing.T) {
 		fee := types.NewSDKIntExternalToken(oneEth.Mul(vAsSDKInt), tokenId, myTokenContractAddr).HubCoin(testDenomResolver)
 		valCommission := types.NewSDKIntExternalToken(sdk.NewInt(0), tokenId, myTokenContractAddr).HubCoin(testDenomResolver)
 
-		_, err := input.GravityKeeper.createSendToExternal(ctx, chainId, mySender, myReceiver.Hex(), amount, fee, valCommission, "", "", "")
+		_, err := input.Mhub2Keeper.createSendToExternal(ctx, chainId, mySender, myReceiver.Hex(), amount, fee, valCommission, "", "", "")
 		require.NoError(t, err)
 	}
 
@@ -172,10 +172,10 @@ func TestBatchesFullCoins(t *testing.T) {
 	ctx = ctx.WithBlockTime(now)
 
 	// tx batch size is 2, so that some of them stay behind
-	firstBatch := input.GravityKeeper.BuildBatchTx(ctx, chainId, myTokenContractAddr, 2)
+	firstBatch := input.Mhub2Keeper.BuildBatchTx(ctx, chainId, myTokenContractAddr, 2)
 
 	// then batch is persisted
-	gotFirstBatch := input.GravityKeeper.GetOutgoingTx(ctx, chainId, firstBatch.GetStoreIndex(chainId))
+	gotFirstBatch := input.Mhub2Keeper.GetOutgoingTx(ctx, chainId, firstBatch.GetStoreIndex(chainId))
 	require.NotNil(t, gotFirstBatch)
 
 	expFirstBatch := &types.BatchTx{
@@ -208,7 +208,7 @@ func TestBatchesFullCoins(t *testing.T) {
 
 	// and verify remaining available Tx in the pool
 	var gotUnbatchedTx []*types.SendToExternal
-	input.GravityKeeper.IterateUnbatchedSendToExternals(ctx, chainId, func(tx *types.SendToExternal) bool {
+	input.Mhub2Keeper.IterateUnbatchedSendToExternals(ctx, chainId, func(tx *types.SendToExternal) bool {
 		gotUnbatchedTx = append(gotUnbatchedTx, tx)
 		return false
 	})
@@ -246,14 +246,14 @@ func TestBatchesFullCoins(t *testing.T) {
 		fee := types.NewSDKIntExternalToken(oneEth.Mul(vAsSDKInt), tokenId, myTokenContractAddr).HubCoin(testDenomResolver)
 		valCommission := types.NewSDKIntExternalToken(sdk.NewInt(0), tokenId, myTokenContractAddr).HubCoin(testDenomResolver)
 
-		_, err := input.GravityKeeper.createSendToExternal(ctx, chainId, mySender, myReceiver.Hex(), amount, fee, valCommission, "", "", "")
+		_, err := input.Mhub2Keeper.createSendToExternal(ctx, chainId, mySender, myReceiver.Hex(), amount, fee, valCommission, "", "", "")
 		require.NoError(t, err)
 	}
 
 	// create the more profitable batch
 	ctx = ctx.WithBlockTime(now)
 	// tx batch size is 2, so that some of them stay behind
-	secondBatch := input.GravityKeeper.BuildBatchTx(ctx, chainId, myTokenContractAddr, 2)
+	secondBatch := input.Mhub2Keeper.BuildBatchTx(ctx, chainId, myTokenContractAddr, 2)
 
 	// check that the more profitable batch has the right txs in it
 	expSecondBatch := &types.BatchTx{
@@ -291,15 +291,15 @@ func TestBatchesFullCoins(t *testing.T) {
 	// =================================
 
 	// Execute the batch
-	input.GravityKeeper.batchTxExecuted(ctx, chainId, secondBatch.ExternalTokenId, secondBatch.BatchNonce, "", sdk.NewInt(0), "")
+	input.Mhub2Keeper.batchTxExecuted(ctx, chainId, secondBatch.ExternalTokenId, secondBatch.BatchNonce, "", sdk.NewInt(0), "")
 
 	// check batch has been deleted
-	gotSecondBatch := input.GravityKeeper.GetOutgoingTx(ctx, chainId, secondBatch.GetStoreIndex(chainId))
+	gotSecondBatch := input.Mhub2Keeper.GetOutgoingTx(ctx, chainId, secondBatch.GetStoreIndex(chainId))
 	require.Nil(t, gotSecondBatch)
 
 	// check that txs from first batch have been freed
 	gotUnbatchedTx = nil
-	input.GravityKeeper.IterateUnbatchedSendToExternals(ctx, chainId, func(tx *types.SendToExternal) bool {
+	input.Mhub2Keeper.IterateUnbatchedSendToExternals(ctx, chainId, func(tx *types.SendToExternal) bool {
 		gotUnbatchedTx = append(gotUnbatchedTx, tx)
 		return false
 	})
@@ -351,7 +351,7 @@ func TestBatchesFullCoins(t *testing.T) {
 func TestPoolTxRefund(t *testing.T) {
 	input := CreateTestEnv(t)
 	ctx := input.Context
-	tokenInfos := input.GravityKeeper.GetTokenInfos(ctx).TokenInfos
+	tokenInfos := input.Mhub2Keeper.GetTokenInfos(ctx).TokenInfos
 	var (
 		now                 = time.Now().UTC()
 		mySender, _         = sdk.AccAddressFromBech32("cosmos1ahx7f8wyertuus9r20284ej0asrs085case3kn")
@@ -377,7 +377,7 @@ func TestPoolTxRefund(t *testing.T) {
 	// for i, v := range []uint64{2, 3, 2, 1} {
 	// 	amount := types.NewExternalToken(uint64(i+100), myTokenContractAddr).HubCoin()
 	// 	fee := types.NewExternalToken(v, myTokenContractAddr).HubCoin()
-	// 	_, err := input.GravityKeeper.CreateSendToEthereum(ctx, mySender, myReceiver, amount, fee)
+	// 	_, err := input.Mhub2Keeper.CreateSendToEthereum(ctx, mySender, myReceiver, amount, fee)
 	// 	require.NoError(t, err)
 	// }
 	input.AddSendToEthTxsToPool(t, ctx, chainId, tokenId, myTokenContractAddr, mySender, myReceiver, 2, 3, 2, 1)
@@ -386,14 +386,14 @@ func TestPoolTxRefund(t *testing.T) {
 	ctx = ctx.WithBlockTime(now)
 
 	// tx batch size is 2, so that some of them stay behind
-	input.GravityKeeper.BuildBatchTx(ctx, chainId, myTokenContractAddr, 2)
+	input.Mhub2Keeper.BuildBatchTx(ctx, chainId, myTokenContractAddr, 2)
 
 	// try to refund a tx that's in a batch
-	err := input.GravityKeeper.cancelSendToExternal(ctx, chainId, 2, mySender.String())
+	err := input.Mhub2Keeper.cancelSendToExternal(ctx, chainId, 2, mySender.String())
 	require.Error(t, err)
 
 	// try to refund a tx that's in the pool
-	err = input.GravityKeeper.cancelSendToExternal(ctx, chainId, 4, mySender.String())
+	err = input.Mhub2Keeper.cancelSendToExternal(ctx, chainId, 4, mySender.String())
 	require.NoError(t, err)
 
 	// make sure refund was issued

@@ -130,7 +130,7 @@ func TestValsetSort(t *testing.T) {
 			},
 		},
 		// if you're thinking about changing this due to a change in the sorting algorithm
-		// you MUST go change this in gravity_utils/types.rs as well. You will also break all
+		// you MUST go change this in mhub2_utils/types.rs as well. You will also break all
 		// bridges in production when they try to migrate so use extreme caution!
 		"real world": {
 			src: ExternalSigners{

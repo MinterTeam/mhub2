@@ -25,33 +25,33 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// Params represent the Gravity genesis and store parameters
+// Params represent the Mhub2 genesis and store parameters
 // gravity_id:
 // a random 32 byte value to prevent signature reuse, for example if the
 // cosmos validators decided to use the same Ethereum keys for another chain
-// also running Gravity we would not want it to be possible to play a deposit
-// from chain A back on chain B's Gravity. This value IS USED ON ETHEREUM so
+// also running Mhub2 we would not want it to be possible to play a deposit
+// from chain A back on chain B's Mhub2. This value IS USED ON ETHEREUM so
 // it must be set in your genesis.json before launch and not changed after
-// deploying Gravity
+// deploying Mhub2
 //
 // contract_hash:
-// the code hash of a known good version of the Gravity contract
+// the code hash of a known good version of the Mhub2 contract
 // solidity code. This can be used to verify the correct version
 // of the contract has been deployed. This is a reference value for
-// goernance action only it is never read by any Gravity code
+// goernance action only it is never read by any Mhub2 code
 //
 // bridge_ethereum_address:
 // is address of the bridge contract on the Ethereum side, this is a
 // reference value for governance only and is not actually used by any
-// Gravity code
+// Mhub2 code
 //
 // bridge_chain_id:
 // the unique identifier of the Ethereum chain, this is a reference value
-// only and is not actually used by any Gravity code
+// only and is not actually used by any Mhub2 code
 //
-// These reference values may be used by future Gravity client implemetnations
-// to allow for saftey features or convenience features like the Gravity address
-// in your relayer. A relayer would require a configured Gravity address if
+// These reference values may be used by future Mhub2 client implemetnations
+// to allow for saftey features or convenience features like the Mhub2 address
+// in your relayer. A relayer would require a configured Mhub2 address if
 // governance had not set the address on the chain it was relaying for.
 //
 // signed_signer_set_txs_window
@@ -83,7 +83,7 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 // slash_fraction_ethereum_signature
 // slash_fraction_conflicting_ethereum_signature
 //
-// The slashing fractions for the various gravity related slashing conditions.
+// The slashing fractions for the various Mhub2 related slashing conditions.
 // The first three refer to not submitting a particular message, the third for
 // submitting a different ethereum_signature for the same Ethereum event
 type Params struct {

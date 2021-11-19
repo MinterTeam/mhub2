@@ -64,7 +64,7 @@ build:
 	go build -o build/mhub2 $(BUILD_FLAGS) ./cmd/mhub2/main.go
 
 docker-build:
-	docker build -t github.com/althea-net/gravity:latest
+	docker build -t github.com/MinterTeam/mhub2:latest
 
 # look into .golangci.yml for enabling / disabling linters
 lint:

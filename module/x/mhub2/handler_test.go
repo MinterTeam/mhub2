@@ -36,7 +36,7 @@ func TestHandleMsgSendToEthereum(t *testing.T) {
 	// we start by depositing some funds into the users balance to send
 	input := keeper.CreateTestEnv(t)
 	ctx := input.Context
-	h := mhub2.NewHandler(input.GravityKeeper)
+	h := mhub2.NewHandler(input.Mhub2Keeper)
 	input.BankKeeper.MintCoins(ctx, types.ModuleName, startingCoins)
 	input.BankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, userCosmosAddr, startingCoins) // 150
 	balance1 := input.BankKeeper.GetAllBalances(ctx, userCosmosAddr)
@@ -90,7 +90,7 @@ func TestHandleMsgSendToEthereum(t *testing.T) {
 func TestMsgSubmitEthereumEventSendToCosmosSingleValidator(t *testing.T) {
 	input := keeper.CreateTestEnv(t)
 	ctx := input.Context
-	tokenInfos := input.GravityKeeper.GetTokenInfos(ctx).TokenInfos
+	tokenInfos := input.Mhub2Keeper.GetTokenInfos(ctx).TokenInfos
 	var (
 		myOrchestratorAddr sdk.AccAddress = make([]byte, app.MaxAddrLen)
 		myCosmosAddr, _                   = sdk.AccAddressFromBech32("cosmos16ahjkfqxpp6lvfy9fpfnfjg39xr96qett0alj5")
@@ -104,7 +104,7 @@ func TestMsgSubmitEthereumEventSendToCosmosSingleValidator(t *testing.T) {
 		tokenId                           = tokenInfos[0].Id
 	)
 
-	gk := input.GravityKeeper
+	gk := input.Mhub2Keeper
 	bk := input.BankKeeper
 	gk.StakingKeeper = keeper.NewStakingKeeperMock(myValAddr)
 	gk.SetOrchestratorValidatorAddress(ctx, myValAddr, myOrchestratorAddr)
@@ -203,7 +203,7 @@ func TestMsgSubmitEthereumEventSendToCosmosSingleValidator(t *testing.T) {
 func TestMsgSubmitEthreumEventSendToCosmosMultiValidator(t *testing.T) {
 	input := keeper.CreateTestEnv(t)
 	ctx := input.Context
-	tokenInfos := input.GravityKeeper.GetTokenInfos(ctx).TokenInfos
+	tokenInfos := input.Mhub2Keeper.GetTokenInfos(ctx).TokenInfos
 	var (
 		orchestratorAddr1, _ = sdk.AccAddressFromBech32("cosmos1dg55rtevlfxh46w88yjpdd08sqhh5cc3xhkcej")
 		orchestratorAddr2, _ = sdk.AccAddressFromBech32("cosmos164knshrzuuurf05qxf3q5ewpfnwzl4gj4m4dfy")
@@ -219,11 +219,11 @@ func TestMsgSubmitEthreumEventSendToCosmosMultiValidator(t *testing.T) {
 		tokenId              = tokenInfos[0].Id
 	)
 
-	input.GravityKeeper.StakingKeeper = keeper.NewStakingKeeperMock(valAddr1, valAddr2, valAddr3)
-	input.GravityKeeper.SetOrchestratorValidatorAddress(ctx, valAddr1, orchestratorAddr1)
-	input.GravityKeeper.SetOrchestratorValidatorAddress(ctx, valAddr2, orchestratorAddr2)
-	input.GravityKeeper.SetOrchestratorValidatorAddress(ctx, valAddr3, orchestratorAddr3)
-	h := mhub2.NewHandler(input.GravityKeeper)
+	input.Mhub2Keeper.StakingKeeper = keeper.NewStakingKeeperMock(valAddr1, valAddr2, valAddr3)
+	input.Mhub2Keeper.SetOrchestratorValidatorAddress(ctx, valAddr1, orchestratorAddr1)
+	input.Mhub2Keeper.SetOrchestratorValidatorAddress(ctx, valAddr2, orchestratorAddr2)
+	input.Mhub2Keeper.SetOrchestratorValidatorAddress(ctx, valAddr3, orchestratorAddr3)
+	h := mhub2.NewHandler(input.Mhub2Keeper)
 
 	myErc20 := types.ExternalToken{
 		Amount:  sdk.NewInt(12),
@@ -264,10 +264,10 @@ func TestMsgSubmitEthreumEventSendToCosmosMultiValidator(t *testing.T) {
 	// when
 	ctx = ctx.WithBlockTime(myBlockTime)
 	_, err = h(ctx, ethClaim1Msg)
-	mhub2.EndBlocker(ctx, input.GravityKeeper)
+	mhub2.EndBlocker(ctx, input.Mhub2Keeper)
 	require.NoError(t, err)
 	// and attestation persisted
-	a1 := input.GravityKeeper.GetExternalEventVoteRecord(ctx, chainId, myNonce, ethClaim1.Hash())
+	a1 := input.Mhub2Keeper.GetExternalEventVoteRecord(ctx, chainId, myNonce, ethClaim1.Hash())
 	require.NotNil(t, a1)
 	// and vouchers not yet added to the account
 	balance1 := input.BankKeeper.GetAllBalances(ctx, myCosmosAddr)
@@ -276,11 +276,11 @@ func TestMsgSubmitEthreumEventSendToCosmosMultiValidator(t *testing.T) {
 	// when
 	ctx = ctx.WithBlockTime(myBlockTime)
 	_, err = h(ctx, ethClaim2Msg)
-	mhub2.EndBlocker(ctx, input.GravityKeeper)
+	mhub2.EndBlocker(ctx, input.Mhub2Keeper)
 	require.NoError(t, err)
 
 	// and attestation persisted
-	a2 := input.GravityKeeper.GetExternalEventVoteRecord(ctx, chainId, myNonce, ethClaim2.Hash())
+	a2 := input.Mhub2Keeper.GetExternalEventVoteRecord(ctx, chainId, myNonce, ethClaim2.Hash())
 	require.NotNil(t, a2)
 	// and vouchers now added to the account
 	balance2 := input.BankKeeper.GetAllBalances(ctx, myCosmosAddr)
@@ -289,11 +289,11 @@ func TestMsgSubmitEthreumEventSendToCosmosMultiValidator(t *testing.T) {
 	// when
 	ctx = ctx.WithBlockTime(myBlockTime)
 	_, err = h(ctx, ethClaim3Msg)
-	mhub2.EndBlocker(ctx, input.GravityKeeper)
+	mhub2.EndBlocker(ctx, input.Mhub2Keeper)
 	require.NoError(t, err)
 
 	// and attestation persisted
-	a3 := input.GravityKeeper.GetExternalEventVoteRecord(ctx, chainId, myNonce, ethClaim3.Hash())
+	a3 := input.Mhub2Keeper.GetExternalEventVoteRecord(ctx, chainId, myNonce, ethClaim3.Hash())
 	require.NotNil(t, a3)
 	// and no additional added to the account
 	balance3 := input.BankKeeper.GetAllBalances(ctx, myCosmosAddr)
@@ -319,7 +319,7 @@ func TestMsgSetDelegateAddresses(t *testing.T) {
 	)
 
 	input := keeper.CreateTestEnv(t)
-	input.GravityKeeper.StakingKeeper = keeper.NewStakingKeeperMock(valAddress)
+	input.Mhub2Keeper.StakingKeeper = keeper.NewStakingKeeperMock(valAddress)
 	ctx := input.Context
 	wctx := sdk.WrapSDKContext(ctx)
 
@@ -346,8 +346,8 @@ func TestMsgSetDelegateAddresses(t *testing.T) {
 	sig, err := types.NewEthereumSignature(hash, ethPrivKey)
 	require.NoError(t, err)
 
-	k := input.GravityKeeper
-	h := mhub2.NewHandler(input.GravityKeeper)
+	k := input.Mhub2Keeper
+	h := mhub2.NewHandler(input.Mhub2Keeper)
 	ctx = ctx.WithBlockTime(blockTime)
 
 	msg := types.NewMsgDelegateKeys(valAddress, cosmosAddress, ethAddress.String(), sig)

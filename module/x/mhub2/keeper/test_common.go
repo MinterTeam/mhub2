@@ -191,8 +191,8 @@ var (
 		BondDenom:         "stake",
 	}
 
-	// TestingGravityParams is a set of mhub2 params for testing
-	TestingGravityParams = types.Params{
+	// TestingMhub2Params is a set of mhub2 params for testing
+	TestingMhub2Params = types.Params{
 		GravityId:                                 "testgravityid",
 		ContractSourceHash:                        "62328f7bc12efb28f86111d08c29b39285680a906ea0e524e0209d6f6657b713",
 		BridgeEthereumAddress:                     "0x8858eeb3dfffa017d4bce9801d340d36cf895ccf",
@@ -215,7 +215,7 @@ var (
 
 // TestInput stores the various keepers required to test mhub2
 type TestInput struct {
-	GravityKeeper  Keeper
+	Mhub2Keeper    Keeper
 	AccountKeeper  authkeeper.AccountKeeper
 	StakingKeeper  stakingkeeper.Keeper
 	SlashingKeeper slashingkeeper.Keeper
@@ -231,7 +231,7 @@ func (input TestInput) AddSendToEthTxsToPool(t *testing.T, ctx sdk.Context, chai
 	for i, id := range ids {
 		amount := types.NewExternalToken(uint64(i+100), tokenId, externalTokenId).HubCoin(testDenomResolver)
 		fee := types.NewExternalToken(id, tokenId, externalTokenId).HubCoin(testDenomResolver)
-		_, err := input.GravityKeeper.createSendToExternal(ctx, chainId, sender, receiver.Hex(), amount, fee, sdk.NewInt64Coin(amount.Denom, 0), "#", "hub", sender.String())
+		_, err := input.Mhub2Keeper.createSendToExternal(ctx, chainId, sender, receiver.Hex(), amount, fee, sdk.NewInt64Coin(amount.Denom, 0), "#", "hub", sender.String())
 		require.NoError(t, err)
 	}
 }
@@ -280,9 +280,9 @@ func SetupFiveValChain(t *testing.T) (TestInput, sdk.Context) {
 
 	// Register eth addresses for each validator
 	for i, addr := range ValAddrs {
-		input.GravityKeeper.setValidatorExternalAddress(input.Context, addr, EthAddrs[i])
-		input.GravityKeeper.SetOrchestratorValidatorAddress(input.Context, addr, AccAddrs[i])
-		input.GravityKeeper.setExternalOrchestratorAddress(input.Context, EthAddrs[i], AccAddrs[i])
+		input.Mhub2Keeper.setValidatorExternalAddress(input.Context, addr, EthAddrs[i])
+		input.Mhub2Keeper.SetOrchestratorValidatorAddress(input.Context, addr, AccAddrs[i])
+		input.Mhub2Keeper.setExternalOrchestratorAddress(input.Context, EthAddrs[i], AccAddrs[i])
 	}
 
 	// Return the test input
@@ -309,7 +309,7 @@ func CreateTestEnv(t *testing.T) TestInput {
 	t.Helper()
 
 	// Initialize store keys
-	gravityKey := sdk.NewKVStoreKey(types.StoreKey)
+	mhub2key := sdk.NewKVStoreKey(types.StoreKey)
 	keyAcc := sdk.NewKVStoreKey(authtypes.StoreKey)
 	keyStaking := sdk.NewKVStoreKey(stakingtypes.StoreKey)
 	keyBank := sdk.NewKVStoreKey(banktypes.StoreKey)
@@ -322,7 +322,7 @@ func CreateTestEnv(t *testing.T) TestInput {
 	// Initialize memory database and mount stores on it
 	db := dbm.NewMemDB()
 	ms := store.NewCommitMultiStore(db)
-	ms.MountStoreWithDB(gravityKey, sdk.StoreTypeIAVL, db)
+	ms.MountStoreWithDB(mhub2key, sdk.StoreTypeIAVL, db)
 	ms.MountStoreWithDB(keyAcc, sdk.StoreTypeIAVL, db)
 	ms.MountStoreWithDB(keyParams, sdk.StoreTypeIAVL, db)
 	ms.MountStoreWithDB(keyStaking, sdk.StoreTypeIAVL, db)
@@ -443,7 +443,7 @@ func CreateTestEnv(t *testing.T) TestInput {
 
 	k := NewKeeper(
 		marshaler,
-		gravityKey,
+		mhub2key,
 		getSubspace(paramsKeeper, types.DefaultParamspace),
 		accountKeeper,
 		stakingKeeper,
@@ -461,11 +461,11 @@ func CreateTestEnv(t *testing.T) TestInput {
 		),
 	)
 
-	k.setParams(ctx, TestingGravityParams)
+	k.setParams(ctx, TestingMhub2Params)
 	k.SetTokenInfos(ctx, types.DefaultGenesisState().TokenInfos)
 
 	return TestInput{
-		GravityKeeper:  k,
+		Mhub2Keeper:    k,
 		AccountKeeper:  accountKeeper,
 		BankKeeper:     bankKeeper,
 		StakingKeeper:  stakingKeeper,

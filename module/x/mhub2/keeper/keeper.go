@@ -375,12 +375,12 @@ func (k Keeper) GetChains(ctx sdk.Context) []types.ChainID {
 }
 
 // getGravityID returns the GravityID the GravityID is essentially a salt value
-// for bridge signatures, provided each chain running Gravity has a unique ID
+// for bridge signatures, provided each chain running Mhub2 has a unique ID
 // it won't be possible to play back signatures from one bridge onto another
 // even if they share a validator set.
 //
 // The lifecycle of the GravityID is that it is set in the Genesis file
-// read from the live chain for the contract deployment, once a Gravity contract
+// read from the live chain for the contract deployment, once a Mhub2 contract
 // is deployed the GravityID CAN NOT BE CHANGED. Meaning that it can't just be the
 // same as the chain id since the chain id may be changed many times with each
 // successive chain in charge of the same bridge

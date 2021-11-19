@@ -21,7 +21,7 @@ import (
 	tmos "github.com/tendermint/tendermint/libs/os"
 	tmtypes "github.com/tendermint/tendermint/types"
 
-	gravitytypes "github.com/MinterTeam/mhub2/module/x/mhub2/types"
+	mhub2types "github.com/MinterTeam/mhub2/module/x/mhub2/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
@@ -118,7 +118,7 @@ $ %s gentx my-key-name 1000000stake 0x033030FEeBd93E3178487c35A9c8cA80874353C9 c
 			ethAddress := args[2]
 
 			if !common.IsHexAddress(ethAddress) {
-				return errors.Wrapf(gravitytypes.ErrInvalid, "invalid ethereum address")
+				return errors.Wrapf(mhub2types.ErrInvalid, "invalid ethereum address")
 			}
 
 			orchAddress, err := sdk.AccAddressFromBech32(args[3])
@@ -185,14 +185,14 @@ $ %s gentx my-key-name 1000000stake 0x033030FEeBd93E3178487c35A9c8cA80874353C9 c
 				return err
 			}
 
-			delegateGravityMsg := &gravitytypes.MsgDelegateKeys{
+			delegateMhub2Msg := &mhub2types.MsgDelegateKeys{
 				ValidatorAddress:    sdk.ValAddress(key.GetAddress()).String(),
 				OrchestratorAddress: orchAddress.String(),
 				ExternalAddress:     ethAddress,
 				EthSignature:        ethSig,
 			}
 
-			msgs := []sdk.Msg{msg, delegateGravityMsg}
+			msgs := []sdk.Msg{msg, delegateMhub2Msg}
 
 			if key.GetType() == keyring.TypeOffline || key.GetType() == keyring.TypeMulti {
 				cmd.PrintErrln("Offline key passed in. Use `tx sign` command to sign.")
