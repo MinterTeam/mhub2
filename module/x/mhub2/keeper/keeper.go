@@ -588,10 +588,12 @@ func (k Keeper) CreateContractCallTx(ctx sdk.Context, chainId types.ChainID, inv
 	return newContractCallTx
 }
 
-func (k Keeper) GetTokenInfos(ctx sdk.Context) (out *types.TokenInfos) {
+func (k Keeper) GetTokenInfos(ctx sdk.Context) *types.TokenInfos {
+	out := &types.TokenInfos{}
 	if err := k.cdc.Unmarshal(ctx.KVStore(k.storeKey).Get([]byte{types.TokenInfosKey}), out); err != nil {
 		panic(err)
 	}
+
 	return out
 }
 

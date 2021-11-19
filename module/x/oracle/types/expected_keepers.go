@@ -21,7 +21,7 @@ type StakingKeeper interface {
 }
 
 type Mhub2Keeper interface {
-	GetTokenInfos(ctx sdk.Context) (out *types.TokenInfos)
+	GetTokenInfos(sdk.Context) *types.TokenInfos
 }
 
 // BankKeeper defines the expected bank keeper methods
