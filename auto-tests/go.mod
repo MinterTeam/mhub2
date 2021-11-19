@@ -10,6 +10,7 @@ require (
 	github.com/cosmos/cosmos-sdk v0.44.3
 	github.com/cosmos/go-bip39 v1.0.0
 	github.com/ethereum/go-ethereum v1.10.10
+	github.com/status-im/keycard-go v0.0.0-20190316090335-8537d3370df4
 	github.com/tendermint/tendermint v0.34.14
 	google.golang.org/grpc v1.42.0
 )

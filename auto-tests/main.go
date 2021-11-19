@@ -21,7 +21,9 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	secp256k12 "github.com/ethereum/go-ethereum/crypto/secp256k1"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/status-im/keycard-go/hexutils"
 	"github.com/tendermint/tendermint/libs/log"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/backoff"
@@ -46,10 +48,11 @@ func init() {
 /// 6. mhub - v2
 
 const (
-	denom       = "stake"
-	mhubChainId = "mhub-test"
-	ethChainId  = 15
-	bscChainId  = 16
+	denom              = "stake"
+	mhubChainId        = "mhub-test"
+	ethChainId         = 15
+	bscChainId         = 16
+	ethSignaturePrefix = "\x19Ethereum Signed Message:\n32"
 )
 
 type Context struct {
@@ -154,7 +157,18 @@ func main() {
 	runOrPanic("mhub2 add-genesis-account --keyring-backend test validator1 100000000000000000000000000%s,100000000000000000000000000hub", denom)
 	runOrPanic("mhub2 prepare-genesis-for-tests %s %s %s", erc20addr, bep20addr, "1")
 
-	runOrPanic("mhub2 gentx --keyring-backend test --moniker validator1 --chain-id=%s validator1 1000000000000000000000000%s %s %s 0x00", mhubChainId, denom, ethAddress.Hex(), hubAddress)
+	valAddress, _ := cosmos.GetAccount(cosmosMnemonic)
+	signMsgBz := app.MakeEncodingConfig().Marshaler.MustMarshal(&types.DelegateKeysSignMsg{
+		ValidatorAddress: sdk.ValAddress(valAddress).String(),
+		Nonce:            0,
+	})
+	hash := append([]uint8(ethSignaturePrefix), crypto.Keccak256Hash(signMsgBz).Bytes()...)
+	sig, err := secp256k12.Sign(crypto.Keccak256Hash(hash).Bytes(), hexutils.HexToBytes(ethPrivateKeyString))
+	if err != nil {
+		panic(err)
+	}
+
+	runOrPanic("mhub2 gentx --keyring-backend test --moniker validator1 --chain-id=%s validator1 1000000000000000000000000%s %s %s 0x%x", mhubChainId, denom, ethAddress.Hex(), hubAddress, sig)
 	runOrPanic("mhub2 collect-gentxs test")
 
 	runOrPanic(os.ExpandEnv("cp mhub2-config.toml $HOME/.mhub2/config/config.toml"))
