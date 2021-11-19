@@ -18,6 +18,7 @@ const minterDecimals = 18
 // Keeper maintains the link to storage and exposes getter/setter methods for the various parts of the state machine
 type Keeper struct {
 	StakingKeeper types.StakingKeeper
+	Mhub2keeper   types.Mhub2Keeper
 
 	storeKey   sdk.StoreKey // Unexposed key to access store from sdk.Context
 	paramSpace paramtypes.Subspace
@@ -49,6 +50,10 @@ func NewKeeper(cdc codec.BinaryCodec, storeKey sdk.StoreKey, paramSpace paramtyp
 	}
 
 	return k
+}
+
+func (k Keeper) SetMhub2Keeper(keeper types.Mhub2Keeper) {
+	k.Mhub2keeper = keeper
 }
 
 func (k Keeper) GetHolders(ctx sdk.Context) *types.Holders {

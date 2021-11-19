@@ -412,6 +412,8 @@ func NewMhub2App(
 		sdk.DefaultPowerReduction,
 	)
 
+	app.oracleKeeper.SetMhub2Keeper(app.mhub2Keeper)
+
 	govRouter := govtypes.NewRouter()
 	govRouter.AddRoute(govtypes.RouterKey, govtypes.ProposalHandler).
 		AddRoute(paramsproposal.RouterKey, params.NewParamChangeProposalHandler(app.paramsKeeper)).

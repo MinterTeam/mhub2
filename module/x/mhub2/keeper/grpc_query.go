@@ -23,7 +23,7 @@ func (k Keeper) TransactionStatus(ctx context.Context, request *types.Transactio
 }
 
 func (k Keeper) TokenInfos(ctx context.Context, _ *types.TokenInfosRequest) (*types.TokenInfosResponse, error) {
-	return &types.TokenInfosResponse{List: k.GetTokenInfos(sdk.UnwrapSDKContext(ctx))}, nil
+	return &types.TokenInfosResponse{List: *k.GetTokenInfos(sdk.UnwrapSDKContext(ctx))}, nil
 }
 
 func (k Keeper) Params(c context.Context, _ *types.ParamsRequest) (*types.ParamsResponse, error) {

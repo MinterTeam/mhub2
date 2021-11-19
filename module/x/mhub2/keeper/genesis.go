@@ -101,7 +101,7 @@ func ExportGenesis(ctx sdk.Context, k Keeper) types.GenesisState {
 	tokenInfos := k.GetTokenInfos(ctx)
 	state := types.GenesisState{
 		Params:     &params,
-		TokenInfos: &tokenInfos,
+		TokenInfos: tokenInfos,
 	}
 
 	for _, chainId := range chains {
