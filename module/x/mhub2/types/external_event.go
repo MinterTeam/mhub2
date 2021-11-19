@@ -145,6 +145,9 @@ func (ttce *TransferToChainEvent) Validate() error {
 	if !common.IsHexAddress(ttce.ExternalReceiver) {
 		return sdkerrors.Wrap(ErrInvalid, "external receiver")
 	}
+	if ttce.ExternalReceiver == "0x0000000000000000000000000000000000000000" {
+		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, "cannot transfer to zero address")
+	}
 	return nil
 }
 
