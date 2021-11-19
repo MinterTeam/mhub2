@@ -16,6 +16,8 @@ import (
 const ethSignaturePrefix = "\x19Ethereum Signed Message:\n32"
 
 func main() {
+	app.SetAddressConfig()
+
 	if len(os.Args) == 4 && os.Args[1] == "make_delegate_sign" {
 		ethPrivateKey := os.Args[2]
 		cosmosAddr := os.Args[3]
