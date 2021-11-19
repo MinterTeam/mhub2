@@ -10,9 +10,9 @@ apt-get update && \
 
 2. Install Golang
 ```bash
-wget https://golang.org/dl/go1.17.2.linux-amd64.tar.gz && \
+wget https://golang.org/dl/go1.17.3.linux-amd64.tar.gz && \
   rm -rf /usr/local/go && \
-  tar -C /usr/local -xzf go1.17.2.linux-amd64.tar.gz
+  tar -C /usr/local -xzf go1.17.3.linux-amd64.tar.gz
 echo 'export PATH=$PATH:/usr/local/go/bin:~/go/bin' >> ~/.profile
 ```
 
@@ -59,7 +59,7 @@ minter node
 
 2. Install and sync Ethereum node
 ```bash
-geth --rpc --rpcaddr "127.0.0.1" --rpcport "8545"
+geth --http --http.addr "127.0.0.1" --http.port "8545"
 ```
 
 3. Sync Minter Hub Node
@@ -84,8 +84,6 @@ mhub2 start \
   --p2p.persistent_peers="..."
 ```
 
-- **IMPORTANT**: After syncing you must edit `~/.mhub2/config/app.toml`: enable API in respective section.
-
 4. Generate Hub account
 ```bash
 mhub2 keys add validator1
@@ -105,7 +103,7 @@ mhub2 tx staking create-validator \
   --commission-max-rate="1" \
   --commission-rate="0.1" \
   --min-self-delegation="1" \
-  --chain-id=mhub-mainnet-1 (mhub-testnet-11 for testnet)
+  --chain-id=mhub-mainnet-2 (mhub-testnet-11 for testnet)
 ```
 
 - **WARNING: save tendermint validator's key**
@@ -124,7 +122,8 @@ register-peggy-delegate-keys \
   --cosmos-phrase=<COSMOS MNEMONIC> \
   --validator-phrase=<COSMOS MNEMONIC> \
   --ethereum-key=<ETHEREUM PRIVATE KEY> \
-  --cosmos-rpc="http://127.0.0.1:1317" \
+  --address-prefix=hub \
+  --cosmos-grpc="http://127.0.0.1:9090" \
   --fees=hub
 ```
 
@@ -133,19 +132,33 @@ register-peggy-delegate-keys \
 - **Start Hub ↔ Ethereum oracle.** 
 ```
 Ethereum Contract for testnet: ...
-
 Ethereum Contract for mainnet: ...
+
+BSC Contract for testnet: ...
+BSC Contract for mainnet: ...
 ```
 ```bash
-RUST_LOG=info orchestrator \
+orchestrator \
   --cosmos-phrase=<COSMOS MNEMONIC> \
   --ethereum-key=<ETHEREUM PRIVATE KEY> \
   --cosmos-grpc="http://127.0.0.1:9090" \
-  --cosmos-legacy-rpc="http://127.0.0.1:1317" \
   --ethereum-rpc="http://127.0.0.1:8545/" \
-  --fees=hub
+  --fees=hub \
+  --address-prefix=hub \
   --chain-id=ethereum \
   --contract-address=<ADDRESS OF ETHEREUM CONTRACT> 
+```
+
+```bash
+orchestrator \
+  --cosmos-phrase=<COSMOS MNEMONIC> \
+  --ethereum-key=<ETHEREUM PRIVATE KEY> \
+  --cosmos-grpc="http://127.0.0.1:9090" \
+  --ethereum-rpc="http://127.0.0.1:8545/" \
+  --fees=hub \
+  --address-prefix=hub \
+  --chain-id=bsc \
+  --contract-address=<ADDRESS OF BSC CONTRACT> 
 ```
 
 - **Start Hub ↔ Minter oracle.** 
@@ -169,7 +182,7 @@ api_addr = "http://127.0.0.1:8843/v2/"
 start_block = <MINTER START BLOCK>
 start_event_nonce = 1
 start_batch_nonce = 1
-start_valset_nonce = 1
+start_valset_nonce = 0
 
 [cosmos]
 mnemonic = ""
@@ -203,11 +216,5 @@ gas_price_providers = [
 ```
 
 ```bash
-mhub-oracle --config=oracle-config.toml
-```
-
-## API
-
-## Processes
-
-## UI
+mhub-oracle --config=oracle-config.toml (--testnet)
+``` 
