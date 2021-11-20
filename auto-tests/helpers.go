@@ -723,8 +723,6 @@ func deployContractsAndMultisig(prKeyString string) {
 
 	println("minter", minterMultisig)
 
-	os.Exit(0)
-
 	{
 		client, err := ethclient.Dial("https://ropsten.infura.io/v3/c2f9dc16ef8d4897a1bd6f9270e38914")
 		if err != nil {
