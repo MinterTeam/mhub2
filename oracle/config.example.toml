@@ -1,5 +1,5 @@
 holders_url = "https://explorer-hub-api.minter.network/api/tokens/1902/holders"
-holders_url = "https://explorer-hub-api.minter.network/api/prices"
+prices_url = "https://explorer-hub-api.minter.network/api/prices"
 
 [cosmos]
 mnemonic = ""
