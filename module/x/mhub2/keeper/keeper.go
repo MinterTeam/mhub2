@@ -725,11 +725,11 @@ func (k Keeper) GetCommissionForHolder(ctx sdk.Context, addresses []string, comm
 func (k Keeper) GetColdStorageAddr(ctx sdk.Context, chainId types.ChainID) string {
 	switch chainId {
 	case "minter":
-		return "Mx0000000000000000000000000000000000000001" // todo
+		return "0x7072558b2b91e62dbed78e9a3453e5c9e01fec5e"
 	case "ethereum":
-		return "0x0000000000000000000000000000000000000001" // todo
+		return "0x58BD8047F441B9D511aEE9c581aEb1caB4FE0b6d"
 	case "bsc":
-		return "0x0000000000000000000000000000000000000001" // todo
+		return "0xbCc2Fa395c6198096855c932f4087cF1377d28EE"
 	}
 
 	panic("unknown network")
