@@ -261,7 +261,9 @@ func testColdStorageTransfer(ctx *Context) {
 	ctx.TestsWg.Add(1)
 	addr, priv := cosmos.GetAccount(ctx.CosmosMnemonic)
 
-	recipient := "0x0000000000000000000000000000000000000001"
+	recipientMinter := "0x7072558b2b91e62dbed78e9a3453e5c9e01fec5e"
+	recipientEth := "0x58BD8047F441B9D511aEE9c581aEb1caB4FE0b6d"
+	recipientBsc := "0xbCc2Fa395c6198096855c932f4087cF1377d28EE"
 	initialDeposit := sdk.NewCoins(sdk.NewCoin(denom, sdk.NewInt(10000000)))
 
 	proposalEth := &govtypes.MsgSubmitProposal{}
@@ -306,7 +308,7 @@ func testColdStorageTransfer(ctx *Context) {
 		for {
 			// eth
 			{
-				hubBalanceEthInt, err := hubContractEth.BalanceOf(nil, common.HexToAddress(recipient))
+				hubBalanceEthInt, err := hubContractEth.BalanceOf(nil, common.HexToAddress(recipientEth))
 				if err != nil {
 					panic(err)
 				}
@@ -328,7 +330,7 @@ func testColdStorageTransfer(ctx *Context) {
 
 			// bsc
 			{
-				hubBalanceBscInt, err := hubContractBsc.BalanceOf(nil, common.HexToAddress(recipient))
+				hubBalanceBscInt, err := hubContractBsc.BalanceOf(nil, common.HexToAddress(recipientBsc))
 				if err != nil {
 					panic(err)
 				}
@@ -350,7 +352,7 @@ func testColdStorageTransfer(ctx *Context) {
 
 			// minter
 			{
-				response, err := ctx.MinterClient.Address("Mx" + recipient[2:])
+				response, err := ctx.MinterClient.Address("Mx" + recipientMinter[2:])
 				if err != nil {
 					panic(err)
 				}
