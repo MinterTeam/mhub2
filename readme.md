@@ -196,20 +196,12 @@ mhub-minter-connector --config=connector-config.toml
 ```toml
 # oracle-config.toml
 holders_url = "https://explorer-hub-api.minter.network/api/tokens/1902/holders"
-
-[minter]
-api_addr = "http://127.0.0.1:8843/v2/"
+prices_url = "https://explorer-hub-api.minter.network/api/prices"
 
 [cosmos]
 mnemonic = <COSMOS MNEMONIC>
 grpc_addr = "127.0.0.1:9090"
 rpc_addr = "http://127.0.0.1:26657"
-
-[ethereum]
-gas_price_providers = [
-    "ethgasstation",
-    "etherchain"
-]
 ```
 
 ```bash
