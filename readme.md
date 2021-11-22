@@ -48,7 +48,6 @@ make install
 # Hub ↔ Ethereum oracle
 cd ~/mhub2/orchestrator
 cargo install --locked --path orchestrator
-cargo install --locked --path register_delegate_keys
 ```
 
 ## Run
@@ -118,13 +117,11 @@ mhub-keys-generator
 
 7. Register Ethereum keys
 ```bash
-register-peggy-delegate-keys \
-  --cosmos-phrase=<COSMOS MNEMONIC> \
-  --validator-phrase=<COSMOS MNEMONIC> \
-  --ethereum-key=<ETHEREUM PRIVATE KEY> \
-  --address-prefix=hub \
-  --cosmos-grpc="http://127.0.0.1:9090" \
-  --fees=hub
+mhub2 query account <YOUR_ACCOUNT> # get account nonce
+
+mhub-keys-generator make_delegate_sign <YOUR_ETH_PRIVATE_KEY> <YOUR_ACCOUNT> <YOUR_NONCE>
+
+mhub2 tx mhub2 set-delegate-keys <VALADDR> <YOUR_ACCOUNT> <ETH_ADDR> <SIG> --from=...
 ```
 
 8. Start services. *You can set them up as services or run in different terminal screens.*
