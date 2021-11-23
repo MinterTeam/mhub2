@@ -101,22 +101,30 @@ func getHolders(cfg *config.Config) *types.Holders {
 
 	holdersResponse, err := http.Get(cfg.HoldersUrl)
 	if err != nil {
-		panic(err)
+		println(err.Error())
+		time.Sleep(time.Second)
+		return getHolders(cfg)
 	}
 	data, err := ioutil.ReadAll(holdersResponse.Body)
 	if err != nil {
-		panic(err)
+		println(err.Error())
+		time.Sleep(time.Second)
+		return getHolders(cfg)
 	}
 
 	holdersList := HoldersResult{}
 	if err := json.Unmarshal(data, &holdersList); err != nil {
-		panic(err)
+		println(err.Error())
+		time.Sleep(time.Second)
+		return getHolders(cfg)
 	}
 
 	for _, item := range holdersList.Data {
 		v, ok := sdk.NewIntFromString(item.Balance)
 		if !ok {
-			panic("err: " + item.Balance + " is not a number")
+			println("err: " + item.Balance + " is not a number")
+			time.Sleep(time.Second)
+			return getHolders(cfg)
 		}
 		holders.List = append(holders.List, &types.Holder{
 			Address: strings.ToLower(item.Address),
@@ -141,22 +149,30 @@ func getPrices(cfg *config.Config) *types.Prices {
 
 	pricesResponse, err := http.Get(cfg.PricesUrl)
 	if err != nil {
-		panic(err)
+		println(err.Error())
+		time.Sleep(time.Second)
+		return getPrices(cfg)
 	}
 	data, err := ioutil.ReadAll(pricesResponse.Body)
 	if err != nil {
-		panic(err)
+		println(err.Error())
+		time.Sleep(time.Second)
+		return getPrices(cfg)
 	}
 
 	pricesList := PricesResult{}
 	if err := json.Unmarshal(data, &pricesList); err != nil {
-		panic(err)
+		println(err.Error())
+		time.Sleep(time.Second)
+		return getPrices(cfg)
 	}
 
 	for _, item := range pricesList.Data {
 		v, err := sdk.NewDecFromStr(item.Price)
 		if err != nil {
-			panic(err)
+			println(err.Error())
+			time.Sleep(time.Second)
+			return getPrices(cfg)
 		}
 		prices.List = append(prices.List, &types.Price{
 			Name:  item.Denom,

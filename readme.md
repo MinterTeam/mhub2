@@ -56,7 +56,7 @@ cargo install --locked --path orchestrator
 minter node
 ```
 
-2. Install and sync Ethereum node
+2. Install and sync Ethereum & BSC node
 ```bash
 geth --http --http.addr "127.0.0.1" --http.port "8545"
 ```
