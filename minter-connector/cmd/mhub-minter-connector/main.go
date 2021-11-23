@@ -202,7 +202,9 @@ func relayBatches(ctx context.Context) {
 		ChainId: "minter",
 	})
 	if err != nil {
-		panic(err)
+		println(err.Error())
+		time.Sleep(time.Second)
+		return
 	}
 
 	// Check if signer is in the last confirmed valset
@@ -392,7 +394,9 @@ func relayValsets(ctx context.Context) {
 		ChainId: "minter",
 	})
 	if err != nil {
-		panic(err)
+		println(err.Error())
+		time.Sleep(time.Second)
+		return
 	}
 
 	// Check if signer is in the last confirmed valset
