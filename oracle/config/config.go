@@ -6,25 +6,16 @@ import (
 	"github.com/spf13/viper"
 )
 
-type MinterConfig struct {
-	ApiAddr string `mapstructure:"api_addr"`
-}
-
 type CosmosConfig struct {
 	Mnemonic string `mapstructure:"mnemonic"`
 	GrpcAddr string `mapstructure:"grpc_addr"`
 	RpcAddr  string `mapstructure:"rpc_addr"`
 }
 
-type EthereumConfig struct {
-	GasPriceProviders []string `mapstructure:"gas_price_providers"`
-}
-
 type Config struct {
 	Cosmos     CosmosConfig
-	Minter     MinterConfig
-	Ethereum   EthereumConfig
 	HoldersUrl string `mapstructure:"holders_url"`
+	PricesUrl  string `mapstructure:"prices_url"`
 }
 
 func Get() *Config {

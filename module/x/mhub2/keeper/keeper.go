@@ -375,12 +375,12 @@ func (k Keeper) GetChains(ctx sdk.Context) []types.ChainID {
 }
 
 // getGravityID returns the GravityID the GravityID is essentially a salt value
-// for bridge signatures, provided each chain running Gravity has a unique ID
+// for bridge signatures, provided each chain running Mhub2 has a unique ID
 // it won't be possible to play back signatures from one bridge onto another
 // even if they share a validator set.
 //
 // The lifecycle of the GravityID is that it is set in the Genesis file
-// read from the live chain for the contract deployment, once a Gravity contract
+// read from the live chain for the contract deployment, once a Mhub2 contract
 // is deployed the GravityID CAN NOT BE CHANGED. Meaning that it can't just be the
 // same as the chain id since the chain id may be changed many times with each
 // successive chain in charge of the same bridge
@@ -588,10 +588,12 @@ func (k Keeper) CreateContractCallTx(ctx sdk.Context, chainId types.ChainID, inv
 	return newContractCallTx
 }
 
-func (k Keeper) GetTokenInfos(ctx sdk.Context) (out types.TokenInfos) {
-	if err := k.cdc.Unmarshal(ctx.KVStore(k.storeKey).Get([]byte{types.TokenInfosKey}), &out); err != nil {
+func (k Keeper) GetTokenInfos(ctx sdk.Context) *types.TokenInfos {
+	out := &types.TokenInfos{}
+	if err := k.cdc.Unmarshal(ctx.KVStore(k.storeKey).Get([]byte{types.TokenInfosKey}), out); err != nil {
 		panic(err)
 	}
+
 	return out
 }
 
@@ -723,11 +725,11 @@ func (k Keeper) GetCommissionForHolder(ctx sdk.Context, addresses []string, comm
 func (k Keeper) GetColdStorageAddr(ctx sdk.Context, chainId types.ChainID) string {
 	switch chainId {
 	case "minter":
-		return "Mx..." // todo
+		return "0x7072558b2b91e62dbed78e9a3453e5c9e01fec5e"
 	case "ethereum":
-		return "0x..." // todo
+		return "0x58BD8047F441B9D511aEE9c581aEb1caB4FE0b6d"
 	case "bsc":
-		return "0x..." // todo
+		return "0xbCc2Fa395c6198096855c932f4087cF1377d28EE"
 	}
 
 	panic("unknown network")
@@ -737,19 +739,17 @@ func (k Keeper) ColdStorageTransfer(ctx sdk.Context, c *types.ColdStorageTransfe
 	chainId := types.ChainID(c.ChainId)
 	coldStorageAddr := k.GetColdStorageAddr(ctx, chainId)
 
-	var defaultSender = sdk.AccAddress{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0} // todo
-
 	for _, coin := range c.Amount {
 		vouchers := sdk.Coins{coin}
 		if err := k.bankKeeper.MintCoins(ctx, types.ModuleName, vouchers); err != nil {
 			return errors2.Wrapf(err, "mint vouchers coins: %s", vouchers)
 		}
 
-		if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, defaultSender, vouchers); err != nil {
+		if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, types.TempAddress, vouchers); err != nil {
 			return errors2.Wrap(err, "transfer vouchers")
 		}
 
-		txID, err := k.createSendToExternal(ctx, chainId, defaultSender, coldStorageAddr, coin, sdk.NewCoin(coin.Denom, sdk.NewInt(0)), sdk.NewCoin(coin.Denom, sdk.NewInt(0)), fmt.Sprintf("%x", sha256.Sum256(ctx.TxBytes())), "hub", defaultSender.String())
+		txID, err := k.createSendToExternal(ctx, chainId, types.TempAddress, coldStorageAddr, coin, sdk.NewCoin(coin.Denom, sdk.NewInt(0)), sdk.NewCoin(coin.Denom, sdk.NewInt(0)), fmt.Sprintf("%x", sha256.Sum256(ctx.TxBytes())), "hub", types.TempAddress.String())
 		if err != nil {
 			return err
 		}

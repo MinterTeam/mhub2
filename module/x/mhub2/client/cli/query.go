@@ -12,14 +12,14 @@ import (
 )
 
 func GetQueryCmd() *cobra.Command {
-	gravityQueryCmd := &cobra.Command{
+	queryCmd := &cobra.Command{
 		Use:                        types.ModuleName,
 		Short:                      "Querying commands for the mhub2 module",
 		DisableFlagParsing:         true,
 		SuggestionsMinimumDistance: 2,
 		RunE:                       client.ValidateCmd,
 	}
-	gravityQueryCmd.AddCommand(
+	queryCmd.AddCommand(
 		CmdBatchTx(),
 		CmdBatchTxConfirmations(),
 		CmdBatchTxFees(),
@@ -43,7 +43,7 @@ func GetQueryCmd() *cobra.Command {
 		CmdDelegateKeys(),
 	)
 
-	return gravityQueryCmd
+	return queryCmd
 }
 
 func CmdParams() *cobra.Command {

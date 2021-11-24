@@ -78,14 +78,12 @@ func (k msgServer) SetDelegateKeys(c context.Context, msg *types.MsgDelegateKeys
 	})
 
 	hash := crypto.Keccak256Hash(signMsgBz).Bytes()
-
 	if err = types.ValidateEthereumSignature(hash, msg.EthSignature, ethAddr); err != nil {
-		// TODO: ???
-		//return nil, sdkerrors.Wrapf(
-		//	types.ErrDelegateKeys,
-		//	"failed to validate delegate keys signature for Ethereum address %X; %s",
-		//	ethAddr, err,
-		//)
+		return nil, sdkerrors.Wrapf(
+			types.ErrDelegateKeys,
+			"failed to validate delegate keys signature for Ethereum address %X; %s",
+			ethAddr, err,
+		)
 	}
 
 	k.SetOrchestratorValidatorAddress(ctx, valAddr, orchAddr)

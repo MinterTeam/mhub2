@@ -21,22 +21,22 @@ import (
 )
 
 func GetTxCmd(storeKey string) *cobra.Command {
-	gravityTxCmd := &cobra.Command{
+	txCmd := &cobra.Command{
 		Use:                        types.ModuleName,
-		Short:                      "Gravity transaction subcommands",
+		Short:                      "Mhub2 transaction subcommands",
 		DisableFlagParsing:         true,
 		SuggestionsMinimumDistance: 2,
 		RunE:                       client.ValidateCmd,
 	}
 
-	gravityTxCmd.AddCommand(
+	txCmd.AddCommand(
 		CmdSendToEthereum(),
 		CmdCancelSendToEthereum(),
 		CmdRequestBatchTx(),
 		CmdSetDelegateKeys(),
 	)
 
-	return gravityTxCmd
+	return txCmd
 }
 
 func CmdSendToEthereum() *cobra.Command {

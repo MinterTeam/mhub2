@@ -18,9 +18,12 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	secp256k12 "github.com/ethereum/go-ethereum/crypto/secp256k1"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/status-im/keycard-go/hexutils"
 	"github.com/tendermint/tendermint/libs/log"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/backoff"
@@ -36,11 +39,20 @@ func init() {
 	app.SetAddressConfig()
 }
 
+/// Requirements on local binaries:
+/// 1. minter node - v2.6.0+
+/// 2. geth node - 1.10.11+
+/// 3. oracle - v2
+/// 4. orchestrator - v2
+/// 5. minter-connector - v2
+/// 6. mhub - v2
+
 const (
-	denom       = "stake"
-	mhubChainId = "mhub-test"
-	ethChainId  = 15
-	bscChainId  = 16
+	denom              = "stake"
+	mhubChainId        = "mhub-test"
+	ethChainId         = 15
+	bscChainId         = 16
+	ethSignaturePrefix = "\x19Ethereum Signed Message:\n32"
 )
 
 type Context struct {
@@ -145,7 +157,18 @@ func main() {
 	runOrPanic("mhub2 add-genesis-account --keyring-backend test validator1 100000000000000000000000000%s,100000000000000000000000000hub", denom)
 	runOrPanic("mhub2 prepare-genesis-for-tests %s %s %s", erc20addr, bep20addr, "1")
 
-	runOrPanic("mhub2 gentx --keyring-backend test --moniker validator1 --chain-id=%s validator1 1000000000000000000000000%s %s %s 0x00", mhubChainId, denom, ethAddress.Hex(), hubAddress)
+	valAddress, _ := cosmos.GetAccount(cosmosMnemonic)
+	signMsgBz := app.MakeEncodingConfig().Marshaler.MustMarshal(&types.DelegateKeysSignMsg{
+		ValidatorAddress: sdk.ValAddress(valAddress).String(),
+		Nonce:            0,
+	})
+	hash := append([]uint8(ethSignaturePrefix), crypto.Keccak256Hash(signMsgBz).Bytes()...)
+	sig, err := secp256k12.Sign(crypto.Keccak256Hash(hash).Bytes(), hexutils.HexToBytes(ethPrivateKeyString))
+	if err != nil {
+		panic(err)
+	}
+
+	runOrPanic("mhub2 gentx --keyring-backend test --moniker validator1 --chain-id=%s validator1 1000000000000000000000000%s %s %s 0x%x", mhubChainId, denom, ethAddress.Hex(), hubAddress, sig)
 	runOrPanic("mhub2 collect-gentxs test")
 
 	runOrPanic(os.ExpandEnv("cp mhub2-config.toml $HOME/.mhub2/config/config.toml"))
@@ -161,13 +184,12 @@ func main() {
 	}
 
 	time.Sleep(time.Second * 10)
-	go runOrPanic("mhub-oracle --test-env --config=oracle-config.toml --cosmos-mnemonic=%s", cosmosMnemonic)
+	go runOrPanic("mhub-oracle --config=oracle-config.toml --cosmos-mnemonic=%s", cosmosMnemonic)
 	go runOrPanic("mhub-minter-connector --config=connector-config.toml --cosmos-mnemonic=%s --minter-private-key=%s --minter-multisig-addr=%s", cosmosMnemonic, ethPrivateKeyString, minterMultisig)
 	go runOrPanic("orchestrator --chain-id=ethereum --eth-fee-calculator-url=http://localhost:8840 --cosmos-phrase=%s --ethereum-key=%s --cosmos-grpc=%s --ethereum-rpc=%s --contract-address=%s --fees=%s --address-prefix=hub --metrics-listen=127.0.0.1:3000", cosmosMnemonic, ethPrivateKeyString, "http://localhost:9090", "http://localhost:8545", ethContract, denom)
 	go runOrPanic("orchestrator --chain-id=bsc --eth-fee-calculator-url=http://localhost:8840 --cosmos-phrase=%s --ethereum-key=%s --cosmos-grpc=%s --ethereum-rpc=%s --contract-address=%s --fees=%s --address-prefix=hub --metrics-listen=127.0.0.1:3001", cosmosMnemonic, ethPrivateKeyString, "http://localhost:9090", "http://localhost:8546", bscContract, denom)
 	approveERC20ToHub(ethPrivateKey, ethClient, ethContract, erc20addr, ethChainId)
 	approveERC20ToHub(ethPrivateKey, bscClient, bscContract, bep20addr, bscChainId)
-
 	time.Sleep(time.Second * 10)
 
 	ctx := &Context{
@@ -187,10 +209,14 @@ func main() {
 		CosmosMnemonic:      cosmosMnemonic,
 	}
 
-	println("Start running tests")
+	println("Start running preparation tests")
 	testMinterMultisigChanges(ctx)
 	testEthereumMultisigChanges(ctx)
 	testBSCMultisigChanges(ctx)
+	ctx.TestsWg.Wait()
+	time.Sleep(time.Second * 20) // todo: wait for all of networks to confirm valset updates
+
+	println("Start real tests")
 	testEthereumToMinterTransfer(ctx)
 	testEthereumToBscTransfer(ctx)
 	testBSCToEthereumTransfer(ctx)
@@ -201,9 +227,8 @@ func main() {
 	testHubToEthereumTransfer(ctx)
 	testHubToBSCTransfer(ctx)
 	testMinterToEthereumTransfer(ctx)
-	testFeeForTransactionRelayer(ctx)
-	testValidatorsCommissions(ctx)
 	testFeeRefund(ctx)
+	testColdStorageTransfer(ctx)
 
 	// tests associated with holders
 	ctx.TestsWg.Add(2)
@@ -216,12 +241,142 @@ func main() {
 	}()
 	ctx.TestsWg.Wait()
 
+	println("Running test for transaction relayer fee")
+	testFeeForTransactionRelayer(ctx)
+	ctx.TestsWg.Wait()
+
+	println("Running test for validator's commission")
+	testValidatorsCommissions(ctx)
+	ctx.TestsWg.Wait()
+
 	println("Killing orchestrator")
 	stopProcess("orchestrator")
 	testTxTimeout(ctx)
-
 	ctx.TestsWg.Wait()
+
 	println("All tests are done")
+}
+
+func testColdStorageTransfer(ctx *Context) {
+	ctx.TestsWg.Add(1)
+	addr, priv := cosmos.GetAccount(ctx.CosmosMnemonic)
+
+	recipientMinter := "0x7072558b2b91e62dbed78e9a3453e5c9e01fec5e"
+	recipientEth := "0x58BD8047F441B9D511aEE9c581aEb1caB4FE0b6d"
+	recipientBsc := "0xbCc2Fa395c6198096855c932f4087cF1377d28EE"
+	initialDeposit := sdk.NewCoins(sdk.NewCoin(denom, sdk.NewInt(10000000)))
+
+	proposalEth := &govtypes.MsgSubmitProposal{}
+	proposalEth.SetInitialDeposit(initialDeposit)
+	proposalEth.SetProposer(addr)
+	if err := proposalEth.SetContent(&mhubtypes.ColdStorageTransferProposal{ChainId: "ethereum", Amount: sdk.NewCoins(sdk.NewCoin("hub", sdk.NewInt(1e18)))}); err != nil {
+		panic(err)
+	}
+
+	proposalBsc := &govtypes.MsgSubmitProposal{}
+	proposalBsc.SetInitialDeposit(initialDeposit)
+	proposalBsc.SetProposer(addr)
+	if err := proposalBsc.SetContent(&mhubtypes.ColdStorageTransferProposal{ChainId: "bsc", Amount: sdk.NewCoins(sdk.NewCoin("hub", sdk.NewInt(1e18)))}); err != nil {
+		panic(err)
+	}
+
+	proposalMinter := &govtypes.MsgSubmitProposal{}
+	proposalMinter.SetInitialDeposit(initialDeposit)
+	proposalMinter.SetProposer(addr)
+	if err := proposalMinter.SetContent(&mhubtypes.ColdStorageTransferProposal{ChainId: "minter", Amount: sdk.NewCoins(sdk.NewCoin("hub", sdk.NewInt(1e18)))}); err != nil {
+		panic(err)
+	}
+
+	cosmos.SendCosmosTx([]sdk.Msg{
+		proposalEth,
+		proposalMinter,
+		proposalBsc,
+		govtypes.NewMsgVote(addr, 1, govtypes.OptionYes),
+		govtypes.NewMsgVote(addr, 2, govtypes.OptionYes),
+		govtypes.NewMsgVote(addr, 3, govtypes.OptionYes),
+	}, addr, priv, ctx.CosmosConn, log.NewTMLogger(os.Stdout), true)
+
+	go func() {
+		expectedValue := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(1)))
+
+		startTime := time.Now()
+		timeout := time.Minute * 5
+
+		hubContractEth, _ := erc20.NewErc20(common.HexToAddress(ctx.Erc20addr), ctx.EthClient)
+		hubContractBsc, _ := erc20.NewErc20(common.HexToAddress(ctx.Bep20addr), ctx.BscClient)
+
+		for {
+			// eth
+			{
+				hubBalanceEthInt, err := hubContractEth.BalanceOf(nil, common.HexToAddress(recipientEth))
+				if err != nil {
+					panic(err)
+				}
+
+				hubBalanceEth := sdk.NewIntFromBigInt(hubBalanceEthInt)
+				if hubBalanceEth.IsZero() {
+					if time.Now().Sub(startTime).Seconds() > timeout.Seconds() {
+						panic("Timeout waiting for the balance to update")
+					}
+
+					time.Sleep(time.Second)
+					continue
+				}
+
+				if !hubBalanceEth.Equal(expectedValue) {
+					panic(fmt.Sprintf("Balance is not equal to expected value. Expected %s, got %s", expectedValue.String(), hubBalanceEth.String()))
+				}
+			}
+
+			// bsc
+			{
+				hubBalanceBscInt, err := hubContractBsc.BalanceOf(nil, common.HexToAddress(recipientBsc))
+				if err != nil {
+					panic(err)
+				}
+
+				hubBalanceBsc := sdk.NewIntFromBigInt(hubBalanceBscInt)
+				if hubBalanceBsc.IsZero() {
+					if time.Now().Sub(startTime).Seconds() > timeout.Seconds() {
+						panic("Timeout waiting for the balance to update")
+					}
+
+					time.Sleep(time.Second)
+					continue
+				}
+
+				if !hubBalanceBsc.Equal(expectedValue.QuoRaw(1e12)) {
+					panic(fmt.Sprintf("Balance is not equal to expected value. Expected %s, got %s", expectedValue.String(), hubBalanceBsc.String()))
+				}
+			}
+
+			// minter
+			{
+				response, err := ctx.MinterClient.Address("Mx" + recipientMinter[2:])
+				if err != nil {
+					panic(err)
+				}
+
+				hubBalance := getMinterCoinBalance(response.Balance, "HUB")
+				if hubBalance.IsZero() {
+					if time.Now().Sub(startTime).Seconds() > 180 {
+						panic("Timeout waiting for the balance to update")
+					}
+
+					time.Sleep(time.Second)
+					continue
+				}
+
+				if !hubBalance.Equal(expectedValue) {
+					panic(fmt.Sprintf("Balance is not equal to expected value. Expected %s, got %s", expectedValue.String(), hubBalance.String()))
+				}
+			}
+
+			println("SUCCESS: test cold storage transfer")
+			ctx.TestsWg.Done()
+			break
+		}
+	}()
 }
 
 func testMinterMultisigChanges(ctx *Context) {
@@ -331,7 +486,7 @@ func testFeeForTransactionRelayer(ctx *Context) {
 	ctx.TestsWg.Add(1)
 	randomPk, _ := crypto.GenerateKey()
 	recipient := crypto.PubkeyToAddress(randomPk.PublicKey).Hex()
-	fee := sdk.NewInt(88)
+	fee := sdk.NewInt(8888)
 	sendMinterCoinToEthereum(ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterMultisig, ctx.MinterClient, recipient, sdk.NewInt(1e18), fee)
 	minterStatus, err := ctx.MinterClient.Status()
 	if err != nil {
@@ -367,7 +522,7 @@ func testFeeForTransactionRelayer(ctx *Context) {
 					}
 
 					for _, item := range data.List {
-						if item.Coin.Id == 1 && strings.ToLower(ctx.EthAddress.String())[2:] == item.To[2:] && strings.HasSuffix(item.Value, fee.String()) { // todo???
+						if item.Coin.Id == 1 && strings.ToLower(ctx.EthAddress.String())[2:] == item.To[2:] && item.Value == fee.String() {
 							println("SUCCESS: test fee for transaction relayer")
 							ctx.TestsWg.Done()
 							return
@@ -636,7 +791,7 @@ func testHubToBSCTransfer(ctx *Context) {
 		expectedValue = expectedValue.QuoRaw(1e12)
 
 		startTime := time.Now()
-		timeout := time.Minute * 10
+		timeout := time.Minute * 5
 
 		hubContract, _ := erc20.NewErc20(common.HexToAddress(ctx.Bep20addr), ctx.BscClient)
 
@@ -901,7 +1056,7 @@ func testBSCToEthereumTransfer(ctx *Context) {
 		expectedValue = expectedValue.SubRaw(100 * 1e12)
 
 		startTime := time.Now()
-		timeout := time.Minute * 10
+		timeout := time.Minute * 5
 
 		hubContract, _ := erc20.NewErc20(common.HexToAddress(ctx.Erc20addr), ctx.EthClient)
 
@@ -989,7 +1144,7 @@ func testValidatorsCommissions(ctx *Context) {
 		}
 
 		minterHeight := minterStatus.LatestBlockHeight
-		timeout := time.Minute * 10
+		timeout := time.Minute * 5
 
 		for {
 			if time.Now().Sub(startTime).Seconds() > timeout.Seconds() {
@@ -1033,14 +1188,14 @@ func testFeeRefund(ctx *Context) {
 	randomPk, _ := crypto.GenerateKey()
 	randomPkString := fmt.Sprintf("%x", crypto.FromECDSA(randomPk))
 	recipient := crypto.PubkeyToAddress(randomPk.PublicKey).Hex()
-	value := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(50)))
-	fee := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(10)))
+	value := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(16000)))
+	fee := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(15000)))
 	fundMinterAddress("Mx"+recipient[2:], ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterClient)
 
 	sendMinterCoinToEthereum(randomPkString, common.HexToAddress(recipient), ctx.MinterMultisig, ctx.MinterClient, recipient, value, fee)
 
 	go func() {
-		expectedValue := sdk.NewInt(3602620000000000000) // todo: calculate this value somehow
+		expectedValue := fee // todo: calculate this value somehow
 		startTime := time.Now()
 
 		minterStatus, err := ctx.MinterClient.Status()
@@ -1049,7 +1204,7 @@ func testFeeRefund(ctx *Context) {
 		}
 
 		minterHeight := minterStatus.LatestBlockHeight
-		timeout := time.Minute * 10
+		timeout := time.Minute * 5
 
 		for {
 			if time.Now().Sub(startTime).Seconds() > timeout.Seconds() {
@@ -1074,7 +1229,12 @@ func testFeeRefund(ctx *Context) {
 					}
 
 					for _, item := range data.List {
-						if item.Coin.Id == 1 && strings.ToLower(recipient)[2:] == item.To[2:] && item.Value == expectedValue.String() {
+						if item.Coin.Id != 1 || strings.ToLower(recipient)[2:] != item.To[2:] {
+							continue
+						}
+
+						itemValue, _ := sdk.NewIntFromString(item.Value)
+						if itemValue.LTE(expectedValue) && itemValue.IsPositive() {
 							println("SUCCESS: test fee refund")
 							ctx.TestsWg.Done()
 							return
@@ -1101,7 +1261,7 @@ func testEthereumToBscTransfer(ctx *Context) {
 		expectedValue = expectedValue.QuoRaw(1e12)
 
 		startTime := time.Now()
-		timeout := time.Minute * 10
+		timeout := time.Minute * 5
 
 		hubContract, _ := erc20.NewErc20(common.HexToAddress(ctx.Bep20addr), ctx.BscClient)
 

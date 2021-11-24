@@ -19,7 +19,7 @@ func (k Keeper) recordEventVote(ctx sdk.Context, chainId types.ChainID, event ty
 	// and prevents validators from submitting two claims with the same nonce
 	lastEventNonce := k.getLastEventNonceByValidator(ctx, chainId, val)
 	expectedNonce := lastEventNonce + 1
-	if event.GetEventNonce() != expectedNonce {
+	if event.GetEventNonce() != expectedNonce && lastEventNonce != 0 {
 		return nil, sdkerrors.Wrapf(types.ErrInvalid,
 			"non contiguous event nonce expected %v observed %v for validator %v",
 			expectedNonce,

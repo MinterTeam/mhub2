@@ -46,6 +46,7 @@ type SlashingKeeper interface {
 // functionality.
 type AccountKeeper interface {
 	GetSequence(ctx sdk.Context, addr sdk.AccAddress) (uint64, error)
+	GetModuleAddress(string) sdk.AccAddress
 }
 
 type OracleKeeper interface {

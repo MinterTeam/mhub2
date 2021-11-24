@@ -146,7 +146,7 @@ func DefaultGenesisState() *GenesisState {
 				Id:               3,
 				Denom:            "hub",
 				ChainId:          "minter",
-				ExternalTokenId:  "1840",
+				ExternalTokenId:  "1839",
 				ExternalDecimals: 18,
 				Commission:       sdk.NewDec(1).QuoInt64(100),
 			},

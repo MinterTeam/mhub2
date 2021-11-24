@@ -49,18 +49,18 @@ func (b ExternalSigners) Hash() []byte {
 }
 
 // PowerDiff returns the difference in power between two bridge validator sets
-// note this is Gravity bridge power *not* Cosmos voting power. Cosmos voting
+// note this is Mhub2 bridge power *not* Cosmos voting power. Cosmos voting
 // power is based on the absolute number of tokens in the staking pool at any given
-// time Gravity bridge power is normalized using the equation.
+// time Mhub2 bridge power is normalized using the equation.
 //
 // validators cosmos voting power / total cosmos voting power in this block = mhub2 bridge power / u32_max
 //
-// As an example if someone has 52% of the Cosmos voting power when a validator set is created their Gravity
+// As an example if someone has 52% of the Cosmos voting power when a validator set is created their Mhub2
 // bridge voting power is u32_max * .52
 //
 // Normalized voting power dramatically reduces how often we have to produce new validator set updates. For example
 // if the total on chain voting power increases by 1% due to inflation, we shouldn't have to generate a new validator
-// set, after all the validators retained their relative percentages during inflation and normalized Gravity bridge power
+// set, after all the validators retained their relative percentages during inflation and normalized Mhub2 bridge power
 // shows no difference.
 func (b ExternalSigners) PowerDiff(c ExternalSigners) float64 {
 	// loop over b and initialize the map with their powers

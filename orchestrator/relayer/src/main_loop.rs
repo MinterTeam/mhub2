@@ -23,6 +23,14 @@ pub async fn relayer_main_loop(
     chain_id: String,
     eth_fee_calculator_url: Option<String>,
 ) {
+    let balance = web3
+        .eth_get_balance(ethereum_key.to_public_key().unwrap())
+        .await
+        .unwrap();
+    if balance == 0u8.into() {
+        return;
+    }
+
     let mut grpc_client = grpc_client;
     loop {
         let loop_start = Instant::now();

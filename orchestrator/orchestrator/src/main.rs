@@ -29,9 +29,7 @@ use deep_space::private_key::PrivateKey as CosmosPrivateKey;
 use docopt::Docopt;
 use env_logger::Env;
 use main_loop::{ETH_ORACLE_LOOP_SPEED, ETH_SIGNER_LOOP_SPEED};
-use mhub2_utils::connection_prep::{
-    check_delegate_addresses, check_for_eth, wait_for_cosmos_node_ready,
-};
+use mhub2_utils::connection_prep::{check_delegate_addresses, wait_for_cosmos_node_ready};
 use mhub2_utils::connection_prep::{check_for_fee_denom, create_rpc_connections};
 use relayer::main_loop::LOOP_SPEED as RELAYER_LOOP_SPEED;
 use std::cmp::min;
@@ -46,32 +44,32 @@ struct Args {
     flag_contract_address: String,
     flag_fees: String,
     flag_chain_id: String,
-    flag_eth_fee_calculator_url: Option<String>,
     flag_metrics_listen: String,
+    flag_eth_fee_calculator_url: Option<String>,
 }
 
 lazy_static! {
     pub static ref USAGE: String = format!(
-    "Usage: {} --chain-id=<id> --eth-fee-calculator-url=<url> --cosmos-phrase=<key> --ethereum-key=<key> --cosmos-grpc=<url> --address-prefix=<prefix> --ethereum-rpc=<url> --fees=<denom> --contract-address=<addr> --metrics-listen=<addr>
-        Options:
-            -h --help                    Show this screen.
-            --cosmos-phrase=<ckey>       The mnenmonic of the Cosmos account key of the validator
-            --ethereum-key=<ekey>        The Ethereum private key of the validator
-            --cosmos-grpc=<gurl>         The Cosmos gRPC url, usually the validator
-            --address-prefix=<prefix>    The prefix for addresses on this Cosmos chain
-            --ethereum-rpc=<eurl>        The Ethereum RPC url, should be a self hosted node
-            --fees=<denom>               The Cosmos Denom in which to pay Cosmos chain fees
-            --contract-address=<addr>    The Ethereum contract address for Gravity, this is temporary
-            --metrics-listen=<addr>      The address metrics server listens on [default: 127.0.0.1:3000].
-        About:
-            The Validator companion binary for Minter Hub 2. This must be run by all Minter Hub 2 chain validators
-            and is a mix of a relayer + oracle + external signing infrastructure
-            Written By: {}
-            Version {}",
-            env!("CARGO_PKG_NAME"),
-            env!("CARGO_PKG_AUTHORS"),
-            env!("CARGO_PKG_VERSION"),
-        );
+    "Usage: {} [--eth-fee-calculator-url=<furl>] --chain-id=<id> --cosmos-phrase=<key> --ethereum-key=<key> --cosmos-grpc=<url> --address-prefix=<prefix> --ethereum-rpc=<url> --fees=<denom> --contract-address=<addr> --metrics-listen=<addr>
+    Options:
+        -h --help                           Show this screen.
+        --cosmos-phrase=<ckey>              The mnenmonic of the Cosmos account key of the validator
+        --ethereum-key=<ekey>               The Ethereum private key of the validator
+        --cosmos-grpc=<gurl>                The Cosmos gRPC url, usually the validator
+        --address-prefix=<prefix>           The prefix for addresses on this Cosmos chain
+        --ethereum-rpc=<eurl>               The Ethereum RPC url, should be a self hosted node
+        --fees=<denom>                      The Cosmos Denom in which to pay Cosmos chain fees
+        --contract-address=<addr>           The Ethereum contract address for Gravity, this is temporary
+        --metrics-listen=<addr>             The address metrics server listens on [default: 127.0.0.1:3000]. 
+    About:
+        The Validator companion binary for Minter Hub 2. This must be run by all Minter Hub 2 chain validators
+        and is a mix of a relayer + oracle + external signing infrastructure
+        Written By: {}
+        Version {}",
+        env!("CARGO_PKG_NAME"),
+        env!("CARGO_PKG_AUTHORS"),
+        env!("CARGO_PKG_VERSION"),
+    );
 }
 
 #[actix_rt::main]
@@ -120,7 +118,6 @@ async fn main() {
 
     let mut grpc = connections.grpc.clone().unwrap();
     let contact = connections.contact.clone().unwrap();
-    let web3 = connections.web3.clone().unwrap();
 
     let public_eth_key = ethereum_key
         .to_public_key()
@@ -149,7 +146,7 @@ async fn main() {
 
     // check if we actually have the promised balance of tokens to pay fees
     check_for_fee_denom(&fee_denom, public_cosmos_key, &contact).await;
-    check_for_eth(public_eth_key, &web3).await;
+    // check_for_eth(public_eth_key, &web3).await;
 
     orchestrator_main_loop(
         cosmos_key,

@@ -23,11 +23,11 @@ const BatchTxSize = 100
 // - emit an event
 func (k Keeper) BuildBatchTx(ctx sdk.Context, chainId types.ChainID, externalTokenId string, maxElements int) *types.BatchTx {
 	// if there is a more profitable batch for this token type do not create a new batch
-	if lastBatch := k.getLastOutgoingBatchByTokenType(ctx, chainId, externalTokenId); lastBatch != nil {
-		if lastBatch.GetFees().GTE(k.getBatchFeesByTokenType(ctx, chainId, externalTokenId, maxElements)) {
-			return nil
-		}
-	}
+	//if lastBatch := k.getLastOutgoingBatchByTokenType(ctx, chainId, externalTokenId); lastBatch != nil {
+	//	if lastBatch.GetFees().GTE(k.getBatchFeesByTokenType(ctx, chainId, externalTokenId, maxElements)) {
+	//		return nil
+	//	}
+	//}
 
 	var selectedStes []*types.SendToExternal
 	k.iterateUnbatchedSendToExternalsByCoin(ctx, chainId, externalTokenId, func(ste *types.SendToExternal) bool {
@@ -81,8 +81,6 @@ func (k Keeper) getBatchTimeoutHeight(ctx sdk.Context, chainId types.ChainID) ui
 // batchTxExecuted is run when the Cosmos chain detects that a batch has been executed on External Chain
 // It deletes all the transactions in the batch, then cancels all earlier batches
 func (k Keeper) batchTxExecuted(ctx sdk.Context, chainId types.ChainID, externalTokenId string, nonce uint64, txHash string, feePaid sdk.Int, feePayer string) {
-	tempSender := sdk.AccAddress{} // todo
-
 	otx := k.GetOutgoingTx(ctx, chainId, types.MakeBatchTxKey(chainId, externalTokenId, nonce))
 	batchTx, _ := otx.(*types.BatchTx)
 	if chainId != "minter" {
@@ -121,13 +119,13 @@ func (k Keeper) batchTxExecuted(ctx sdk.Context, chainId types.ChainID, external
 		if err := k.bankKeeper.MintCoins(ctx, types.ModuleName, sdk.Coins{totalValCommission}); err != nil {
 			panic(sdkerrors.Wrapf(err, "mint vouchers coins: %s", sdk.Coins{totalValCommission}))
 		}
-		if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, tempSender, sdk.Coins{totalValCommission}); err != nil {
+		if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, types.TempAddress, sdk.Coins{totalValCommission}); err != nil {
 			panic(err)
 		}
 
 		for _, val := range valset {
 			amount := totalValCommission.Amount.Mul(sdk.NewIntFromUint64(val.Power)).Quo(sdk.NewIntFromUint64(totalPower))
-			_, err = k.createSendToExternal(ctx, "minter", tempSender, val.ExternalAddress, sdk.NewCoin(tokenInfo.Denom, amount), sdk.NewInt64Coin(tokenInfo.Denom, 0), sdk.NewInt64Coin(tokenInfo.Denom, 0), "#commission", "", "")
+			_, err = k.createSendToExternal(ctx, "minter", types.TempAddress, val.ExternalAddress, sdk.NewCoin(tokenInfo.Denom, amount), sdk.NewInt64Coin(tokenInfo.Denom, 0), sdk.NewInt64Coin(tokenInfo.Denom, 0), "#commission", "", "")
 			if err != nil {
 				panic(err)
 			}
@@ -135,7 +133,23 @@ func (k Keeper) batchTxExecuted(ctx sdk.Context, chainId types.ChainID, external
 	}
 
 	if totalFee.IsPositive() {
-		amount := feePaid.ToDec().Mul(k.oracleKeeper.MustGetTokenPrice(ctx, "eth")).Quo(k.oracleKeeper.MustGetTokenPrice(ctx, tokenInfo.Denom)).Mul(sdk.NewDecWithPrec(15, 1)).TruncateInt()
+		var externalBaseCoin string
+
+		switch chainId {
+		case "ethereum":
+			externalBaseCoin = "eth"
+		case "bsc":
+			externalBaseCoin = "bnb"
+		default:
+			return
+		}
+
+		amount := feePaid.ToDec().
+			Mul(k.oracleKeeper.MustGetTokenPrice(ctx, externalBaseCoin)).
+			Quo(k.oracleKeeper.MustGetTokenPrice(ctx, tokenInfo.Denom)).
+			MulInt64(150).
+			QuoInt64(100).
+			TruncateInt()
 		fee := sdk.NewCoin(tokenInfo.Denom, amount)
 		if fee.IsGTE(totalFee) {
 			fee = totalFee
@@ -145,11 +159,11 @@ func (k Keeper) batchTxExecuted(ctx sdk.Context, chainId types.ChainID, external
 			if err := k.bankKeeper.MintCoins(ctx, types.ModuleName, sdk.Coins{fee}); err != nil {
 				panic(sdkerrors.Wrapf(err, "mint vouchers coins: %s", sdk.Coins{fee}))
 			}
-			if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, tempSender, sdk.Coins{fee}); err != nil {
+			if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, types.TempAddress, sdk.Coins{fee}); err != nil {
 				panic(err)
 			}
 
-			_, err = k.createSendToExternal(ctx, "minter", tempSender, feePayer, fee, sdk.NewInt64Coin(fee.Denom, 0), sdk.NewInt64Coin(fee.Denom, 0), "#fee", "", "")
+			_, err = k.createSendToExternal(ctx, "minter", types.TempAddress, feePayer, fee, sdk.NewInt64Coin(fee.Denom, 0), sdk.NewInt64Coin(fee.Denom, 0), "#fee", "", "")
 			if err != nil {
 				panic(err)
 			}
@@ -159,16 +173,33 @@ func (k Keeper) batchTxExecuted(ctx sdk.Context, chainId types.ChainID, external
 				if err := k.bankKeeper.MintCoins(ctx, types.ModuleName, sdk.Coins{feeLeft}); err != nil {
 					panic(sdkerrors.Wrapf(err, "mint vouchers coins: %s", sdk.Coins{feeLeft}))
 				}
-				if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, tempSender, sdk.Coins{feeLeft}); err != nil {
+				if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, types.TempAddress, sdk.Coins{feeLeft}); err != nil {
 					panic(err)
 				}
 
 				averageFeePaid := fee.Amount.QuoRaw(int64(len(batchTx.Transactions)))
+				totalGoodFeePaid := sdk.NewInt(0)
 				for _, tx := range batchTx.Transactions {
-					toRefund := tx.Fee.Amount.Sub(averageFeePaid)
-					_, err = k.createSendToExternal(ctx, "minter", tempSender, tx.RefundAddress, sdk.NewCoin(fee.Denom, toRefund), sdk.NewInt64Coin(fee.Denom, 0), sdk.NewInt64Coin(fee.Denom, 0), "#fee", "", "")
-					if err != nil {
-						panic(err)
+					if tx.Fee.Amount.GTE(averageFeePaid) {
+						totalGoodFeePaid = totalGoodFeePaid.Add(tx.Fee.Amount)
+					}
+				}
+
+				for _, tx := range batchTx.Transactions {
+					if tx.Fee.Amount.LT(averageFeePaid) {
+						continue
+					}
+
+					toRefund := feeLeft.Amount.Mul(tx.Fee.Amount).Quo(totalGoodFeePaid)
+					if tx.RefundChainId != "minter" { // we only can refund fee to minter
+						continue
+					}
+
+					if toRefund.IsPositive() {
+						_, err = k.createSendToExternal(ctx, "minter", types.TempAddress, tx.RefundAddress, sdk.NewCoin(fee.Denom, toRefund), sdk.NewInt64Coin(fee.Denom, 0), sdk.NewInt64Coin(fee.Denom, 0), "#fee", "", "")
+						if err != nil {
+							panic(err)
+						}
 					}
 				}
 			}

@@ -17,7 +17,7 @@ ENV PACKAGES curl make git libc-dev bash gcc linux-headers eudev-dev python3
 RUN apk add --no-cache $PACKAGES
 
 # Set working directory for the build
-WORKDIR /go/src/github.com/althea-net/cosmos-gravity-bridge/module
+WORKDIR /go/src/github.com/MinterTeam/mhub2/module
 
 # Get dependancies - will also be cached if we won't change mod/sum
 COPY go.mod .
@@ -39,9 +39,9 @@ RUN apk add --update ca-certificates
 WORKDIR /root
 
 # Copy over binaries from the build-env
-COPY --from=build-env /go/src/github.com/althea-net/cosmos-gravity-bridge/module/build/gravity /usr/bin/gravity
+COPY --from=build-env /go/src/github.com/MinterTeam/mhub2/module/build/mhub2 /usr/bin/mhub2
 
 EXPOSE 26656 26657 1317 9090
 
 # Run mhub2 by default
-CMD ["gravity", "--home", "home", "start", "--pruning=nothing"]
+CMD ["mhub2", "--home", "home", "start", "--pruning=nothing"]

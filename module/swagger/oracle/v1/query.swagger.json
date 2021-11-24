@@ -11,6 +11,28 @@
     "application/json"
   ],
   "paths": {
+    "/oracle/v1/bsc_fee": {
+      "get": {
+        "operationId": "Query_BscFee",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1QueryBscFeeResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "tags": [
+          "Query"
+        ]
+      }
+    },
     "/oracle/v1/epoch/current": {
       "get": {
         "operationId": "Query_CurrentEpoch",
@@ -220,6 +242,17 @@
           "items": {
             "$ref": "#/definitions/v1Price"
           }
+        }
+      }
+    },
+    "v1QueryBscFeeResponse": {
+      "type": "object",
+      "properties": {
+        "min": {
+          "type": "string"
+        },
+        "fast": {
+          "type": "string"
         }
       }
     },

@@ -875,7 +875,7 @@ func (m *DelegateKeysSignMsg) GetNonce() uint64 {
 }
 
 // SendToHubEvent is submitted when the SendToHubEvent is emitted by they
-// gravity contract.
+// mhub2 contract.
 type SendToHubEvent struct {
 	EventNonce     uint64                                 `protobuf:"varint,1,opt,name=event_nonce,json=eventNonce,proto3" json:"event_nonce,omitempty"`
 	ExternalCoinId string                                 `protobuf:"bytes,2,opt,name=external_coin_id,json=externalCoinId,proto3" json:"external_coin_id,omitempty"`
@@ -962,7 +962,7 @@ func (m *SendToHubEvent) GetTxHash() string {
 }
 
 // TransferToChainEvent is submitted when the TransferToChainEvent is emitted by they
-// gravity contract.
+// mhub2 contract.
 type TransferToChainEvent struct {
 	EventNonce       uint64                                 `protobuf:"varint,1,opt,name=event_nonce,json=eventNonce,proto3" json:"event_nonce,omitempty"`
 	ExternalCoinId   string                                 `protobuf:"bytes,2,opt,name=external_coin_id,json=externalCoinId,proto3" json:"external_coin_id,omitempty"`

@@ -174,7 +174,11 @@ pub async fn send_main_loop(
     while let Some(messages) = rx.recv().await {
         match send_messages(contact, cosmos_key, gas_price.to_owned(), messages).await {
             Ok(res) => trace!("okay: {:?}", res),
-            Err(err) => error!("fail: {}", err),
+            Err(err) => {
+                if !err.to_string().contains("account sequence mismatch") {
+                    error!("fail: {}", err)
+                }
+            }
         }
     }
 }

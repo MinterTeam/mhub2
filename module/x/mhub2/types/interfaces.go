@@ -25,7 +25,7 @@ type ExternalEvent interface {
 	GetEventNonce() uint64
 	GetExternalHeight() uint64
 	Hash() tmbytes.HexBytes
-	Validate() error
+	Validate(ChainID) error
 }
 
 type OutgoingTx interface {

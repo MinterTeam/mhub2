@@ -10,9 +10,9 @@ apt-get update && \
 
 2. Install Golang
 ```bash
-wget https://golang.org/dl/go1.17.2.linux-amd64.tar.gz && \
+wget https://golang.org/dl/go1.17.3.linux-amd64.tar.gz && \
   rm -rf /usr/local/go && \
-  tar -C /usr/local -xzf go1.17.2.linux-amd64.tar.gz
+  tar -C /usr/local -xzf go1.17.3.linux-amd64.tar.gz
 echo 'export PATH=$PATH:/usr/local/go/bin:~/go/bin' >> ~/.profile
 ```
 
@@ -48,7 +48,6 @@ make install
 # Hub ↔ Ethereum oracle
 cd ~/mhub2/orchestrator
 cargo install --locked --path orchestrator
-cargo install --locked --path register_delegate_keys
 ```
 
 ## Run
@@ -57,9 +56,9 @@ cargo install --locked --path register_delegate_keys
 minter node
 ```
 
-2. Install and sync Ethereum node
+2. Install and sync Ethereum & BSC node
 ```bash
-geth --rpc --rpcaddr "127.0.0.1" --rpcport "8545"
+geth --http --http.addr "127.0.0.1" --http.port "8545"
 ```
 
 3. Sync Minter Hub Node
@@ -77,14 +76,12 @@ for testnet:
 ```bash
 # Download genesis
 mkdir -p ~/.mhub/config/
-curl https://raw.githubusercontent.com/MinterTeam/mhub2/dev/testnet-genesis.json > ~/.mhub/config/genesis.json
+curl https://raw.githubusercontent.com/MinterTeam/mhub2/master/testnet/genesis.json > ~/.mhub2/config/genesis.json
 
 # Start and sync Minter Hub node
 mhub2 start \
-  --p2p.persistent_peers="..."
+  --p2p.persistent_peers="c5990e44c9969bf6bd6bfb50ea8d86ea3121af17@46.101.215.17:26656"
 ```
-
-- **IMPORTANT**: After syncing you must edit `~/.mhub2/config/app.toml`: enable API in respective section.
 
 4. Generate Hub account
 ```bash
@@ -105,7 +102,7 @@ mhub2 tx staking create-validator \
   --commission-max-rate="1" \
   --commission-rate="0.1" \
   --min-self-delegation="1" \
-  --chain-id=mhub-mainnet-1 (mhub-testnet-11 for testnet)
+  --chain-id=mhub-mainnet-2 (mhub-testnet-11 for testnet)
 ```
 
 - **WARNING: save tendermint validator's key**
@@ -120,38 +117,51 @@ mhub-keys-generator
 
 7. Register Ethereum keys
 ```bash
-register-peggy-delegate-keys \
-  --cosmos-phrase=<COSMOS MNEMONIC> \
-  --validator-phrase=<COSMOS MNEMONIC> \
-  --ethereum-key=<ETHEREUM PRIVATE KEY> \
-  --cosmos-rpc="http://127.0.0.1:1317" \
-  --fees=hub
+mhub2 query account <YOUR_ACCOUNT> # get account nonce
+
+mhub-keys-generator make_delegate_sign <YOUR_ETH_PRIVATE_KEY> <YOUR_ACCOUNT> <YOUR_NONCE>
+
+mhub2 tx mhub2 set-delegate-keys <VALADDR> <YOUR_ACCOUNT> <ETH_ADDR> <SIG> --from=...
 ```
 
 8. Start services. *You can set them up as services or run in different terminal screens.*
 
 - **Start Hub ↔ Ethereum oracle.** 
 ```
-Ethereum Contract for testnet: ...
-
+Ethereum Contract for testnet: 0xcD53640C87Acd89BD7935765167D1E6330201C89
 Ethereum Contract for mainnet: ...
+
+BSC Contract for testnet: 0x32d19e88E478d9135b5CcaB6D7468858C5a83800
+BSC Contract for mainnet: ...
 ```
 ```bash
-RUST_LOG=info orchestrator \
+orchestrator \
   --cosmos-phrase=<COSMOS MNEMONIC> \
   --ethereum-key=<ETHEREUM PRIVATE KEY> \
   --cosmos-grpc="http://127.0.0.1:9090" \
-  --cosmos-legacy-rpc="http://127.0.0.1:1317" \
   --ethereum-rpc="http://127.0.0.1:8545/" \
-  --fees=hub
+  --fees=hub \
+  --address-prefix=hub \
   --chain-id=ethereum \
   --contract-address=<ADDRESS OF ETHEREUM CONTRACT> 
 ```
 
+```bash
+orchestrator \
+  --cosmos-phrase=<COSMOS MNEMONIC> \
+  --ethereum-key=<ETHEREUM PRIVATE KEY> \
+  --cosmos-grpc="http://127.0.0.1:9090" \
+  --ethereum-rpc="http://127.0.0.1:8545/" \
+  --fees=hub \
+  --address-prefix=hub \
+  --chain-id=bsc \
+  --contract-address=<ADDRESS OF BSC CONTRACT> 
+```
+
 - **Start Hub ↔ Minter oracle.** 
 ```
-Minter Multisig for testnet: ...
-Start Minter Block for testnet: ...
+Minter Multisig for testnet: Mxa5c82b5c9674e854eef75f81412b019e6005ce49
+Start Minter Block for testnet: 3341491
 
 Minter Multisig for mainnet: ...
 Start Minter Block for mainnet: ...
@@ -169,7 +179,7 @@ api_addr = "http://127.0.0.1:8843/v2/"
 start_block = <MINTER START BLOCK>
 start_event_nonce = 1
 start_batch_nonce = 1
-start_valset_nonce = 1
+start_valset_nonce = 0
 
 [cosmos]
 mnemonic = ""
@@ -186,28 +196,14 @@ mhub-minter-connector --config=connector-config.toml
 ```toml
 # oracle-config.toml
 holders_url = "https://explorer-hub-api.minter.network/api/tokens/1902/holders"
-
-[minter]
-api_addr = "http://127.0.0.1:8843/v2/"
+prices_url = "https://explorer-hub-api.minter.network/api/prices"
 
 [cosmos]
 mnemonic = <COSMOS MNEMONIC>
 grpc_addr = "127.0.0.1:9090"
 rpc_addr = "http://127.0.0.1:26657"
-
-[ethereum]
-gas_price_providers = [
-    "ethgasstation",
-    "etherchain"
-]
 ```
 
 ```bash
-mhub-oracle --config=oracle-config.toml
-```
-
-## API
-
-## Processes
-
-## UI
+mhub-oracle --config=oracle-config.toml (--testnet)
+``` 

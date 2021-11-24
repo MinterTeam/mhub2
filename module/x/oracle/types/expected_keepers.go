@@ -1,6 +1,7 @@
 package types
 
 import (
+	"github.com/MinterTeam/mhub2/module/x/mhub2/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
@@ -17,6 +18,10 @@ type StakingKeeper interface {
 	ValidatorByConsAddr(sdk.Context, sdk.ConsAddress) stakingtypes.ValidatorI
 	Slash(sdk.Context, sdk.ConsAddress, int64, int64, sdk.Dec)
 	Jail(sdk.Context, sdk.ConsAddress)
+}
+
+type Mhub2Keeper interface {
+	GetTokenInfos(sdk.Context) *types.TokenInfos
 }
 
 // BankKeeper defines the expected bank keeper methods

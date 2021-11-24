@@ -86,7 +86,7 @@ func (msg *MsgSubmitExternalEvent) ValidateBasic() (err error) {
 	if err != nil {
 		return err
 	}
-	return event.Validate()
+	return event.Validate(ChainID(msg.ChainId))
 }
 
 // GetSignBytes encodes the message for signing
@@ -186,8 +186,12 @@ func (msg MsgSendToExternal) ValidateBasic() error {
 	if !msg.BridgeFee.IsValid() {
 		return sdkerrors.Wrap(sdkerrors.ErrInvalidCoins, "fee")
 	}
-	if !common.IsHexAddress(msg.ExternalRecipient) {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, "ethereum address")
+	if !common.IsHexAddress(msg.ExternalRecipient) || len(msg.ExternalRecipient) != common.AddressLength*2+2 {
+		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, "external address")
+	}
+
+	if msg.ExternalRecipient == "0x0000000000000000000000000000000000000000" {
+		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, "cannot withdraw to zero address")
 	}
 
 	return nil

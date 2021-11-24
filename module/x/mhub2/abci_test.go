@@ -24,21 +24,21 @@ var testDenomResolver = func(id uint64) (string, error) {
 
 func TestSignerSetTxCreationIfNotAvailable(t *testing.T) {
 	input, ctx := keeper.SetupFiveValChain(t)
-	gravityKeeper := input.GravityKeeper
+	mhub2Keeper := input.Mhub2Keeper
 
 	// BeginBlocker should set a new validator set if not available
-	mhub2.BeginBlocker(ctx, gravityKeeper)
-	otx := gravityKeeper.GetOutgoingTx(ctx, chainId, types.MakeSignerSetTxKey(chainId, 1))
+	mhub2.BeginBlocker(ctx, mhub2Keeper)
+	otx := mhub2Keeper.GetOutgoingTx(ctx, chainId, types.MakeSignerSetTxKey(chainId, 1))
 	require.NotNil(t, otx)
 	_, ok := otx.(*types.SignerSetTx)
 	require.True(t, ok)
-	require.True(t, len(gravityKeeper.GetSignerSetTxs(ctx, chainId)) == 1)
+	require.True(t, len(mhub2Keeper.GetSignerSetTxs(ctx, chainId)) == 1)
 }
 
 func TestSignerSetTxCreationUponUnbonding(t *testing.T) {
 	input, ctx := keeper.SetupFiveValChain(t)
-	gravityKeeper := input.GravityKeeper
-	gravityKeeper.CreateSignerSetTx(ctx, chainId)
+	mhub2Keeper := input.Mhub2Keeper
+	mhub2Keeper.CreateSignerSetTx(ctx, chainId)
 
 	input.Context = ctx.WithBlockHeight(ctx.BlockHeight() + 1)
 	// begin unbonding
@@ -48,17 +48,17 @@ func TestSignerSetTxCreationUponUnbonding(t *testing.T) {
 
 	// Run the staking endblocker to ensure signer set tx is set in state
 	staking.EndBlocker(input.Context, input.StakingKeeper)
-	mhub2.BeginBlocker(input.Context, gravityKeeper)
+	mhub2.BeginBlocker(input.Context, mhub2Keeper)
 
-	require.EqualValues(t, 2, gravityKeeper.GetLatestSignerSetTxNonce(ctx, chainId))
+	require.EqualValues(t, 2, mhub2Keeper.GetLatestSignerSetTxNonce(ctx, chainId))
 }
 
 func TestSignerSetTxSlashing_SignerSetTxCreated_Before_ValidatorBonded(t *testing.T) {
 	//	Don't slash validators if signer set tx is created before he is bonded.
 
 	input, ctx := keeper.SetupFiveValChain(t)
-	pk := input.GravityKeeper
-	params := input.GravityKeeper.GetParams(ctx)
+	pk := input.Mhub2Keeper
+	params := input.Mhub2Keeper.GetParams(ctx)
 
 	signerSet := pk.CreateSignerSetTx(ctx, chainId)
 	height := uint64(ctx.BlockHeight()) - (params.SignedSignerSetTxsWindow + 1)
@@ -73,11 +73,12 @@ func TestSignerSetTxSlashing_SignerSetTxCreated_Before_ValidatorBonded(t *testin
 }
 
 func TestSignerSetTxSlashing_SignerSetTxCreated_After_ValidatorBonded(t *testing.T) {
+	return // todo: enable when slashing will be enabled
 	//	Slashing Conditions for Bonded Validator
 
 	input, ctx := keeper.SetupFiveValChain(t)
-	pk := input.GravityKeeper
-	params := input.GravityKeeper.GetParams(ctx)
+	pk := input.Mhub2Keeper
+	params := input.Mhub2Keeper.GetParams(ctx)
 
 	ctx = ctx.WithBlockHeight(ctx.BlockHeight() + int64(params.SignedSignerSetTxsWindow) + 2)
 	signerSet := pk.CreateSignerSetTx(ctx, chainId)
@@ -112,8 +113,8 @@ func TestSignerSetTxSlashing_UnbondingValidator_UnbondWindow_NotExpired(t *testi
 	// val := input.StakingKeeper.Validator(ctx, keeper.ValAddrs[0])
 	// fmt.Println("val1  tokens", val.GetTokens().ToDec())
 
-	gravityKeeper := input.GravityKeeper
-	params := input.GravityKeeper.GetParams(ctx)
+	mhub2Keeper := input.Mhub2Keeper
+	params := input.Mhub2Keeper.GetParams(ctx)
 
 	// Define slashing variables
 	validatorStartHeight := ctx.BlockHeight()                                                             // 0
@@ -128,10 +129,10 @@ func TestSignerSetTxSlashing_UnbondingValidator_UnbondWindow_NotExpired(t *testi
 
 	// Create signer set tx request
 	ctx = ctx.WithBlockHeight(signerSetTxHeight)
-	vs := gravityKeeper.CreateSignerSetTx(ctx, chainId)
+	vs := mhub2Keeper.CreateSignerSetTx(ctx, chainId)
 	vs.Height = uint64(signerSetTxHeight)
 	vs.Nonce = uint64(signerSetTxHeight)
-	gravityKeeper.SetOutgoingTx(ctx, chainId, vs)
+	mhub2Keeper.SetOutgoingTx(ctx, chainId, vs)
 
 	// Start Unbonding validators
 	// Validator-1  Unbond slash window is not expired. if not attested, slash
@@ -148,12 +149,12 @@ func TestSignerSetTxSlashing_UnbondingValidator_UnbondWindow_NotExpired(t *testi
 			// don't sign with first validator
 			continue
 		}
-		gravityKeeper.SetExternalSignature(ctx, chainId, &types.SignerSetTxConfirmation{vs.Nonce, keeper.EthAddrs[i].Hex(), []byte("dummySig")}, val)
+		mhub2Keeper.SetExternalSignature(ctx, chainId, &types.SignerSetTxConfirmation{vs.Nonce, keeper.EthAddrs[i].Hex(), []byte("dummySig")}, val)
 	}
 	staking.EndBlocker(input.Context, input.StakingKeeper)
 
 	ctx = ctx.WithBlockHeight(currentBlockHeight)
-	mhub2.EndBlocker(ctx, gravityKeeper)
+	mhub2.EndBlocker(ctx, mhub2Keeper)
 
 	// Assertions
 	val1 := input.StakingKeeper.Validator(ctx, keeper.ValAddrs[0])
@@ -168,9 +169,11 @@ func TestSignerSetTxSlashing_UnbondingValidator_UnbondWindow_NotExpired(t *testi
 }
 
 func TestBatchSlashing(t *testing.T) {
+	return // todo: enable when slashing will be enabled
+
 	input, ctx := keeper.SetupFiveValChain(t)
-	gravityKeeper := input.GravityKeeper
-	params := gravityKeeper.GetParams(ctx)
+	mhub2Keeper := input.Mhub2Keeper
+	params := mhub2Keeper.GetParams(ctx)
 
 	ctx = ctx.WithBlockHeight(ctx.BlockHeight() + int64(params.SignedBatchesWindow) + 2)
 
@@ -181,7 +184,7 @@ func TestBatchSlashing(t *testing.T) {
 		ExternalTokenId: keeper.TokenContractAddrs[0],
 		Height:          uint64(ctx.BlockHeight() - int64(params.SignedBatchesWindow+1)),
 	}
-	gravityKeeper.SetOutgoingTx(ctx, chainId, batch)
+	mhub2Keeper.SetOutgoingTx(ctx, chainId, batch)
 
 	for i, val := range keeper.ValAddrs {
 		if i == 0 {
@@ -196,7 +199,7 @@ func TestBatchSlashing(t *testing.T) {
 			input.SlashingKeeper.SetValidatorSigningInfo(ctx, valConsAddr, valSigningInfo)
 			continue
 		}
-		gravityKeeper.SetExternalSignature(ctx, chainId, &types.BatchTxConfirmation{
+		mhub2Keeper.SetExternalSignature(ctx, chainId, &types.BatchTxConfirmation{
 			BatchNonce:      batch.BatchNonce,
 			ExternalTokenId: keeper.TokenContractAddrs[0],
 			ExternalSigner:  keeper.EthAddrs[i].String(),
@@ -204,7 +207,7 @@ func TestBatchSlashing(t *testing.T) {
 		}, val)
 	}
 
-	mhub2.EndBlocker(ctx, gravityKeeper)
+	mhub2.EndBlocker(ctx, mhub2Keeper)
 
 	// ensure that the  validator is jailed and slashed
 	require.True(t, input.StakingKeeper.Validator(ctx, keeper.ValAddrs[0]).IsJailed())
@@ -213,29 +216,29 @@ func TestBatchSlashing(t *testing.T) {
 	require.False(t, input.StakingKeeper.Validator(ctx, keeper.ValAddrs[1]).IsJailed())
 
 	// Ensure that the last slashed signer set tx nonce is set properly
-	require.Equal(t, input.GravityKeeper.GetLastSlashedOutgoingTxBlockHeight(ctx, chainId), batch.Height)
+	require.Equal(t, input.Mhub2Keeper.GetLastSlashedOutgoingTxBlockHeight(ctx, chainId), batch.Height)
 }
 
 func TestSignerSetTxEmission(t *testing.T) {
 	input, ctx := keeper.SetupFiveValChain(t)
-	gravityKeeper := input.GravityKeeper
+	mhub2Keeper := input.Mhub2Keeper
 
 	// Store a validator set with a power change as the most recent validator set
-	sstx := gravityKeeper.CreateSignerSetTx(ctx, chainId)
+	sstx := mhub2Keeper.CreateSignerSetTx(ctx, chainId)
 	delta := float64(types.ExternalSigners(sstx.Signers).TotalPower()) * 0.05
 	sstx.Signers[0].Power = uint64(float64(sstx.Signers[0].Power) - delta/2)
 	sstx.Signers[1].Power = uint64(float64(sstx.Signers[1].Power) + delta/2)
-	gravityKeeper.SetOutgoingTx(ctx, chainId, sstx)
+	mhub2Keeper.SetOutgoingTx(ctx, chainId, sstx)
 
 	// BeginBlocker should set a new validator set
-	mhub2.BeginBlocker(ctx, gravityKeeper)
-	require.NotNil(t, gravityKeeper.GetOutgoingTx(ctx, chainId, types.MakeSignerSetTxKey(chainId, 2)))
-	require.EqualValues(t, 2, len(gravityKeeper.GetSignerSetTxs(ctx, chainId)))
+	mhub2.BeginBlocker(ctx, mhub2Keeper)
+	require.NotNil(t, mhub2Keeper.GetOutgoingTx(ctx, chainId, types.MakeSignerSetTxKey(chainId, 2)))
+	require.EqualValues(t, 2, len(mhub2Keeper.GetSignerSetTxs(ctx, chainId)))
 }
 
 func TestSignerSetTxSetting(t *testing.T) {
 	input, ctx := keeper.SetupFiveValChain(t)
-	gk := input.GravityKeeper
+	gk := input.Mhub2Keeper
 	gk.CreateSignerSetTx(ctx, chainId)
 	require.EqualValues(t, 1, len(gk.GetSignerSetTxs(ctx, chainId)))
 }
@@ -243,9 +246,9 @@ func TestSignerSetTxSetting(t *testing.T) {
 /// Test batch timeout
 func TestBatchTxTimeout(t *testing.T) {
 	input, ctx := keeper.SetupFiveValChain(t)
-	gravityKeeper := input.GravityKeeper
-	params := gravityKeeper.GetParams(ctx)
-	tokenInfos := input.GravityKeeper.GetTokenInfos(ctx).TokenInfos
+	mhub2Keeper := input.Mhub2Keeper
+	params := mhub2Keeper.GetParams(ctx)
+	tokenInfos := input.Mhub2Keeper.GetTokenInfos(ctx).TokenInfos
 	var (
 		now             = time.Now().UTC()
 		mySender, _     = sdk.AccAddressFromBech32("cosmos1ahx7f8wyertuus9r20284ej0asrs085case3kn")
@@ -271,47 +274,47 @@ func TestBatchTxTimeout(t *testing.T) {
 	ctx = ctx.WithBlockTime(now).WithBlockHeight(250)
 
 	// check that we can make a batch without first setting an ethereum block height
-	b1 := gravityKeeper.BuildBatchTx(ctx, chainId, externalTokenId, 2)
+	b1 := mhub2Keeper.BuildBatchTx(ctx, chainId, externalTokenId, 2)
 	require.Equal(t, b1.Timeout, uint64(0))
 
-	gravityKeeper.SetLastObservedExternalBlockHeight(ctx, chainId, 500)
+	mhub2Keeper.SetLastObservedExternalBlockHeight(ctx, chainId, 500)
 
-	b2 := gravityKeeper.BuildBatchTx(ctx, chainId, externalTokenId, 2)
+	b2 := mhub2Keeper.BuildBatchTx(ctx, chainId, externalTokenId, 2)
 	// this is exactly block 500 plus twelve hours
 	require.Equal(t, b2.Timeout, uint64(504))
 
 	// make sure the batches got stored in the first place
-	gotFirstBatch := input.GravityKeeper.GetOutgoingTx(ctx, chainId, types.MakeBatchTxKey(chainId, b1.ExternalTokenId, b1.BatchNonce))
+	gotFirstBatch := input.Mhub2Keeper.GetOutgoingTx(ctx, chainId, types.MakeBatchTxKey(chainId, b1.ExternalTokenId, b1.BatchNonce))
 	require.NotNil(t, gotFirstBatch)
-	gotSecondBatch := input.GravityKeeper.GetOutgoingTx(ctx, chainId, types.MakeBatchTxKey(chainId, b2.ExternalTokenId, b2.BatchNonce))
+	gotSecondBatch := input.Mhub2Keeper.GetOutgoingTx(ctx, chainId, types.MakeBatchTxKey(chainId, b2.ExternalTokenId, b2.BatchNonce))
 	require.NotNil(t, gotSecondBatch)
 
 	// when, way into the future
 	ctx = ctx.WithBlockTime(now).WithBlockHeight(9)
 
-	b3 := gravityKeeper.BuildBatchTx(ctx, chainId, externalTokenId, 2)
+	b3 := mhub2Keeper.BuildBatchTx(ctx, chainId, externalTokenId, 2)
 
-	mhub2.BeginBlocker(ctx, gravityKeeper)
+	mhub2.BeginBlocker(ctx, mhub2Keeper)
 
 	// this had a timeout of zero should be deleted.
-	gotFirstBatch = input.GravityKeeper.GetOutgoingTx(ctx, chainId, types.MakeBatchTxKey(chainId, b1.ExternalTokenId, b1.BatchNonce))
+	gotFirstBatch = input.Mhub2Keeper.GetOutgoingTx(ctx, chainId, types.MakeBatchTxKey(chainId, b1.ExternalTokenId, b1.BatchNonce))
 	require.Nil(t, gotFirstBatch)
 	// make sure the end blocker does not delete these, as the block height has not officially
 	// been updated by a relay event
-	gotSecondBatch = input.GravityKeeper.GetOutgoingTx(ctx, chainId, types.MakeBatchTxKey(chainId, b2.ExternalTokenId, b2.BatchNonce))
+	gotSecondBatch = input.Mhub2Keeper.GetOutgoingTx(ctx, chainId, types.MakeBatchTxKey(chainId, b2.ExternalTokenId, b2.BatchNonce))
 	require.NotNil(t, gotSecondBatch)
-	gotThirdBatch := input.GravityKeeper.GetOutgoingTx(ctx, chainId, types.MakeBatchTxKey(chainId, b3.ExternalTokenId, b3.BatchNonce))
+	gotThirdBatch := input.Mhub2Keeper.GetOutgoingTx(ctx, chainId, types.MakeBatchTxKey(chainId, b3.ExternalTokenId, b3.BatchNonce))
 	require.NotNil(t, gotThirdBatch)
 
-	gravityKeeper.SetLastObservedExternalBlockHeight(ctx, chainId, 5000)
-	mhub2.BeginBlocker(ctx, gravityKeeper)
+	mhub2Keeper.SetLastObservedExternalBlockHeight(ctx, chainId, 5000)
+	mhub2.BeginBlocker(ctx, mhub2Keeper)
 
 	// make sure the end blocker does delete these, as we've got a new Ethereum block height
-	gotFirstBatch = input.GravityKeeper.GetOutgoingTx(ctx, chainId, types.MakeBatchTxKey(chainId, b1.ExternalTokenId, b1.BatchNonce))
+	gotFirstBatch = input.Mhub2Keeper.GetOutgoingTx(ctx, chainId, types.MakeBatchTxKey(chainId, b1.ExternalTokenId, b1.BatchNonce))
 	require.Nil(t, gotFirstBatch)
-	gotSecondBatch = input.GravityKeeper.GetOutgoingTx(ctx, chainId, types.MakeBatchTxKey(chainId, b2.ExternalTokenId, b2.BatchNonce))
+	gotSecondBatch = input.Mhub2Keeper.GetOutgoingTx(ctx, chainId, types.MakeBatchTxKey(chainId, b2.ExternalTokenId, b2.BatchNonce))
 	require.Nil(t, gotSecondBatch)
-	gotThirdBatch = input.GravityKeeper.GetOutgoingTx(ctx, chainId, types.MakeBatchTxKey(chainId, b3.ExternalTokenId, b3.BatchNonce))
+	gotThirdBatch = input.Mhub2Keeper.GetOutgoingTx(ctx, chainId, types.MakeBatchTxKey(chainId, b3.ExternalTokenId, b3.BatchNonce))
 	require.NotNil(t, gotThirdBatch)
 }
 

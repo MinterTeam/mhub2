@@ -10,7 +10,7 @@ import (
 
 func TestEthereumEventProcessor_DetectMaliciousSupply(t *testing.T) {
 	input := CreateTestEnv(t)
-	eep := ExternalEventProcessor{keeper: input.GravityKeeper, bankKeeper: input.BankKeeper}
+	eep := ExternalEventProcessor{keeper: input.Mhub2Keeper, bankKeeper: input.BankKeeper}
 
 	// set supply to maximum value
 	var testBigInt big.Int

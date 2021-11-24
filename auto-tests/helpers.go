@@ -186,7 +186,7 @@ func runEvmChain(chainId int, wd string, ethAddress common.Address, privateKey *
 		panic(err)
 	}
 	runOrPanic("geth --networkid %d --datadir %s/data/eth-%d account import --password=eth-password.txt data/private-key-%d.txt", chainId, wd, chainId, chainId)
-	go runOrPanic("geth --port %d --maxpeers 0 --allow-insecure-unlock --http --http.port %s --networkid %d --unlock %s --password=eth-password.txt --mine --datadir %s/data/eth-%d", 30303+chainId, port, chainId, ethAddress.Hex(), wd, chainId)
+	go runOrPanic("geth --miner.gasprice 100000000000 --port %d --maxpeers 0 --allow-insecure-unlock --http --http.port %s --networkid %d --unlock %s --password=eth-password.txt --mine --datadir %s/data/eth-%d", 30303+chainId, port, chainId, ethAddress.Hex(), wd, chainId)
 	client, err := ethclient.Dial("http://localhost:" + port)
 	if err != nil {
 		panic(err)
@@ -436,7 +436,7 @@ func fundContractWithErc20(privateKey *ecdsa.PrivateKey, client *ethclient.Clien
 		panic(err)
 	}
 
-	response, err := erc20Instance.Transfer(auth, common.HexToAddress(hub2Addr), transaction.BipToPip(big.NewInt(100)))
+	response, err := erc20Instance.Transfer(auth, common.HexToAddress(hub2Addr), transaction.BipToPip(big.NewInt(100000)))
 	if err != nil {
 		panic(err)
 	}
@@ -454,7 +454,7 @@ func waitEthTx(hash common.Hash, client *ethclient.Client) {
 		if !pending {
 			receipt, err := client.TransactionReceipt(context.TODO(), hash)
 			if err != nil {
-				panic(err)
+				println(err.Error())
 			}
 
 			if receipt.Status == ethTypes.ReceiptStatusFailed {
@@ -511,7 +511,7 @@ func run(cmdString string, args ...interface{}) (string, error) {
 		return "", err
 	}
 	processLock.Lock()
-	processes[cmdArgs[0]] = append(processes[cmdString], cmd.Process)
+	processes[cmdArgs[0]] = append(processes[cmdArgs[0]], cmd.Process)
 	processLock.Unlock()
 	if err := cmd.Wait(); err != nil {
 		if err.Error() != "signal: killed" {
@@ -553,7 +553,7 @@ func populateEthGenesis(address common.Address, chainId int) {
 			PetersburgBlock:     big.NewInt(0),
 			IstanbulBlock:       big.NewInt(0),
 			Clique: &params.CliqueConfig{
-				Period: 3,
+				Period: 1,
 				Epoch:  30000,
 			},
 		},
@@ -718,6 +718,11 @@ func deployContractsAndMultisig(prKeyString string) {
 	ethPrivateKeyString := fmt.Sprintf("%x", crypto.FromECDSA(pk))
 	ethAddress := crypto.PubkeyToAddress(pk.PublicKey)
 
+	minterClient, _ := grpc_client.New("node-api.taconet.minter.network:8842")
+	minterMultisig := createMinterMultisig(ethPrivateKeyString, ethAddress, minterClient)
+
+	println("minter", minterMultisig)
+
 	{
 		client, err := ethclient.Dial("https://ropsten.infura.io/v3/c2f9dc16ef8d4897a1bd6f9270e38914")
 		if err != nil {
@@ -739,9 +744,4 @@ func deployContractsAndMultisig(prKeyString string) {
 
 		println("bsc", contract)
 	}
-
-	minterClient, _ := grpc_client.New("node-api.taconet.minter.network:8842")
-	minterMultisig := createMinterMultisig(ethPrivateKeyString, ethAddress, minterClient)
-
-	println("minter", minterMultisig)
 }

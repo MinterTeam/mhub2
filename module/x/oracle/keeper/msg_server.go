@@ -65,10 +65,11 @@ func (k msgServer) PriceClaim(c context.Context, msg *types.MsgPriceClaim) (*typ
 		return nil, sdkerrors.Wrap(sdkerrors.ErrLogic, "wrong epoch")
 	}
 
-	requiredPrices := []string{"eth", "eth/gas", "hub"}
-	//for _, coin := range k.GetCoins(ctx).List() { TODO
-	//	requiredPrices = append(requiredPrices, fmt.Sprintf("minter/%d", coin.MinterId))
-	//}
+	tokenInfos := k.Mhub2keeper.GetTokenInfos(ctx)
+	requiredPrices := []string{"eth", "eth/gas", "bnb", "bsc/gas"}
+	for _, coin := range tokenInfos.TokenInfos {
+		requiredPrices = append(requiredPrices, coin.Denom)
+	}
 
 	for _, requiredPrice := range requiredPrices {
 		found := false
