@@ -192,7 +192,7 @@ type HoldersResult struct {
 
 type PricesResult struct {
 	Data []struct {
-		Denom string `json:"address"`
+		Denom string `json:"denom"`
 		Price string `json:"price"`
 	} `json:"data"`
 }
