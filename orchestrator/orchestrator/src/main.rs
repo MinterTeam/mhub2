@@ -29,9 +29,7 @@ use deep_space::private_key::PrivateKey as CosmosPrivateKey;
 use docopt::Docopt;
 use env_logger::Env;
 use main_loop::{ETH_ORACLE_LOOP_SPEED, ETH_SIGNER_LOOP_SPEED};
-use mhub2_utils::connection_prep::{
-    check_delegate_addresses, check_for_eth, wait_for_cosmos_node_ready,
-};
+use mhub2_utils::connection_prep::{check_delegate_addresses, wait_for_cosmos_node_ready};
 use mhub2_utils::connection_prep::{check_for_fee_denom, create_rpc_connections};
 use relayer::main_loop::LOOP_SPEED as RELAYER_LOOP_SPEED;
 use std::cmp::min;
@@ -120,7 +118,6 @@ async fn main() {
 
     let mut grpc = connections.grpc.clone().unwrap();
     let contact = connections.contact.clone().unwrap();
-    let web3 = connections.web3.clone().unwrap();
 
     let public_eth_key = ethereum_key
         .to_public_key()
@@ -149,7 +146,7 @@ async fn main() {
 
     // check if we actually have the promised balance of tokens to pay fees
     check_for_fee_denom(&fee_denom, public_cosmos_key, &contact).await;
-    check_for_eth(public_eth_key, &web3).await;
+    // check_for_eth(public_eth_key, &web3).await;
 
     orchestrator_main_loop(
         cosmos_key,
