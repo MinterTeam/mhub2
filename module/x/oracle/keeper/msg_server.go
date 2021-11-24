@@ -66,7 +66,7 @@ func (k msgServer) PriceClaim(c context.Context, msg *types.MsgPriceClaim) (*typ
 	}
 
 	tokenInfos := k.Mhub2keeper.GetTokenInfos(ctx)
-	requiredPrices := []string{"eth", "eth/gas"}
+	requiredPrices := []string{"eth", "eth/gas", "bnb", "bsc/gas"}
 	for _, coin := range tokenInfos.TokenInfos {
 		requiredPrices = append(requiredPrices, coin.Denom)
 	}
