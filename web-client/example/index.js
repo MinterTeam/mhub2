@@ -14,6 +14,8 @@ logPromise(minterHub.getTxStatus(TX_HASH));
 
 logPromise(minterHub.getOracleEthFee());
 
+logPromise(minterHub.getOracleBscFee());
+
 function logPromise(promise) {
     promise.then((result) => console.log(result))
         .catch((error) => {

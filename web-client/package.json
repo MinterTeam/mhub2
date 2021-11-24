@@ -1,6 +1,6 @@
 {
   "name": "minter-js-hub",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "JS client to communicate with Minter Hub through GRPC",
   "main": "index.js",
   "browser": {

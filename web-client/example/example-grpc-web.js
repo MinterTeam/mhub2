@@ -6,7 +6,7 @@ const {TX_HASH, GRPC_APU_URL} = require('./variables.js');
 const {ParamsRequest, TokenInfosRequest, TransactionStatusRequest} = require('../gen/mhub2/v1/query_pb.js')
 const {QueryClient: HubService} = require('../gen/mhub2/v1/query_grpc_web_pb.js')
 
-const {QueryPricesRequest, QueryEthFeeRequest} = require('../gen/oracle/v1/query_pb.js')
+const {QueryPricesRequest, QueryEthFeeRequest, QueryBscFeeRequest} = require('../gen/oracle/v1/query_pb.js')
 const {QueryClient: OracleService} = require('../gen/oracle/v1/query_grpc_web_pb.js')
 
 
@@ -61,6 +61,14 @@ oracleService.prices(new QueryPricesRequest(), {}, function(err, response) {
 });
 
 oracleService.ethFee(new QueryEthFeeRequest(), {}, function(err, response) {
+  if (err) {
+    console.log(err);
+  } else {
+    console.log(response.toObject());
+  }
+});
+
+oracleService.bscFee(new QueryBscFeeRequest(), {}, function(err, response) {
   if (err) {
     console.log(err);
   } else {
