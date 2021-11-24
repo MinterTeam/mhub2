@@ -133,8 +133,19 @@ func (k Keeper) batchTxExecuted(ctx sdk.Context, chainId types.ChainID, external
 	}
 
 	if totalFee.IsPositive() {
+		var externalBaseCoin string
+
+		switch chainId {
+		case "ethereum":
+			externalBaseCoin = "eth"
+		case "bsc":
+			externalBaseCoin = "bnb"
+		default:
+			return
+		}
+
 		amount := feePaid.ToDec().
-			Mul(k.oracleKeeper.MustGetTokenPrice(ctx, "eth")).
+			Mul(k.oracleKeeper.MustGetTokenPrice(ctx, externalBaseCoin)).
 			Quo(k.oracleKeeper.MustGetTokenPrice(ctx, tokenInfo.Denom)).
 			MulInt64(150).
 			QuoInt64(100).
