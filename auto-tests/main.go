@@ -159,7 +159,7 @@ func main() {
 	hubAddress := strings.Trim(runOrPanic("mhub2 keys show validator1 -a --keyring-backend test"), "\n")
 
 	runOrPanic("mhub2 add-genesis-account --keyring-backend test validator1 100000000000000000000000000%s,100000000000000000000000000hub", denom)
-	runOrPanic("mhub2 prepare-genesis-for-tests %s %s %s %s", erc20addr, bep20addr, "1", "2", wethAddr)
+	runOrPanic("mhub2 prepare-genesis-for-tests %s %s %s %s %s", erc20addr, bep20addr, "1", "2", wethAddr)
 
 	valAddress, _ := cosmos.GetAccount(cosmosMnemonic)
 	signMsgBz := app.MakeEncodingConfig().Marshaler.MustMarshal(&types.DelegateKeysSignMsg{
@@ -195,8 +195,6 @@ func main() {
 	approveERC20ToHub(ethPrivateKey, ethClient, ethContract, erc20addr, ethChainId)
 	approveERC20ToHub(ethPrivateKey, bscClient, bscContract, bep20addr, bscChainId)
 
-	approveERC20ToHub(ethPrivateKey, ethClient, ethContract, wethAddr, ethChainId)
-	approveERC20ToHub(ethPrivateKey, bscClient, bscContract, wbnbAddr, bscChainId)
 	time.Sleep(time.Second * 10)
 
 	ctx := &Context{
@@ -239,6 +237,8 @@ func main() {
 	testMinterToBscTransfer(ctx)
 	testFeeRefund(ctx)
 	testColdStorageTransfer(ctx)
+	testEthEthereumToMinterTransfer(ctx)
+	testEthMinterToEthereumTransfer(ctx)
 
 	// tests associated with holders
 	ctx.TestsWg.Add(2)
@@ -497,7 +497,7 @@ func testFeeForTransactionRelayer(ctx *Context) {
 	randomPk, _ := crypto.GenerateKey()
 	recipient := crypto.PubkeyToAddress(randomPk.PublicKey).Hex()
 	fee := sdk.NewInt(8888)
-	sendMinterCoinToEthereum(ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterMultisig, ctx.MinterClient, recipient, sdk.NewInt(1e18), fee)
+	sendMinterCoinToEthereum(ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterMultisig, ctx.MinterClient, 1, recipient, sdk.NewInt(1e18), fee)
 	minterStatus, err := ctx.MinterClient.Status()
 	if err != nil {
 		panic(err)
@@ -547,7 +547,7 @@ func testFeeForTransactionRelayer(ctx *Context) {
 }
 
 func testDiscountForHolder(ctx *Context, recipient string) {
-	sendMinterCoinToEthereum(ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterMultisig, ctx.MinterClient, recipient, sdk.NewInt(1e18), sdk.NewInt(100))
+	sendMinterCoinToEthereum(ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterMultisig, ctx.MinterClient, 1, recipient, sdk.NewInt(1e18), sdk.NewInt(100))
 
 	fee := int64(100)
 	expectedValue := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(1)))
@@ -632,11 +632,53 @@ func testUpdateHolders(ctx *Context, recipient string) {
 	}
 }
 
+func testEthMinterToEthereumTransfer(ctx *Context) {
+	ctx.TestsWg.Add(1)
+	randomPk, _ := crypto.GenerateKey()
+	recipient := crypto.PubkeyToAddress(randomPk.PublicKey).Hex()
+	sendMinterCoinToEthereum(ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterMultisig, ctx.MinterClient, 2, recipient, sdk.NewInt(1e18), sdk.NewInt(100))
+
+	go func() {
+		fee := int64(100)
+		expectedValue := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(1)))
+		expectedValue = expectedValue.Sub(expectedValue.ToDec().Mul(bridgeCommission).TruncateInt())
+		expectedValue = expectedValue.SubRaw(fee)
+
+		startTime := time.Now()
+		timeout := time.Minute * 5
+
+		for {
+			ethBalanceInt, err := ctx.EthClient.BalanceAt(context.TODO(), common.HexToAddress(recipient), nil)
+			if err != nil {
+				panic(err)
+			}
+
+			ethBalance := sdk.NewIntFromBigInt(ethBalanceInt)
+			if ethBalance.IsZero() {
+				if time.Now().Sub(startTime).Seconds() > timeout.Seconds() {
+					panic("Timeout waiting for the balance to update")
+				}
+
+				time.Sleep(time.Second)
+				continue
+			}
+
+			if !ethBalance.Equal(expectedValue) {
+				panic(fmt.Sprintf("Balance is not equal to expected value. Expected %s, got %s", expectedValue.String(), ethBalance.String()))
+			}
+
+			println("SUCCESS: test Minter -> Ethereum (ETH) transfer")
+			ctx.TestsWg.Done()
+			break
+		}
+	}()
+}
+
 func testMinterToEthereumTransfer(ctx *Context) {
 	ctx.TestsWg.Add(1)
 	randomPk, _ := crypto.GenerateKey()
 	recipient := crypto.PubkeyToAddress(randomPk.PublicKey).Hex()
-	sendMinterCoinToEthereum(ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterMultisig, ctx.MinterClient, recipient, sdk.NewInt(1e18), sdk.NewInt(100))
+	sendMinterCoinToEthereum(ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterMultisig, ctx.MinterClient, 1, recipient, sdk.NewInt(1e18), sdk.NewInt(100))
 
 	go func() {
 		fee := int64(100)
@@ -726,7 +768,7 @@ func testTxTimeout(ctx *Context) {
 	randomPk, _ := crypto.GenerateKey()
 	recipient := crypto.PubkeyToAddress(randomPk.PublicKey).Hex()
 	value := big.NewInt(1e18)
-	sendMinterCoinToEthereum(ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterMultisig, ctx.MinterClient, recipient, sdk.NewInt(1e18), sdk.NewInt(100))
+	sendMinterCoinToEthereum(ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterMultisig, ctx.MinterClient, 1, recipient, sdk.NewInt(1e18), sdk.NewInt(100))
 
 	minterStatus, err := ctx.MinterClient.Status()
 	if err != nil {
@@ -1142,6 +1184,45 @@ func testBSCToEthereumTransfer(ctx *Context) {
 	}()
 }
 
+func testEthEthereumToMinterTransfer(ctx *Context) {
+	ctx.TestsWg.Add(1)
+	randomPk, _ := crypto.GenerateKey()
+	recipient := crypto.PubkeyToAddress(randomPk.PublicKey).Hex()
+	sendEthToAnotherChain(ctx.EthPrivateKey, ctx.EthClient, ctx.EthContract, recipient, ethChainId, "minter", big.NewInt(1e18))
+
+	go func() {
+		expectedValue := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(1)))
+		expectedValue = expectedValue.Sub(expectedValue.ToDec().Mul(bridgeCommission).TruncateInt())
+		expectedValue = expectedValue.SubRaw(100)
+		startTime := time.Now()
+
+		for {
+			response, err := ctx.MinterClient.Address("Mx" + recipient[2:])
+			if err != nil {
+				panic(err)
+			}
+
+			hubBalance := getMinterCoinBalance(response.Balance, "ETH")
+			if hubBalance.IsZero() {
+				if time.Now().Sub(startTime).Seconds() > 180 {
+					panic("Timeout waiting for the balance to update")
+				}
+
+				time.Sleep(time.Second)
+				continue
+			}
+
+			if !hubBalance.Equal(expectedValue) {
+				panic(fmt.Sprintf("Balance is not equal to expected value. Expected %s, got %s", expectedValue.String(), hubBalance.String()))
+			}
+
+			println("SUCCESS: test Eth -> Minter (ETH) transfer")
+			ctx.TestsWg.Done()
+			break
+		}
+	}()
+}
+
 func testEthereumToMinterTransfer(ctx *Context) {
 	ctx.TestsWg.Add(1)
 	randomPk, _ := crypto.GenerateKey()
@@ -1247,7 +1328,7 @@ func testFeeRefund(ctx *Context) {
 	fee := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(15000)))
 	fundMinterAddress("Mx"+recipient[2:], ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterClient)
 
-	sendMinterCoinToEthereum(randomPkString, common.HexToAddress(recipient), ctx.MinterMultisig, ctx.MinterClient, recipient, value, fee)
+	sendMinterCoinToEthereum(randomPkString, common.HexToAddress(recipient), ctx.MinterMultisig, ctx.MinterClient, 1, recipient, value, fee)
 
 	go func() {
 		expectedValue := fee // todo: calculate this value somehow

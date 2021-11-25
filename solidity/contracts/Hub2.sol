@@ -27,12 +27,12 @@ struct LogicCallArgs {
 
 interface IWETH {
     function deposit() external payable;
-    function transfer(address to, uint value) external returns (bool);
     function withdraw(uint) external;
 }
 
 contract Hub2 is ReentrancyGuard {
 	using SafeMath for uint256;
+	using SafeMath for uint;
 	using SafeERC20 for IERC20;
 
 	// These are updated often
@@ -82,6 +82,10 @@ contract Hub2 is ReentrancyGuard {
 		uint256 _eventNonce,
 		bytes _returnData
 	);
+
+	receive() external payable {
+        assert(msg.sender == wethAddress); // only accept ETH via fallback from the WETH contract
+    }
 
 	// TEST FIXTURES
 	// These are here to make it easier to measure gas usage. They should be removed before production
@@ -372,17 +376,15 @@ contract Hub2 is ReentrancyGuard {
 			// Store batch nonce
 			state_lastBatchNonces[_tokenContract] = _batchNonce;
 
-			{
-				// Send transaction amounts to destinations
-				if (_tokenContract == wethAddress) {
-					for (uint256 i = 0; i < _amounts.length; i++) {
-						IWETH(wethAddress).withdraw(_amounts[i]);
-						require(_destinations[i].send(_amounts[i]));
-					}
-				} else {
-					for (uint256 i = 0; i < _amounts.length; i++) {
-						IERC20(_tokenContract).safeTransfer(_destinations[i], _amounts[i]);
-					}
+			// Send transaction amounts to destinations
+			if (_tokenContract == wethAddress) {
+				for (uint256 i = 0; i < _amounts.length; i++) {
+					IWETH(wethAddress).withdraw(_amounts[i]);
+					TransferHelper.safeTransferETH(_destinations[i], _amounts[i]);
+				}
+			} else {
+				for (uint256 i = 0; i < _amounts.length; i++) {
+					IERC20(_tokenContract).safeTransfer(_destinations[i], _amounts[i]);
 				}
 			}
 		}
@@ -604,4 +606,29 @@ contract Hub2 is ReentrancyGuard {
 
 		emit ValsetUpdatedEvent(state_lastValsetNonce, state_lastEventNonce, _validators, _powers);
 	}
+}
+
+library TransferHelper {
+    function safeApprove(address token, address to, uint value) internal {
+        // bytes4(keccak256(bytes('approve(address,uint256)')));
+        (bool success, bytes memory data) = token.call(abi.encodeWithSelector(0x095ea7b3, to, value));
+        require(success && (data.length == 0 || abi.decode(data, (bool))), 'TransferHelper: APPROVE_FAILED');
+    }
+
+    function safeTransfer(address token, address to, uint value) internal {
+        // bytes4(keccak256(bytes('transfer(address,uint256)')));
+        (bool success, bytes memory data) = token.call(abi.encodeWithSelector(0xa9059cbb, to, value));
+        require(success && (data.length == 0 || abi.decode(data, (bool))), 'TransferHelper: TRANSFER_FAILED');
+    }
+
+    function safeTransferFrom(address token, address from, address to, uint value) internal {
+        // bytes4(keccak256(bytes('transferFrom(address,address,uint256)')));
+        (bool success, bytes memory data) = token.call(abi.encodeWithSelector(0x23b872dd, from, to, value));
+        require(success && (data.length == 0 || abi.decode(data, (bool))), 'TransferHelper: TRANSFER_FROM_FAILED');
+    }
+
+    function safeTransferETH(address to, uint value) internal {
+        (bool success,) = to.call{value:value}(new bytes(0));
+        require(success, 'TransferHelper: ETH_TRANSFER_FAILED');
+    }
 }

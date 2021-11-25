@@ -128,10 +128,10 @@ mhub2 tx mhub2 set-delegate-keys <VALADDR> <YOUR_ACCOUNT> <ETH_ADDR> <SIG> --fro
 
 - **Start Hub ↔ Ethereum oracle.** 
 ```
-Ethereum Contract for testnet: 0x5701f4Cb4Ed61E8B6D059Ff803587cb1484Dd0c9
+Ethereum Contract for testnet: 0x26a2F004eD4901Ec98656725D9025Bf634960549
 Ethereum Contract for mainnet: ...
 
-BSC Contract for testnet: 0xE45cb395dBa87E3B4cdCC8731C772f69fde1e752
+BSC Contract for testnet: 0xEf6B1dF05417A9F01769Fba734C3fb712618E834
 BSC Contract for mainnet: ...
 ```
 ```bash
@@ -160,8 +160,8 @@ orchestrator \
 
 - **Start Hub ↔ Minter oracle.** 
 ```
-Minter Multisig for testnet: Mx82ed590d75146ad7c5af75d079ddfac3166149c8
-Start Minter Block for testnet: 3362079
+Minter Multisig for testnet: Mxd92022c3f4d9e95586176ed37dc0e888c5f5a425
+Start Minter Block for testnet: 3365039
 
 Minter Multisig for mainnet: ...
 Start Minter Block for mainnet: ...
