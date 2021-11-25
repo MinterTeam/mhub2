@@ -59,14 +59,14 @@ func GetLatestMinterBlockAndNonce(ctx context.Context, currentNonce uint64) cont
 						continue
 					}
 
-					cmd := command.Command{}
+					cmd := &command.Command{}
 					if err := json.Unmarshal(tx.Payload, &cmd); err != nil {
 						ctx.Logger.Error("Cannot validate incoming tx", "err", err.Error())
 						continue
 					}
 
 					value, _ := sdk.NewIntFromString(sendData.Value)
-					if cmd.Validate(value) == nil {
+					if cmd.ValidateAndComplete(value) == nil {
 						ctx.Logger.Debug("Found deposit")
 						if currentNonce > 0 && currentNonce < ctx.LastEventNonce() {
 							ctx.SetLastCheckedMinterBlock(block.Height - 1)

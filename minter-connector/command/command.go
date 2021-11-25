@@ -16,12 +16,13 @@ type Command struct {
 	Fee       string `json:"fee"`
 }
 
-func (cmd Command) Validate(amount sdk.Int) error {
+func (cmd *Command) ValidateAndComplete(amount sdk.Int) error {
 	switch cmd.Type {
 	case TypeSendToEth, TypeSendToBsc:
 		if !common.IsHexAddress(cmd.Recipient) {
 			return errors.New("wrong recipient")
 		}
+		cmd.Recipient = common.HexToAddress(cmd.Recipient).Hex()
 	case TypeSendToHub:
 		if _, err := sdk.AccAddressFromBech32(cmd.Recipient); err != nil {
 			return err

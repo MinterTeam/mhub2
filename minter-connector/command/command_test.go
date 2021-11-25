@@ -13,7 +13,7 @@ func TestCommand(t *testing.T) {
 		t.Fatalf("Unmarshalling failed: %s", err.Error())
 	}
 
-	if err := cmd.Validate(); err != nil {
+	if err := cmd.ValidateAndComplete(); err != nil {
 		t.Fatalf("Validation failed: %s", err.Error())
 	}
 }
