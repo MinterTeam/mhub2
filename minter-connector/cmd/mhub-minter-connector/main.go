@@ -464,7 +464,6 @@ func relayMinterEvents(ctx context.Context) context.Context {
 
 		for _, block := range blocks.Blocks {
 			ctx.SetLastCheckedMinterBlock(block.Height)
-
 			ctx.Logger.Debug("Checking block", "height", block.Height)
 			for _, tx := range block.Transactions {
 				if tx.Type == uint64(transaction.TypeSend) {
@@ -551,6 +550,8 @@ func relayMinterEvents(ctx context.Context) context.Context {
 					}
 				}
 			}
+
+			ctx.Commit()
 		}
 	}
 

@@ -70,6 +70,7 @@ func GetLatestMinterBlockAndNonce(ctx context.Context, currentNonce uint64) cont
 						ctx.Logger.Debug("Found deposit")
 						if currentNonce > 0 && currentNonce < ctx.LastEventNonce() {
 							ctx.SetLastCheckedMinterBlock(block.Height - 1)
+							ctx.Commit()
 							return ctx
 						}
 
@@ -82,6 +83,7 @@ func GetLatestMinterBlockAndNonce(ctx context.Context, currentNonce uint64) cont
 
 					if currentNonce > 0 && currentNonce < ctx.LastEventNonce() {
 						ctx.SetLastCheckedMinterBlock(block.Height - 1)
+						ctx.Commit()
 						return ctx
 					}
 
@@ -98,6 +100,7 @@ func GetLatestMinterBlockAndNonce(ctx context.Context, currentNonce uint64) cont
 
 						if currentNonce > 0 && currentNonce < ctx.LastEventNonce() {
 							ctx.SetLastCheckedMinterBlock(block.Height - 1)
+							ctx.Commit()
 							return ctx
 						}
 
@@ -108,6 +111,7 @@ func GetLatestMinterBlockAndNonce(ctx context.Context, currentNonce uint64) cont
 			}
 
 			ctx.SetLastCheckedMinterBlock(block.Height)
+			ctx.Commit()
 		}
 	}
 
