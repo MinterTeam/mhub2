@@ -126,6 +126,9 @@ service Query {
   rpc TransactionStatus(TransactionStatusRequest) returns (TransactionStatusResponse) {
       option (google.api.http).get = "/mhub2/v1/transaction_status/{tx_hash}";
   }
+  rpc DiscountForHolder(DiscountForHolderRequest) returns (DiscountForHolderResponse) {
+      option (google.api.http).get = "/mhub2/v1/discount_for_holder/{address}";
+  }
 }
 
 message TokenInfosRequest {}
@@ -133,6 +136,12 @@ message TokenInfosResponse { TokenInfos list = 1 [ (gogoproto.nullable) = false 
 
 message TransactionStatusRequest { string tx_hash = 1; }
 message TransactionStatusResponse { TxStatus status = 1 [ (gogoproto.nullable) = true ]; }
+
+message DiscountForHolderRequest { string address = 1; }
+message DiscountForHolderResponse { bytes discount = 1 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable) = false
+]; }
 
 //  rpc Params
 message ParamsRequest {}

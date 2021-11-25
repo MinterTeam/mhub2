@@ -62,8 +62,8 @@ func (k Keeper) EthFee(context context.Context, _ *types.QueryEthFeeRequest) (*t
 	}
 
 	return &types.QueryEthFeeResponse{
-		Min:  gasPrice.Mul(ethPrice).MulInt64(int64(k.GetMinSingleWithdrawGas(ctx))).QuoInt64(gweiInEth).TruncateInt(),
-		Fast: gasPrice.Mul(ethPrice).MulInt64(int64(k.GetMinBatchGas(ctx))).QuoInt64(gweiInEth).TruncateInt(),
+		Min:  gasPrice.Mul(ethPrice).MulInt64(int64(k.GetMinSingleWithdrawGas(ctx))).QuoInt64(gweiInEth),
+		Fast: gasPrice.Mul(ethPrice).MulInt64(int64(k.GetMinBatchGas(ctx))).QuoInt64(gweiInEth),
 	}, nil
 }
 
@@ -81,7 +81,7 @@ func (k Keeper) BscFee(context context.Context, _ *types.QueryBscFeeRequest) (*t
 	}
 
 	return &types.QueryBscFeeResponse{
-		Min:  gasPrice.Mul(bnbPrice).MulInt64(int64(k.GetMinSingleWithdrawGas(ctx))).QuoInt64(gweiInEth).TruncateInt(),
-		Fast: gasPrice.Mul(bnbPrice).MulInt64(int64(k.GetMinBatchGas(ctx))).QuoInt64(gweiInEth).TruncateInt(),
+		Min:  gasPrice.Mul(bnbPrice).MulInt64(int64(k.GetMinSingleWithdrawGas(ctx))).QuoInt64(gweiInEth),
+		Fast: gasPrice.Mul(bnbPrice).MulInt64(int64(k.GetMinBatchGas(ctx))).QuoInt64(gweiInEth),
 	}, nil
 }
