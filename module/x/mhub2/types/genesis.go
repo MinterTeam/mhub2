@@ -154,7 +154,7 @@ func DefaultGenesisState() *GenesisState {
 			},
 			{
 				Id:               4,
-				Denom:            "weth",
+				Denom:            "eth",
 				ChainId:          "minter",
 				ExternalTokenId:  "12345",
 				ExternalDecimals: 18,
@@ -162,7 +162,7 @@ func DefaultGenesisState() *GenesisState {
 			},
 			{
 				Id:               5,
-				Denom:            "weth",
+				Denom:            "eth",
 				ChainId:          "ethereum",
 				ExternalTokenId:  "12345",
 				ExternalDecimals: 18,
