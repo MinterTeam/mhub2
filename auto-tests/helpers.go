@@ -85,7 +85,7 @@ func sendMinterCoinToEthereum(privateKeyString string, sender common.Address, mu
 	if err != nil {
 		panic(err)
 	}
-	signedTransaction, _ := tx.SetNonce(nonce).SetPayload([]byte("{\"recipient\":\"" + to + "\",\"type\":\"send_to_eth\",\"fee\":\"" + fee.String() + "\"}")).Sign(privateKeyString)
+	signedTransaction, _ := tx.SetNonce(nonce).SetPayload([]byte("{\"recipient\":\"" + to + "\",\"type\":\"send_to_ethereum\",\"fee\":\"" + fee.String() + "\"}")).Sign(privateKeyString)
 
 	encode, _ := signedTransaction.Encode()
 

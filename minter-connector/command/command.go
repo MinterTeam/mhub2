@@ -6,7 +6,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-const TypeSendToEth = "send_to_eth"
+const TypeSendToEth = "send_to_ethereum"
 const TypeSendToHub = "send_to_hub"
 const TypeSendToBsc = "send_to_bsc"
 

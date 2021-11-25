@@ -51,7 +51,7 @@ func (k Keeper) CurrentEpoch(context context.Context, _ *types.QueryCurrentEpoch
 func (k Keeper) EthFee(context context.Context, _ *types.QueryEthFeeRequest) (*types.QueryEthFeeResponse, error) {
 	ctx := sdk.UnwrapSDKContext(context)
 
-	gasPrice, err := k.GetTokenPrice(ctx, "eth/gas")
+	gasPrice, err := k.GetTokenPrice(ctx, "ethereum/gas")
 	if err != nil {
 		return nil, sdkerrors.Wrap(err, "gas price")
 	}

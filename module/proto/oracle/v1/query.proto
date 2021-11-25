@@ -14,7 +14,7 @@ service Query {
         option (google.api.http).get = "/oracle/v1/epoch/current";
     }
     rpc EthFee(QueryEthFeeRequest) returns(QueryEthFeeResponse) {
-        option (google.api.http).get = "/oracle/v1/eth_fee";
+        option (google.api.http).get = "/oracle/v1/ethereum_fee";
     }
     rpc BscFee(QueryBscFeeRequest) returns(QueryBscFeeResponse) {
         option (google.api.http).get = "/oracle/v1/bsc_fee";

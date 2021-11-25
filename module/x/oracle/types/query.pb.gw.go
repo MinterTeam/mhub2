@@ -391,7 +391,7 @@ func RegisterQueryHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 var (
 	pattern_Query_CurrentEpoch_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"oracle", "v1", "epoch", "current"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_Query_EthFee_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"oracle", "v1", "eth_fee"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_EthFee_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"oracle", "v1", "ethereum_fee"}, "", runtime.AssumeColonVerbOpt(true)))
 
 	pattern_Query_BscFee_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"oracle", "v1", "bsc_fee"}, "", runtime.AssumeColonVerbOpt(true)))
 
