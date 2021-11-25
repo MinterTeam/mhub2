@@ -53,6 +53,8 @@ var (
 	// ParamsStoreKeyAverageEthereumBlockTime stores the signed blocks window
 	ParamsStoreKeyAverageEthereumBlockTime = []byte("AverageEthereumBlockTime")
 
+	ParamsStoreKeyAverageBscBlockTime = []byte("AverageBscBlockTime")
+
 	// ParamsStoreSlashFractionSignerSetTx stores the slash fraction valset
 	ParamsStoreSlashFractionSignerSetTx = []byte("SlashFractionSignerSetTx")
 
@@ -147,6 +149,22 @@ func DefaultGenesisState() *GenesisState {
 				Denom:            "hub",
 				ChainId:          "minter",
 				ExternalTokenId:  "1839",
+				ExternalDecimals: 18,
+				Commission:       sdk.NewDec(1).QuoInt64(100),
+			},
+			{
+				Id:               4,
+				Denom:            "weth",
+				ChainId:          "minter",
+				ExternalTokenId:  "12345",
+				ExternalDecimals: 18,
+				Commission:       sdk.NewDec(1).QuoInt64(100),
+			},
+			{
+				Id:               5,
+				Denom:            "weth",
+				ChainId:          "ethereum",
+				ExternalTokenId:  "12345",
 				ExternalDecimals: 18,
 				Commission:       sdk.NewDec(1).QuoInt64(100),
 			},
@@ -255,6 +273,7 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(ParamsStoreKeyAverageBlockTime, &p.AverageBlockTime, validateAverageBlockTime),
 		paramtypes.NewParamSetPair(ParamsStoreKeyTargetEthTxTimeout, &p.TargetEthTxTimeout, validateTargetEthTxTimeout),
 		paramtypes.NewParamSetPair(ParamsStoreKeyAverageEthereumBlockTime, &p.AverageEthereumBlockTime, validateAverageEthereumBlockTime),
+		paramtypes.NewParamSetPair(ParamsStoreKeyAverageBscBlockTime, &p.AverageBscBlockTime, validateAverageEthereumBlockTime),
 		paramtypes.NewParamSetPair(ParamsStoreSlashFractionSignerSetTx, &p.SlashFractionSignerSetTx, validateSlashFractionSignerSetTx),
 		paramtypes.NewParamSetPair(ParamsStoreSlashFractionBatch, &p.SlashFractionBatch, validateSlashFractionBatch),
 		paramtypes.NewParamSetPair(ParamsStoreSlashFractionEthereumSignature, &p.SlashFractionEthereumSignature, validateSlashFractionEthereumSignature),

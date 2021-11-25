@@ -70,6 +70,8 @@ type Context struct {
 	EthAddress          common.Address
 	MinterMultisig      string
 	CosmosMnemonic      string
+	WethAddr            string
+	WbnbAddr            string
 }
 
 var bridgeCommission, _ = sdk.NewDecFromStr("0.01")
@@ -124,15 +126,17 @@ func main() {
 		ethClient   *ethclient.Client
 		ethContract string
 		erc20addr   string
+		wethAddr    string
 
 		bscClient   *ethclient.Client
 		bscContract string
 		bep20addr   string
+		wbnbAddr    string
 	)
 
 	wg.Add(2)
 	go func() {
-		ethClient, err, ethContract, erc20addr = runEvmChain(ethChainId, wd, ethAddress, ethPrivateKey, ethPrivateKeyString, "8545")
+		ethClient, err, ethContract, erc20addr, wethAddr = runEvmChain(ethChainId, wd, ethAddress, ethPrivateKey, ethPrivateKeyString, "8545")
 		if err != nil {
 			panic(err)
 		}
@@ -140,7 +144,7 @@ func main() {
 	}()
 
 	go func() {
-		bscClient, err, bscContract, bep20addr = runEvmChain(bscChainId, wd, ethAddress, ethPrivateKey, ethPrivateKeyString, "8546")
+		bscClient, err, bscContract, bep20addr, wbnbAddr = runEvmChain(bscChainId, wd, ethAddress, ethPrivateKey, ethPrivateKeyString, "8546")
 		if err != nil {
 			panic(err)
 		}
@@ -155,7 +159,7 @@ func main() {
 	hubAddress := strings.Trim(runOrPanic("mhub2 keys show validator1 -a --keyring-backend test"), "\n")
 
 	runOrPanic("mhub2 add-genesis-account --keyring-backend test validator1 100000000000000000000000000%s,100000000000000000000000000hub", denom)
-	runOrPanic("mhub2 prepare-genesis-for-tests %s %s %s", erc20addr, bep20addr, "1")
+	runOrPanic("mhub2 prepare-genesis-for-tests %s %s %s %s", erc20addr, bep20addr, "1", "2", wethAddr)
 
 	valAddress, _ := cosmos.GetAccount(cosmosMnemonic)
 	signMsgBz := app.MakeEncodingConfig().Marshaler.MustMarshal(&types.DelegateKeysSignMsg{
@@ -190,6 +194,9 @@ func main() {
 	go runOrPanic("orchestrator --chain-id=bsc --eth-fee-calculator-url=http://localhost:8840 --cosmos-phrase=%s --ethereum-key=%s --cosmos-grpc=%s --ethereum-rpc=%s --contract-address=%s --fees=%s --address-prefix=hub --metrics-listen=127.0.0.1:3001", cosmosMnemonic, ethPrivateKeyString, "http://localhost:9090", "http://localhost:8546", bscContract, denom)
 	approveERC20ToHub(ethPrivateKey, ethClient, ethContract, erc20addr, ethChainId)
 	approveERC20ToHub(ethPrivateKey, bscClient, bscContract, bep20addr, bscChainId)
+
+	approveERC20ToHub(ethPrivateKey, ethClient, ethContract, wethAddr, ethChainId)
+	approveERC20ToHub(ethPrivateKey, bscClient, bscContract, wbnbAddr, bscChainId)
 	time.Sleep(time.Second * 10)
 
 	ctx := &Context{
@@ -207,6 +214,8 @@ func main() {
 		MinterClient:        minterClient,
 		MinterMultisig:      minterMultisig,
 		CosmosMnemonic:      cosmosMnemonic,
+		WethAddr:            wethAddr,
+		WbnbAddr:            wbnbAddr,
 	}
 
 	println("Start running preparation tests")

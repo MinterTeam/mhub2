@@ -568,7 +568,8 @@ contract Hub2 is ReentrancyGuard {
 		uint256 _powerThreshold,
 		// The validator set
 		address[] memory _validators,
-		uint256[] memory _powers
+		uint256[] memory _powers,
+		address _wethAddress
 	) public {
 		// CHECKS
 
@@ -597,7 +598,7 @@ contract Hub2 is ReentrancyGuard {
 		state_powerThreshold = _powerThreshold;
 		state_lastValsetCheckpoint = newCheckpoint;
 
-		wethAddress = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+		wethAddress = _wethAddress;
 
 		// LOGS
 

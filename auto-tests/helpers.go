@@ -9,6 +9,7 @@ import (
 	"github.com/MinterTeam/mhub2/auto-tests/erc20"
 	"github.com/MinterTeam/mhub2/auto-tests/help"
 	"github.com/MinterTeam/mhub2/auto-tests/hub2"
+	"github.com/MinterTeam/mhub2/auto-tests/weth"
 	minterTypes "github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-sdk/v2/api/grpc_client"
 	"github.com/MinterTeam/minter-go-sdk/v2/transaction"
@@ -146,7 +147,8 @@ func fundMinterAddress(to string, privateKeyString string, sender common.Address
 	tx, _ := transaction.NewBuilder(transaction.TestNetChainID).NewTransaction(
 		transaction.NewMultisendData().
 			AddItem(transaction.NewSendData().MustSetTo(to).SetCoin(0).SetValue(transaction.BipToPip(big.NewInt(100000)))).
-			AddItem(transaction.NewSendData().MustSetTo(to).SetCoin(1).SetValue(transaction.BipToPip(big.NewInt(100000)))),
+			AddItem(transaction.NewSendData().MustSetTo(to).SetCoin(1).SetValue(transaction.BipToPip(big.NewInt(100000)))).
+			AddItem(transaction.NewSendData().MustSetTo(to).SetCoin(2).SetValue(transaction.BipToPip(big.NewInt(100000)))),
 	)
 
 	nonce, err := client.Nonce(addr)
@@ -209,7 +211,7 @@ func createMinterMultisig(prKey string, ethAddress common.Address, client *grpc_
 	return transaction.MultisigAddress(addr, nonce)
 }
 
-func runEvmChain(chainId int, wd string, ethAddress common.Address, privateKey *ecdsa.PrivateKey, privateKeyString string, port string) (*ethclient.Client, error, string, string) {
+func runEvmChain(chainId int, wd string, ethAddress common.Address, privateKey *ecdsa.PrivateKey, privateKeyString string, port string) (*ethclient.Client, error, string, string, string) {
 	runOrPanic("geth --networkid %d --datadir %s/data/eth-%d init data/eth-genesis-%d.json", chainId, wd, chainId, chainId)
 	if err := os.WriteFile(fmt.Sprintf("data/private-key-%d.txt", chainId), []byte(privateKeyString), os.ModePerm); err != nil {
 		panic(err)
@@ -230,19 +232,22 @@ func runEvmChain(chainId int, wd string, ethAddress common.Address, privateKey *
 		break
 	}
 
+	wethAddr := deployWeth(privateKey, client, int64(chainId))
+
 	// deploy contract
-	contract := deployContract(privateKey, client, int64(chainId))
+	contract := deployContract(privateKey, client, wethAddr, int64(chainId))
 
 	// deploy erc20
 	erc20addr := deployERC20(privateKey, client, int64(chainId))
 
 	// fund contract with erc20
 	fundContractWithErc20(privateKey, client, contract, erc20addr, int64(chainId))
+	fundContractWithErc20(privateKey, client, contract, wethAddr, int64(chainId))
 
-	return client, err, contract, erc20addr
+	return client, err, contract, erc20addr, wethAddr
 }
 
-func deployContract(privateKey *ecdsa.PrivateKey, client *ethclient.Client, chainId int64) string {
+func deployContract(privateKey *ecdsa.PrivateKey, client *ethclient.Client, wethAddress string, chainId int64) string {
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
 	nonce, err := client.PendingNonceAt(context.TODO(), addr)
 	if err != nil {
@@ -275,7 +280,7 @@ func deployContract(privateKey *ecdsa.PrivateKey, client *ethclient.Client, chai
 	)
 
 	copy(gravityId[:], "defaultgravityid")
-	address, tx, _, err := hub2.DeployHub2(auth, client, gravityId, powerThreshold, validators, powers)
+	address, tx, _, err := hub2.DeployHub2(auth, client, gravityId, powerThreshold, validators, powers, common.HexToAddress(wethAddress))
 	if err != nil {
 		panic(err)
 	}
@@ -307,6 +312,37 @@ func deployERC20(privateKey *ecdsa.PrivateKey, client *ethclient.Client, chainId
 	auth.GasPrice = gasPrice
 
 	address, tx, _, err := erc20.DeployErc20(auth, client, addr, "HUB", "HUB", 18)
+	if err != nil {
+		panic(err)
+	}
+
+	waitEthTx(tx.Hash(), client)
+
+	return address.Hex()
+}
+
+func deployWeth(privateKey *ecdsa.PrivateKey, client *ethclient.Client, chainId int64) string {
+	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
+	nonce, err := client.PendingNonceAt(context.TODO(), addr)
+	if err != nil {
+		panic(err)
+	}
+
+	gasPrice, err := client.SuggestGasPrice(context.TODO())
+	if err != nil {
+		panic(err)
+	}
+
+	auth, err := bind.NewKeyedTransactorWithChainID(privateKey, big.NewInt(chainId))
+	if err != nil {
+		panic(err)
+	}
+	auth.Nonce = big.NewInt(int64(nonce))
+	auth.Value = big.NewInt(0)
+	auth.GasLimit = uint64(3000000)
+	auth.GasPrice = gasPrice
+
+	address, tx, _, err := weth.DeployWeth(auth, client)
 	if err != nil {
 		panic(err)
 	}
@@ -647,6 +683,10 @@ func populateMinterGenesis(pubkey minterTypes.Pubkey, address common.Address) {
 						Coin:  1,
 						Value: "1000000000000000000000000",
 					},
+					{
+						Coin:  2,
+						Value: "1000000000000000000000000",
+					},
 				},
 				Nonce: 0,
 			},
@@ -656,6 +696,16 @@ func populateMinterGenesis(pubkey minterTypes.Pubkey, address common.Address) {
 				ID:        1,
 				Name:      "HUB",
 				Symbol:    minterTypes.StrToCoinSymbol("HUB"),
+				Volume:    "1000000000000000000000000",
+				Crr:       100,
+				Reserve:   "1000000000000000000000000",
+				MaxSupply: "1000000000000000000000000",
+				Version:   0,
+			},
+			{
+				ID:        2,
+				Name:      "ETH",
+				Symbol:    minterTypes.StrToCoinSymbol("ETH"),
 				Volume:    "1000000000000000000000000",
 				Crr:       100,
 				Reserve:   "1000000000000000000000000",
@@ -758,7 +808,7 @@ func deployContractsAndMultisig(prKeyString string) {
 			panic(err)
 		}
 
-		contract := deployContract(pk, client, 3)
+		contract := deployContract(pk, client, "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", 3)
 
 		println("eth", contract)
 	}
@@ -769,7 +819,7 @@ func deployContractsAndMultisig(prKeyString string) {
 			panic(err)
 		}
 
-		contract := deployContract(pk, client, 97)
+		contract := deployContract(pk, client, "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", 97)
 
 		println("bsc", contract)
 	}
