@@ -168,16 +168,17 @@ func DefaultParams() *Params {
 		SignedSignerSetTxsWindow:                  10000,
 		SignedBatchesWindow:                       10000,
 		EthereumSignaturesWindow:                  10000,
-		TargetEthTxTimeout:                        43200000,
+		TargetEthTxTimeout:                        86400000,
 		AverageBlockTime:                          5000,
 		AverageEthereumBlockTime:                  15000,
+		AverageBscBlockTime:                       5000,
 		SlashFractionSignerSetTx:                  sdk.NewDec(1).Quo(sdk.NewDec(1000)),
 		SlashFractionBatch:                        sdk.NewDec(1).Quo(sdk.NewDec(1000)),
 		SlashFractionEthereumSignature:            sdk.NewDec(1).Quo(sdk.NewDec(1000)),
 		SlashFractionConflictingEthereumSignature: sdk.NewDec(1).Quo(sdk.NewDec(1000)),
 		UnbondSlashingSignerSetTxsWindow:          10000,
 		Chains:                                    []string{"ethereum", "minter", "bsc", "hub"},
-		OutgoingTxTimeout:                         43200000 - 1,
+		OutgoingTxTimeout:                         86400000 - 1,
 	}
 }
 

@@ -61,6 +61,18 @@ func (k Keeper) BuildBatchTx(ctx sdk.Context, chainId types.ChainID, externalTok
 // This gets the batch timeout height in External blocks.
 func (k Keeper) getBatchTimeoutHeight(ctx sdk.Context, chainId types.ChainID) uint64 {
 	params := k.GetParams(ctx)
+	var averageBlockTime uint64
+	switch chainId {
+	case "ethereum":
+		averageBlockTime = params.AverageEthereumBlockTime
+	case "bsc":
+		averageBlockTime = params.AverageBscBlockTime
+	case "minter":
+		averageBlockTime = 5000
+	case "hub":
+		averageBlockTime = params.AverageBlockTime
+	}
+
 	currentCosmosHeight := ctx.BlockHeight()
 	// we store the last observed Cosmos and External heights, we do not concern ourselves if these values are zero because
 	// no batch can be produced if the last External block height is not first populated by a deposit event.
@@ -71,10 +83,10 @@ func (k Keeper) getBatchTimeoutHeight(ctx sdk.Context, chainId types.ChainID) ui
 	// we project how long it has been in milliseconds since the last External block height was observed
 	projectedMillis := (uint64(currentCosmosHeight) - heights.CosmosHeight) * params.AverageBlockTime
 	// we convert that projection into the current External height using the average External block time in millis
-	projectedCurrentExternalHeight := (projectedMillis / params.AverageEthereumBlockTime) + heights.ExternalHeight
+	projectedCurrentExternalHeight := (projectedMillis / averageBlockTime) + heights.ExternalHeight
 	// we convert our target time for block timeouts (lets say 12 hours) into a number of blocks to
 	// place on top of our projection of the current External block height.
-	blocksToAdd := params.TargetEthTxTimeout / params.AverageEthereumBlockTime
+	blocksToAdd := params.TargetEthTxTimeout / averageBlockTime
 	return projectedCurrentExternalHeight + blocksToAdd
 }
 

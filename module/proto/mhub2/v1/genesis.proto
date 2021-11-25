@@ -82,26 +82,27 @@ message Params {
   uint64 target_eth_tx_timeout = 10;
   uint64 average_block_time = 11;
   uint64 average_ethereum_block_time = 12;
+  uint64 average_bsc_block_time = 13;
   // TODO: slash fraction for contract call txs too
-  bytes slash_fraction_signer_set_tx = 13 [
+  bytes slash_fraction_signer_set_tx = 14 [
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
     (gogoproto.nullable) = false
   ];
-  bytes slash_fraction_batch = 14 [
+  bytes slash_fraction_batch = 15 [
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
     (gogoproto.nullable) = false
   ];
-  bytes slash_fraction_ethereum_signature = 15 [
+  bytes slash_fraction_ethereum_signature = 16 [
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
     (gogoproto.nullable) = false
   ];
-  bytes slash_fraction_conflicting_ethereum_signature = 16 [
+  bytes slash_fraction_conflicting_ethereum_signature = 17 [
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
     (gogoproto.nullable) = false
   ];
-  uint64 unbond_slashing_signer_set_txs_window = 17;
-  repeated string chains = 18;
-  uint64 outgoing_tx_timeout = 19;
+  uint64 unbond_slashing_signer_set_txs_window = 18;
+  repeated string chains = 19;
+  uint64 outgoing_tx_timeout = 20;
 }
 
 // GenesisState struct

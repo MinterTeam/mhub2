@@ -1515,6 +1515,10 @@
           "type": "string",
           "format": "uint64"
         },
+        "average_bsc_block_time": {
+          "type": "string",
+          "format": "uint64"
+        },
         "slash_fraction_signer_set_tx": {
           "type": "string",
           "format": "byte",
