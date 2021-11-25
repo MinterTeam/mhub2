@@ -678,6 +678,7 @@ func testMinterToBscTransfer(ctx *Context) {
 		expectedValue := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(1)))
 		expectedValue = expectedValue.Sub(expectedValue.ToDec().Mul(bridgeCommission).TruncateInt())
 		expectedValue = expectedValue.SubRaw(fee)
+		expectedValue = expectedValue.QuoRaw(1e12)
 
 		startTime := time.Now()
 		timeout := time.Minute * 5
