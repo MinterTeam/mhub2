@@ -632,6 +632,36 @@
         ]
       }
     },
+    "/mhub2/v1/discount_for_holder/{address}": {
+      "get": {
+        "operationId": "Query_DiscountForHolder",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1DiscountForHolderResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
     "/mhub2/v1/logic_calls/external_signatures/{chain_id}": {
       "get": {
         "operationId": "Query_ContractCallTxConfirmations",
@@ -1372,6 +1402,15 @@
         }
       }
     },
+    "v1DiscountForHolderResponse": {
+      "type": "object",
+      "properties": {
+        "discount": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
     "v1ExternalIdToDenomResponse": {
       "type": "object",
       "properties": {
@@ -1473,6 +1512,10 @@
           "format": "uint64"
         },
         "average_ethereum_block_time": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "average_bsc_block_time": {
           "type": "string",
           "format": "uint64"
         },

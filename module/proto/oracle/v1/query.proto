@@ -14,7 +14,7 @@ service Query {
         option (google.api.http).get = "/oracle/v1/epoch/current";
     }
     rpc EthFee(QueryEthFeeRequest) returns(QueryEthFeeResponse) {
-        option (google.api.http).get = "/oracle/v1/eth_fee";
+        option (google.api.http).get = "/oracle/v1/ethereum_fee";
     }
     rpc BscFee(QueryBscFeeRequest) returns(QueryBscFeeResponse) {
         option (google.api.http).get = "/oracle/v1/bsc_fee";
@@ -39,11 +39,11 @@ message QueryHoldersResponse { Holders holders = 1; }
 message QueryEthFeeRequest {}
 message QueryEthFeeResponse {
     string min = 1 [
-                      (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+                      (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
                       (gogoproto.nullable) = false
                      ];
     string fast = 2 [
-                   (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+                   (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
                    (gogoproto.nullable) = false
                    ];
 }
@@ -51,11 +51,11 @@ message QueryEthFeeResponse {
 message QueryBscFeeRequest {}
 message QueryBscFeeResponse {
     string min = 1 [
-        (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+        (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
         (gogoproto.nullable) = false
     ];
     string fast = 2 [
-        (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+        (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
         (gogoproto.nullable) = false
     ];
 }

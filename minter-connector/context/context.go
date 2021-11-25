@@ -78,22 +78,18 @@ func (c *Context) LastValsetNonce() uint64 {
 
 func (c *Context) SetLastCheckedMinterBlock(lastCheckedMinterBlock uint64) {
 	c.status.LastCheckedMinterBlock = lastCheckedMinterBlock
-	c.Commit()
 }
 
 func (c *Context) SetLastEventNonce(lastEventNonce uint64) {
 	c.status.LastEventNonce = lastEventNonce
-	c.Commit()
 }
 
 func (c *Context) SetLastBatchNonce(lastBatchNonce uint64) {
 	c.status.LastBatchNonce = lastBatchNonce
-	c.Commit()
 }
 
 func (c *Context) SetLastValsetNonce(lastValsetNonce uint64) {
 	c.status.LastValsetNonce = lastValsetNonce
-	c.Commit()
 }
 
 func (c *Context) Commit() {

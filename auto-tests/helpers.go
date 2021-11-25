@@ -85,7 +85,36 @@ func sendMinterCoinToEthereum(privateKeyString string, sender common.Address, mu
 	if err != nil {
 		panic(err)
 	}
-	signedTransaction, _ := tx.SetNonce(nonce).SetPayload([]byte("{\"recipient\":\"" + to + "\",\"type\":\"send_to_eth\",\"fee\":\"" + fee.String() + "\"}")).Sign(privateKeyString)
+	signedTransaction, _ := tx.SetNonce(nonce).SetPayload([]byte("{\"recipient\":\"" + to + "\",\"type\":\"send_to_ethereum\",\"fee\":\"" + fee.String() + "\"}")).Sign(privateKeyString)
+
+	encode, _ := signedTransaction.Encode()
+
+	response, err := client.SendTransaction(encode)
+	if err != nil {
+		panic(err)
+	}
+
+	if response.Code != 0 {
+		panic(response.Log)
+	}
+
+	waitMinterTx(client, response.Hash)
+}
+
+func sendMinterCoinToBsc(privateKeyString string, sender common.Address, multisig string, client *grpc_client.Client, to string, value, fee sdk.Int) {
+	minterSenderLock.Lock()
+	defer minterSenderLock.Unlock()
+
+	addr := "Mx" + sender.Hex()[2:]
+	tx, _ := transaction.NewBuilder(transaction.TestNetChainID).NewTransaction(
+		transaction.NewSendData().MustSetTo(multisig).SetCoin(1).SetValue(value.BigInt()),
+	)
+
+	nonce, err := client.Nonce(addr)
+	if err != nil {
+		panic(err)
+	}
+	signedTransaction, _ := tx.SetNonce(nonce).SetPayload([]byte("{\"recipient\":\"" + to + "\",\"type\":\"send_to_bsc\",\"fee\":\"" + fee.String() + "\"}")).Sign(privateKeyString)
 
 	encode, _ := signedTransaction.Encode()
 

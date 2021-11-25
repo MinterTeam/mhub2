@@ -55,7 +55,7 @@
         ]
       }
     },
-    "/oracle/v1/eth_fee": {
+    "/oracle/v1/ethereum_fee": {
       "get": {
         "operationId": "Query_EthFee",
         "responses": {

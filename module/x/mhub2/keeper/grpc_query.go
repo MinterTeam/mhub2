@@ -18,6 +18,12 @@ import (
 
 var _ types.QueryServer = Keeper{}
 
+func (k Keeper) DiscountForHolder(c context.Context, request *types.DiscountForHolderRequest) (*types.DiscountForHolderResponse, error) {
+	return &types.DiscountForHolderResponse{
+		Discount: sdk.NewDec(1).Sub(k.GetCommissionForHolder(sdk.UnwrapSDKContext(c), []string{request.Address}, sdk.NewDec(1))),
+	}, nil
+}
+
 func (k Keeper) TransactionStatus(ctx context.Context, request *types.TransactionStatusRequest) (*types.TransactionStatusResponse, error) {
 	return &types.TransactionStatusResponse{Status: k.GetTxStatus(sdk.UnwrapSDKContext(ctx), request.TxHash)}, nil
 }

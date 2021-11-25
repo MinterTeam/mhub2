@@ -51,7 +51,7 @@ func (k Keeper) CurrentEpoch(context context.Context, _ *types.QueryCurrentEpoch
 func (k Keeper) EthFee(context context.Context, _ *types.QueryEthFeeRequest) (*types.QueryEthFeeResponse, error) {
 	ctx := sdk.UnwrapSDKContext(context)
 
-	gasPrice, err := k.GetTokenPrice(ctx, "eth/gas")
+	gasPrice, err := k.GetTokenPrice(ctx, "ethereum/gas")
 	if err != nil {
 		return nil, sdkerrors.Wrap(err, "gas price")
 	}
@@ -62,8 +62,8 @@ func (k Keeper) EthFee(context context.Context, _ *types.QueryEthFeeRequest) (*t
 	}
 
 	return &types.QueryEthFeeResponse{
-		Min:  gasPrice.Mul(ethPrice).MulInt64(int64(k.GetMinSingleWithdrawGas(ctx))).QuoInt64(gweiInEth).TruncateInt(),
-		Fast: gasPrice.Mul(ethPrice).MulInt64(int64(k.GetMinBatchGas(ctx))).QuoInt64(gweiInEth).TruncateInt(),
+		Min:  gasPrice.Mul(ethPrice).MulInt64(int64(k.GetMinSingleWithdrawGas(ctx))).QuoInt64(gweiInEth),
+		Fast: gasPrice.Mul(ethPrice).MulInt64(int64(k.GetMinBatchGas(ctx))).QuoInt64(gweiInEth),
 	}, nil
 }
 
@@ -77,11 +77,11 @@ func (k Keeper) BscFee(context context.Context, _ *types.QueryBscFeeRequest) (*t
 
 	bnbPrice, err := k.GetTokenPrice(ctx, "bnb")
 	if err != nil {
-		return nil, sdkerrors.Wrap(err, "eth price")
+		return nil, sdkerrors.Wrap(err, "bnb price")
 	}
 
 	return &types.QueryBscFeeResponse{
-		Min:  gasPrice.Mul(bnbPrice).MulInt64(int64(k.GetMinSingleWithdrawGas(ctx))).QuoInt64(gweiInEth).TruncateInt(),
-		Fast: gasPrice.Mul(bnbPrice).MulInt64(int64(k.GetMinBatchGas(ctx))).QuoInt64(gweiInEth).TruncateInt(),
+		Min:  gasPrice.Mul(bnbPrice).MulInt64(int64(k.GetMinSingleWithdrawGas(ctx))).QuoInt64(gweiInEth),
+		Fast: gasPrice.Mul(bnbPrice).MulInt64(int64(k.GetMinBatchGas(ctx))).QuoInt64(gweiInEth),
 	}, nil
 }

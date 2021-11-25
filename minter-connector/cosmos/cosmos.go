@@ -67,14 +67,20 @@ func CreateClaims(orcAddress sdk.AccAddress, deposits []Deposit, batches []Batch
 		amount, _ := sdk.NewIntFromString(deposit.Amount)
 		fee, _ := sdk.NewIntFromString(deposit.Fee)
 
-		if deposit.Type == command.TypeSendToEth {
+		switch deposit.Type {
+		case command.TypeSendToEth, command.TypeSendToBsc:
+			receiverChain := "ethereum"
+			if deposit.Type == command.TypeSendToBsc {
+				receiverChain = "bsc"
+			}
+
 			event, err := mhub.PackEvent(&mhub.TransferToChainEvent{
 				EventNonce:       deposit.EventNonce,
 				ExternalCoinId:   fmt.Sprintf("%d", deposit.CoinID),
 				Amount:           amount,
 				Fee:              fee,
 				Sender:           "0x" + deposit.Sender[2:],
-				ReceiverChainId:  "ethereum",
+				ReceiverChainId:  receiverChain,
 				ExternalReceiver: deposit.Recipient,
 				ExternalHeight:   deposit.Height,
 				TxHash:           deposit.TxHash,
@@ -87,7 +93,7 @@ func CreateClaims(orcAddress sdk.AccAddress, deposits []Deposit, batches []Batch
 				Signer:  orcAddress.String(),
 				ChainId: "minter",
 			})
-		} else {
+		case command.TypeSendToHub:
 			event, err := mhub.PackEvent(&mhub.SendToHubEvent{
 				EventNonce:     deposit.EventNonce,
 				ExternalCoinId: fmt.Sprintf("%d", deposit.CoinID),
@@ -105,6 +111,8 @@ func CreateClaims(orcAddress sdk.AccAddress, deposits []Deposit, batches []Batch
 				Signer:  orcAddress.String(),
 				ChainId: "minter",
 			})
+		default:
+			panic("unknown event")
 		}
 	}
 

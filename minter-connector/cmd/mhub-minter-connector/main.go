@@ -464,7 +464,6 @@ func relayMinterEvents(ctx context.Context) context.Context {
 
 		for _, block := range blocks.Blocks {
 			ctx.SetLastCheckedMinterBlock(block.Height)
-
 			ctx.Logger.Debug("Checking block", "height", block.Height)
 			for _, tx := range block.Transactions {
 				if tx.Type == uint64(transaction.TypeSend) {
@@ -474,7 +473,7 @@ func relayMinterEvents(ctx context.Context) context.Context {
 						continue
 					}
 
-					cmd := command.Command{}
+					cmd := &command.Command{}
 					if err := json.Unmarshal(tx.Payload, &cmd); err != nil {
 						ctx.Logger.Error("Cannot validate incoming tx", "err", err.Error())
 						continue
@@ -482,7 +481,7 @@ func relayMinterEvents(ctx context.Context) context.Context {
 
 					value, _ := sdk.NewIntFromString(sendData.Value)
 
-					if err := cmd.Validate(value); err != nil {
+					if err := cmd.ValidateAndComplete(value); err != nil {
 						ctx.Logger.Error("Cannot validate incoming tx", "err", err.Error())
 						continue
 					}
@@ -551,6 +550,8 @@ func relayMinterEvents(ctx context.Context) context.Context {
 					}
 				}
 			}
+
+			ctx.Commit()
 		}
 	}
 

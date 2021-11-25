@@ -17,17 +17,19 @@ var HoldersList HoldersResult
 
 type PricesResult struct {
 	Data []struct {
-		Denom string `json:"address"`
-		Price string `json:"balance"`
+		Denom string `json:"denom"`
+		Price string `json:"price"`
 	} `json:"data"`
 }
 
 var PricesList = PricesResult{Data: []struct {
-	Denom string `json:"address"`
-	Price string `json:"balance"`
+	Denom string `json:"denom"`
+	Price string `json:"price"`
 }{
 	{"eth", "4000.0"},
-	{"eth/gas", "123"},
+	{"ethereum/gas", "123"},
+	{"bnb", "400"},
+	{"bsc/gas", "5"},
 	{"hub", "0.1"},
 }}
 

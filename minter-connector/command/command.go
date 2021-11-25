@@ -6,8 +6,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-const TypeSendToEth = "send_to_eth"
+const TypeSendToEth = "send_to_ethereum"
 const TypeSendToHub = "send_to_hub"
+const TypeSendToBsc = "send_to_bsc"
 
 type Command struct {
 	Type      string `json:"type"`
@@ -15,12 +16,13 @@ type Command struct {
 	Fee       string `json:"fee"`
 }
 
-func (cmd Command) Validate(amount sdk.Int) error {
+func (cmd *Command) ValidateAndComplete(amount sdk.Int) error {
 	switch cmd.Type {
-	case TypeSendToEth:
+	case TypeSendToEth, TypeSendToBsc:
 		if !common.IsHexAddress(cmd.Recipient) {
 			return errors.New("wrong recipient")
 		}
+		cmd.Recipient = common.HexToAddress(cmd.Recipient).Hex()
 	case TypeSendToHub:
 		if _, err := sdk.AccAddressFromBech32(cmd.Recipient); err != nil {
 			return err

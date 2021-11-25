@@ -41,7 +41,7 @@ func init() {
 
 /// Requirements on local binaries:
 /// 1. minter node - v2.6.0+
-/// 2. geth node - 1.10.11+
+/// 2. geth node - v1.10.11+
 /// 3. oracle - v2
 /// 4. orchestrator - v2
 /// 5. minter-connector - v2
@@ -227,6 +227,7 @@ func main() {
 	testHubToEthereumTransfer(ctx)
 	testHubToBSCTransfer(ctx)
 	testMinterToEthereumTransfer(ctx)
+	testMinterToBscTransfer(ctx)
 	testFeeRefund(ctx)
 	testColdStorageTransfer(ctx)
 
@@ -660,6 +661,51 @@ func testMinterToEthereumTransfer(ctx *Context) {
 			}
 
 			println("SUCCESS: test Minter -> Ethereum transfer")
+			ctx.TestsWg.Done()
+			break
+		}
+	}()
+}
+
+func testMinterToBscTransfer(ctx *Context) {
+	ctx.TestsWg.Add(1)
+	randomPk, _ := crypto.GenerateKey()
+	recipient := crypto.PubkeyToAddress(randomPk.PublicKey).Hex()
+	sendMinterCoinToBsc(ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterMultisig, ctx.MinterClient, recipient, sdk.NewInt(1e18), sdk.NewInt(100))
+
+	go func() {
+		fee := int64(100)
+		expectedValue := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(1)))
+		expectedValue = expectedValue.Sub(expectedValue.ToDec().Mul(bridgeCommission).TruncateInt())
+		expectedValue = expectedValue.SubRaw(fee)
+		expectedValue = expectedValue.QuoRaw(1e12)
+
+		startTime := time.Now()
+		timeout := time.Minute * 5
+
+		hubContract, _ := erc20.NewErc20(common.HexToAddress(ctx.Bep20addr), ctx.BscClient)
+
+		for {
+			hubBalanceInt, err := hubContract.BalanceOf(nil, common.HexToAddress(recipient))
+			if err != nil {
+				panic(err)
+			}
+
+			hubBalance := sdk.NewIntFromBigInt(hubBalanceInt)
+			if hubBalance.IsZero() {
+				if time.Now().Sub(startTime).Seconds() > timeout.Seconds() {
+					panic("Timeout waiting for the balance to update")
+				}
+
+				time.Sleep(time.Second)
+				continue
+			}
+
+			if !hubBalance.Equal(expectedValue) {
+				panic(fmt.Sprintf("Balance is not equal to expected value. Expected %s, got %s", expectedValue.String(), hubBalance.String()))
+			}
+
+			println("SUCCESS: test Minter -> Bsc transfer")
 			ctx.TestsWg.Done()
 			break
 		}
