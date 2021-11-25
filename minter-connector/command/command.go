@@ -8,6 +8,7 @@ import (
 
 const TypeSendToEth = "send_to_eth"
 const TypeSendToHub = "send_to_hub"
+const TypeSendToBsc = "send_to_bsc"
 
 type Command struct {
 	Type      string `json:"type"`
@@ -17,7 +18,7 @@ type Command struct {
 
 func (cmd Command) Validate(amount sdk.Int) error {
 	switch cmd.Type {
-	case TypeSendToEth:
+	case TypeSendToEth, TypeSendToBsc:
 		if !common.IsHexAddress(cmd.Recipient) {
 			return errors.New("wrong recipient")
 		}

@@ -77,7 +77,7 @@ func (k Keeper) BscFee(context context.Context, _ *types.QueryBscFeeRequest) (*t
 
 	bnbPrice, err := k.GetTokenPrice(ctx, "bnb")
 	if err != nil {
-		return nil, sdkerrors.Wrap(err, "eth price")
+		return nil, sdkerrors.Wrap(err, "bnb price")
 	}
 
 	return &types.QueryBscFeeResponse{
