@@ -27,7 +27,9 @@ var PricesList = PricesResult{Data: []struct {
 	Price string `json:"balance"`
 }{
 	{"eth", "4000.0"},
-	{"eth/gas", "123"},
+	{"ethereum/gas", "123"},
+	{"bnb", "400"},
+	{"bsc/gas", "5"},
 	{"hub", "0.1"},
 }}
 
