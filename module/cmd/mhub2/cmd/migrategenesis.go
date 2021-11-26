@@ -72,6 +72,7 @@ func AddMigrateGenesisCmd(defaultNodeHome string) *cobra.Command {
 					ValidatorAddress:    valAddress.String(),
 					OrchestratorAddress: sdk.AccAddress(valAddress).String(),
 					ExternalAddress:     "0x" + item.Address[2:],
+					EthSignature:        []byte{1},
 					ChainId:             "minter",
 				})
 			}
@@ -86,6 +87,7 @@ func AddMigrateGenesisCmd(defaultNodeHome string) *cobra.Command {
 					ValidatorAddress:    valAddress.String(),
 					OrchestratorAddress: sdk.AccAddress(valAddress).String(),
 					ExternalAddress:     item.EthAddress,
+					EthSignature:        []byte{1},
 					ChainId:             "ethereum",
 				})
 
@@ -93,6 +95,7 @@ func AddMigrateGenesisCmd(defaultNodeHome string) *cobra.Command {
 					ValidatorAddress:    valAddress.String(),
 					OrchestratorAddress: sdk.AccAddress(valAddress).String(),
 					ExternalAddress:     item.EthAddress,
+					EthSignature:        []byte{1},
 					ChainId:             "bsc",
 				})
 			}
