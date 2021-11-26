@@ -99,7 +99,7 @@ func (k Keeper) batchTxExecuted(ctx sdk.Context, chainId types.ChainID, external
 		k.IterateOutgoingTxsByType(ctx, chainId, types.BatchTxPrefixByte, func(key []byte, otx types.OutgoingTx) bool {
 			// If the iterated batches nonce is lower than the one that was just executed, cancel it
 			btx, _ := otx.(*types.BatchTx)
-			if (btx.BatchNonce < batchTx.BatchNonce) && (batchTx.ExternalTokenId == externalTokenId) {
+			if (btx.BatchNonce < batchTx.BatchNonce) && (btx.ExternalTokenId == batchTx.ExternalTokenId) {
 				k.CancelBatchTx(ctx, chainId, externalTokenId, btx.BatchNonce)
 			}
 			return false
