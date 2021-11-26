@@ -50,6 +50,8 @@ contract Hub2 is ReentrancyGuard {
 
 	address public wethAddress;
 
+	address public guardian;
+
 	// TransactionBatchExecutedEvent and TransferToChain both include the field _eventNonce.
 	// This is incremented every time one of these events is emitted. It is checked by the
 	// Cosmos module to ensure that all events are received in order, and that none are lost.
@@ -563,6 +565,21 @@ contract Hub2 is ReentrancyGuard {
 		);
 	}
 
+	function changeGuardian(address _guardian) public {
+		require(msg.sender == guardian, "permission denied");
+
+		guardian = _guardian;
+	}
+
+	function panicHalt(address[] memory _tokenContracts, address _safeAddress) public {
+		require(msg.sender == guardian, "permission denied");
+
+		for (uint256 i = 0; i < _tokenContracts.length; i++) {
+			IERC20 token = IERC20(_tokenContracts[i]);
+			token.safeTransfer(_safeAddress, token.balanceOf(address(this)));
+		}
+	}
+
 	constructor(
 		// A unique identifier for this gravity instance to use in signatures
 		bytes32 _gravityId,
@@ -571,7 +588,8 @@ contract Hub2 is ReentrancyGuard {
 		// The validator set
 		address[] memory _validators,
 		uint256[] memory _powers,
-		address _wethAddress
+		address _wethAddress,
+		address _guardian
 	) public {
 		// CHECKS
 
@@ -601,6 +619,7 @@ contract Hub2 is ReentrancyGuard {
 		state_lastValsetCheckpoint = newCheckpoint;
 
 		wethAddress = _wethAddress;
+		guardian = _guardian;
 
 		// LOGS
 

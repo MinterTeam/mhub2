@@ -276,7 +276,7 @@ func deployContract(privateKey *ecdsa.PrivateKey, client *ethclient.Client, weth
 	)
 
 	copy(gravityId[:], "defaultgravityid")
-	address, tx, _, err := hub2.DeployHub2(auth, client, gravityId, powerThreshold, validators, powers, common.HexToAddress(wethAddress))
+	address, tx, _, err := hub2.DeployHub2(auth, client, gravityId, powerThreshold, validators, powers, common.HexToAddress(wethAddress), addr)
 	if err != nil {
 		panic(err)
 	}
