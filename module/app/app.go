@@ -409,7 +409,7 @@ func NewMhub2App(
 		app.bankKeeper,
 		app.slashingKeeper,
 		app.oracleKeeper,
-		sdk.DefaultPowerReduction,
+		sdk.NewIntFromUint64(1e18),
 	)
 
 	app.oracleKeeper = app.oracleKeeper.SetMhub2Keeper(app.mhub2Keeper)
