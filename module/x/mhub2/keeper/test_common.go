@@ -203,12 +203,13 @@ var (
 		TargetEthTxTimeout:                        60001,
 		AverageBlockTime:                          5000,
 		AverageEthereumBlockTime:                  15000,
+		AverageBscBlockTime:                       5000,
 		SlashFractionSignerSetTx:                  sdk.NewDecWithPrec(1, 2),
 		SlashFractionBatch:                        sdk.NewDecWithPrec(1, 2),
 		SlashFractionEthereumSignature:            sdk.NewDecWithPrec(1, 2),
 		SlashFractionConflictingEthereumSignature: sdk.NewDecWithPrec(1, 2),
 		UnbondSlashingSignerSetTxsWindow:          15,
-		Chains:                                    []string{"ethereum"},
+		Chains:                                    []string{"ethereum", "hub"},
 		OutgoingTxTimeout:                         60001,
 	}
 )

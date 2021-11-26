@@ -199,8 +199,9 @@ func TestMsgServer_CancelSendToExternal(t *testing.T) {
 	require.NoError(t, err)
 
 	cancelMsg := &types.MsgCancelSendToExternal{
-		Id:     response.Id,
-		Sender: orcAddr1.String(),
+		Id:      response.Id,
+		Sender:  orcAddr1.String(),
+		ChainId: "ethereum",
 	}
 	_, err = msgServer.CancelSendToExternal(sdk.WrapSDKContext(ctx), cancelMsg)
 	require.NoError(t, err)
