@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"time"
+
+	oracletypes "github.com/MinterTeam/mhub2/module/x/oracle/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
@@ -65,6 +68,8 @@ func AddMigrateGenesisCmd(defaultNodeHome string) *cobra.Command {
 				},
 			}
 
+			genState.Params.GravityId = "minter-hub-2"
+
 			id := uint64(0)
 			for _, coin := range legacyOracleState.Params.Coins {
 				id++
@@ -95,6 +100,14 @@ func AddMigrateGenesisCmd(defaultNodeHome string) *cobra.Command {
 			}
 
 			appState[types.ModuleName] = genStateJson
+			delete(appState, "minter")
+			delete(appState, "peggy")
+
+			oracleGenStateJson, err := cdc.MarshalJSON(oracletypes.DefaultGenesisState())
+			if err != nil {
+				return fmt.Errorf("failed to marshal genesis state: %w", err)
+			}
+			appState[oracletypes.ModuleName] = oracleGenStateJson
 
 			appStateJSON, err := json.Marshal(appState)
 			if err != nil {
@@ -102,6 +115,9 @@ func AddMigrateGenesisCmd(defaultNodeHome string) *cobra.Command {
 			}
 
 			genDoc.AppState = appStateJSON
+			genDoc.ChainID = "mhub-mainnet-2"
+			genDoc.GenesisTime = time.Date(2021, 12, 2, 13, 0, 0, 0, time.UTC)
+
 			return genutil.ExportGenesisFile(genDoc, genFile)
 		},
 	}

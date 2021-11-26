@@ -22,9 +22,6 @@ var (
 	// ParamsStoreSlashFractionConflictingClaim stores the slash fraction ConflictingClaim
 	ParamsStoreSlashFractionConflictingClaim = []byte("SlashFractionConflictingClaim")
 
-	ParamsMinBatchGas          = []byte("MinBatchGas")
-	ParamsMinSingleWithdrawGas = []byte("MinSingleWithdrawGas")
-
 	// Ensure that params implements the proper interface
 	_ paramtypes.ParamSet = &Params{}
 )
@@ -52,9 +49,6 @@ func DefaultParams() *Params {
 		SignedClaimsWindow:            10000,
 		SlashFractionClaim:            sdk.NewDec(1).Quo(sdk.NewDec(1000)),
 		SlashFractionConflictingClaim: sdk.NewDec(1).Quo(sdk.NewDec(1000)),
-		MinBatchGas:                   100000,
-		MinSingleWithdrawGas:          50000,
-		Commission:                    sdk.NewDec(1).Quo(sdk.NewDec(100)),
 	}
 }
 
@@ -84,8 +78,6 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(ParamsStoreKeySignedClaimsWindow, &p.SignedClaimsWindow, validateSignedClaimsWindow),
 		paramtypes.NewParamSetPair(ParamsStoreSlashFractionClaim, &p.SlashFractionClaim, validateSlashFractionClaim),
 		paramtypes.NewParamSetPair(ParamsStoreSlashFractionConflictingClaim, &p.SlashFractionConflictingClaim, validateSlashFractionConflictingClaim),
-		paramtypes.NewParamSetPair(ParamsMinBatchGas, &p.MinBatchGas, validateMinBatchGas),
-		paramtypes.NewParamSetPair(ParamsMinSingleWithdrawGas, &p.MinSingleWithdrawGas, validateMinSingleWithdrawGas),
 	}
 }
 
@@ -117,32 +109,6 @@ func validateSlashFractionConflictingClaim(i interface{}) error {
 	if _, ok := i.(sdk.Dec); !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)
 	}
-	return nil
-}
-
-func validateMinSingleWithdrawGas(i interface{}) error {
-	// TODO: do we want to set some bounds on this value?
-	if _, ok := i.(uint64); !ok {
-		return fmt.Errorf("invalid parameter type: %T", i)
-	}
-
-	if i.(uint64) < 1 {
-		return fmt.Errorf("invalid parameter value: min single withdraw gas")
-	}
-
-	return nil
-}
-
-func validateMinBatchGas(i interface{}) error {
-	// TODO: do we want to set some bounds on this value?
-	if _, ok := i.(uint64); !ok {
-		return fmt.Errorf("invalid parameter type: %T", i)
-	}
-
-	if i.(uint64) < 1 {
-		return fmt.Errorf("invalid parameter value: min batch gas")
-	}
-
 	return nil
 }
 
