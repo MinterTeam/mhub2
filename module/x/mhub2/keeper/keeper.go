@@ -783,6 +783,16 @@ func (k Keeper) GetOutgoingTxTimeout(ctx sdk.Context) time.Duration {
 	return time.Duration(a) * time.Millisecond
 }
 
+func (k Keeper) CheckChainID(ctx sdk.Context, id types.ChainID) error {
+	for _, c := range k.GetChains(ctx) {
+		if c.String() == id.String() {
+			return nil
+		}
+	}
+
+	return errors.New("invalid chain id")
+}
+
 func convertDecimals(fromDecimals uint64, toDecimals uint64, amount sdk.Int) sdk.Int {
 	if fromDecimals == toDecimals {
 		return amount

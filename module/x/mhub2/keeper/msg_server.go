@@ -109,6 +109,10 @@ func (k msgServer) SubmitTxConfirmation(c context.Context, msg *types.MsgSubmitE
 	ctx := sdk.UnwrapSDKContext(c)
 	chainId := types.ChainID(msg.ChainId)
 
+	if err := k.CheckChainID(ctx, chainId); err != nil {
+		return nil, err
+	}
+
 	confirmation, err := types.UnpackConfirmation(msg.Confirmation)
 	if err != nil {
 		return nil, err
@@ -166,6 +170,11 @@ func (k msgServer) SubmitTxConfirmation(c context.Context, msg *types.MsgSubmitE
 // SubmitExternalEvent handles MsgSubmitExternalEvent
 func (k msgServer) SubmitExternalEvent(c context.Context, msg *types.MsgSubmitExternalEvent) (*types.MsgSubmitExternalEventResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)
+	chainId := types.ChainID(msg.ChainId)
+
+	if err := k.CheckChainID(ctx, chainId); err != nil {
+		return nil, err
+	}
 
 	event, err := types.UnpackEvent(msg.Event)
 	if err != nil {
@@ -179,7 +188,7 @@ func (k msgServer) SubmitExternalEvent(c context.Context, msg *types.MsgSubmitEx
 	}
 
 	// Add the claim to the store
-	_, err = k.recordEventVote(ctx, types.ChainID(msg.ChainId), event, val)
+	_, err = k.recordEventVote(ctx, chainId, event, val)
 	if err != nil {
 		return nil, sdkerrors.Wrap(err, "create event vote record")
 	}
@@ -190,7 +199,7 @@ func (k msgServer) SubmitExternalEvent(c context.Context, msg *types.MsgSubmitEx
 			sdk.EventTypeMessage,
 			sdk.NewAttribute(sdk.AttributeKeyModule, fmt.Sprintf("%T", event)),
 			// TODO: maybe return something better here? is this the right string representation?
-			sdk.NewAttribute(types.AttributeKeyEthereumEventVoteRecordID, string(types.MakeExternalEventVoteRecordKey(types.ChainID(msg.ChainId), event.GetEventNonce(), event.Hash()))),
+			sdk.NewAttribute(types.AttributeKeyEthereumEventVoteRecordID, string(types.MakeExternalEventVoteRecordKey(chainId, event.GetEventNonce(), event.Hash()))),
 		),
 	)
 
@@ -205,13 +214,18 @@ func (k msgServer) SendToExternal(c context.Context, msg *types.MsgSendToExterna
 		return nil, err
 	}
 
-	tokenInfo, err := k.DenomToTokenInfoLookup(ctx, types.ChainID(msg.ChainId), msg.Amount.Denom)
+	chainId := types.ChainID(msg.ChainId)
+	if err := k.CheckChainID(ctx, chainId); err != nil {
+		return nil, err
+	}
+
+	tokenInfo, err := k.DenomToTokenInfoLookup(ctx, chainId, msg.Amount.Denom)
 	if err != nil {
 		return nil, err
 	}
 	commission := k.GetCommissionForHolder(ctx, []string{sender.String(), msg.ExternalRecipient}, tokenInfo.Commission).Mul(msg.Amount.Amount.Add(msg.BridgeFee.Amount).ToDec()).TruncateInt()
 
-	txID, err := k.createSendToExternal(ctx, types.ChainID(msg.ChainId), sender, msg.ExternalRecipient, msg.Amount.SubAmount(commission), msg.BridgeFee, sdk.NewCoin(msg.Amount.Denom, commission), fmt.Sprintf("%x", sha256.Sum256(ctx.TxBytes())), "hub", sender.String())
+	txID, err := k.createSendToExternal(ctx, chainId, sender, msg.ExternalRecipient, msg.Amount.SubAmount(commission), msg.BridgeFee, sdk.NewCoin(msg.Amount.Denom, commission), fmt.Sprintf("%x", sha256.Sum256(ctx.TxBytes())), "hub", sender.String())
 	if err != nil {
 		return nil, err
 	}
@@ -239,13 +253,17 @@ func (k msgServer) SendToExternal(c context.Context, msg *types.MsgSendToExterna
 func (k msgServer) RequestBatchTx(c context.Context, msg *types.MsgRequestBatchTx) (*types.MsgRequestBatchTxResponse, error) {
 	// TODO: limit this to only orchestrators and validators?
 	ctx := sdk.UnwrapSDKContext(c)
+	chainId := types.ChainID(msg.ChainId)
+	if err := k.CheckChainID(ctx, chainId); err != nil {
+		return nil, err
+	}
 
-	tokenInfo, err := k.DenomToTokenInfoLookup(ctx, types.ChainID(msg.ChainId), msg.Denom)
+	tokenInfo, err := k.DenomToTokenInfoLookup(ctx, chainId, msg.Denom)
 	if err != nil {
 		return nil, err
 	}
 
-	batchID := k.BuildBatchTx(ctx, types.ChainID(msg.ChainId), tokenInfo.ExternalTokenId, BatchTxSize)
+	batchID := k.BuildBatchTx(ctx, chainId, tokenInfo.ExternalTokenId, BatchTxSize)
 
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
@@ -262,7 +280,12 @@ func (k msgServer) RequestBatchTx(c context.Context, msg *types.MsgRequestBatchT
 func (k msgServer) CancelSendToExternal(c context.Context, msg *types.MsgCancelSendToExternal) (*types.MsgCancelSendToExternalResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)
 
-	err := k.Keeper.cancelSendToExternal(ctx, types.ChainID(msg.ChainId), msg.Id, msg.Sender)
+	chainId := types.ChainID(msg.ChainId)
+	if err := k.CheckChainID(ctx, chainId); err != nil {
+		return nil, err
+	}
+
+	err := k.Keeper.cancelSendToExternal(ctx, chainId, msg.Id, msg.Sender)
 	if err != nil {
 		return nil, err
 	}
