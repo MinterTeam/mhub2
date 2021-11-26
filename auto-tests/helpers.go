@@ -857,7 +857,7 @@ func deployContractsAndMultisig(prKeyString string) {
 	ethPrivateKeyString := fmt.Sprintf("%x", crypto.FromECDSA(pk))
 	ethAddress := crypto.PubkeyToAddress(pk.PublicKey)
 
-	minterClient, _ := grpc_client.New("node-api.testnet.minter.network:8842")
+	minterClient, _ := grpc_client.New("node-api.testnet.minter.network:28842")
 	minterMultisig := createMinterMultisig(ethPrivateKeyString, ethAddress, minterClient)
 
 	println("minter", minterMultisig)
@@ -868,7 +868,7 @@ func deployContractsAndMultisig(prKeyString string) {
 			panic(err)
 		}
 
-		contract := deployContract(pk, client, "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", 3)
+		contract := deployContract(pk, client, "0x0a180A76e4466bF68A7F86fB029BEd3cCcFaAac5", 3)
 
 		println("eth", contract)
 	}
