@@ -107,17 +107,17 @@ service Query {
 
   // delegate keys
   rpc DelegateKeysByValidator(DelegateKeysByValidatorRequest) returns (DelegateKeysByValidatorResponse) {
-     option (google.api.http).get = "/mhub2/v1/delegate_keys/validator/{validator_address}";
+     option (google.api.http).get = "/mhub2/v1/delegate_keys/validator/{chain_id}/{validator_address}";
   }
   rpc DelegateKeysByExternalSigner(DelegateKeysByExternalSignerRequest) returns (DelegateKeysByExternalSignerResponse) {
-     option (google.api.http).get = "/mhub2/v1/delegate_keys/external/{external_signer}";
+     option (google.api.http).get = "/mhub2/v1/delegate_keys/external/{chain_id}/{external_signer}";
   }
   rpc DelegateKeysByOrchestrator(DelegateKeysByOrchestratorRequest) returns (DelegateKeysByOrchestratorResponse) {
-     option (google.api.http).get = "/mhub2/v1/delegate_keys/orchestrator/{orchestrator_address}";
+     option (google.api.http).get = "/mhub2/v1/delegate_keys/orchestrator/{chain_id}/{orchestrator_address}";
   }
 
   rpc DelegateKeys(DelegateKeysRequest) returns (DelegateKeysResponse) {
-     option (google.api.http).get = "/mhub2/v1/delegate_keys";
+     option (google.api.http).get = "/mhub2/v1/delegate_keys/{chain_id}";
   }
 
   rpc TokenInfos(TokenInfosRequest) returns (TokenInfosResponse) {

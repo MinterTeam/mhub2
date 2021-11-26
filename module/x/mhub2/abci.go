@@ -89,7 +89,7 @@ func createSignerSetTxs(ctx sdk.Context, chainId types.ChainID, k keeper.Keeper)
 
 	lastUnbondingHeight := k.GetLastUnbondingBlockHeight(ctx)
 	blockHeight := uint64(ctx.BlockHeight())
-	powerDiff := k.CurrentSignerSet(ctx).PowerDiff(latestSignerSetTx.Signers)
+	powerDiff := k.CurrentSignerSet(ctx, chainId).PowerDiff(latestSignerSetTx.Signers)
 
 	shouldCreate := (lastUnbondingHeight == blockHeight) || (powerDiff > 0.05) // todo?
 	k.Logger(ctx).Info(

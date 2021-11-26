@@ -132,6 +132,7 @@ message MsgDelegateKeys {
   string orchestrator_address = 2;
   string external_address = 3;
   bytes  eth_signature = 4;
+  string chain_id = 5;
 }
 
 message MsgDelegateKeysResponse {}

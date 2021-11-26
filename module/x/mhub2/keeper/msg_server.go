@@ -29,6 +29,10 @@ var _ types.MsgServer = msgServer{}
 
 func (k msgServer) SetDelegateKeys(c context.Context, msg *types.MsgDelegateKeys) (*types.MsgDelegateKeysResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)
+	chainId := types.ChainID(msg.ChainId)
+	//if err := k.CheckChainID(ctx, chainId); err != nil {
+	//	return nil, err
+	//}
 
 	valAddr, err := sdk.ValAddressFromBech32(msg.ValidatorAddress)
 	if err != nil {
@@ -47,14 +51,14 @@ func (k msgServer) SetDelegateKeys(c context.Context, msg *types.MsgDelegateKeys
 		return nil, sdkerrors.Wrap(stakingtypes.ErrNoValidatorFound, valAddr.String())
 	}
 
-	// check if the Ethereum address is currently not used
-	validators := k.getValidatorsByExternalAddress(ctx, ethAddr)
+	// check if the external address is currently not used
+	validators := k.getValidatorsByExternalAddress(ctx, chainId, ethAddr)
 	if len(validators) > 0 {
-		return nil, sdkerrors.Wrapf(types.ErrDelegateKeys, "ethereum address %s in use", ethAddr)
+		return nil, sdkerrors.Wrapf(types.ErrDelegateKeys, "external address %s in use", ethAddr)
 	}
 
 	// check if the orchestrator address is currently not used
-	ethAddrs := k.getExternalAddressesByOrchestrator(ctx, orchAddr)
+	ethAddrs := k.getExternalAddressesByOrchestrator(ctx, chainId, orchAddr)
 	if len(ethAddrs) > 0 {
 		return nil, sdkerrors.Wrapf(types.ErrDelegateKeys, "orchestrator address %s in use", orchAddr)
 	}
@@ -86,9 +90,9 @@ func (k msgServer) SetDelegateKeys(c context.Context, msg *types.MsgDelegateKeys
 		)
 	}
 
-	k.SetOrchestratorValidatorAddress(ctx, valAddr, orchAddr)
-	k.setValidatorExternalAddress(ctx, valAddr, ethAddr)
-	k.setExternalOrchestratorAddress(ctx, ethAddr, orchAddr)
+	k.SetOrchestratorValidatorAddress(ctx, chainId, valAddr, orchAddr)
+	k.setValidatorExternalAddress(ctx, chainId, valAddr, ethAddr)
+	k.setExternalOrchestratorAddress(ctx, chainId, ethAddr, orchAddr)
 
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
@@ -118,7 +122,7 @@ func (k msgServer) SubmitTxConfirmation(c context.Context, msg *types.MsgSubmitE
 		return nil, err
 	}
 
-	val, err := k.getSignerValidator(ctx, msg.Signer)
+	val, err := k.getSignerValidator(ctx, chainId, msg.Signer)
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +135,7 @@ func (k msgServer) SubmitTxConfirmation(c context.Context, msg *types.MsgSubmitE
 	gravityID := k.getGravityID(ctx)
 	checkpoint := otx.GetCheckpoint([]byte(gravityID))
 
-	ethAddress := k.GetValidatorExternalAddress(ctx, val)
+	ethAddress := k.GetValidatorExternalAddress(ctx, chainId, val)
 	if ethAddress != confirmation.GetSigner() {
 		return nil, sdkerrors.Wrap(types.ErrInvalid, "eth address does not match signer eth address")
 	}
@@ -182,7 +186,7 @@ func (k msgServer) SubmitExternalEvent(c context.Context, msg *types.MsgSubmitEx
 	}
 
 	// return an error if the validator isn't in the active set
-	val, err := k.getSignerValidator(ctx, msg.Signer)
+	val, err := k.getSignerValidator(ctx, chainId, msg.Signer)
 	if err != nil {
 		return nil, err
 	}
@@ -309,13 +313,13 @@ func (k msgServer) CancelSendToExternal(c context.Context, msg *types.MsgCancelS
 
 // getSignerValidator takes an sdk.AccAddress that represents either a validator or orchestrator address and returns
 // the assoicated validator address
-func (k Keeper) getSignerValidator(ctx sdk.Context, signerString string) (sdk.ValAddress, error) {
+func (k Keeper) getSignerValidator(ctx sdk.Context, chainId types.ChainID, signerString string) (sdk.ValAddress, error) {
 	signer, err := sdk.AccAddressFromBech32(signerString)
 	if err != nil {
 		return nil, sdkerrors.Wrap(types.ErrInvalid, "signer address")
 	}
 	var validatorI stakingtypes.ValidatorI
-	if validator := k.GetOrchestratorValidatorAddress(ctx, signer); validator == nil {
+	if validator := k.GetOrchestratorValidatorAddress(ctx, chainId, signer); validator == nil {
 		validatorI = k.StakingKeeper.Validator(ctx, sdk.ValAddress(signer))
 	} else {
 		validatorI = k.StakingKeeper.Validator(ctx, validator)

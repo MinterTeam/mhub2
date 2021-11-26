@@ -493,37 +493,7 @@
         ]
       }
     },
-    "/mhub2/v1/delegate_keys": {
-      "get": {
-        "operationId": "Query_DelegateKeys",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/v1DelegateKeysResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/runtimeError"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "chain_id",
-            "in": "query",
-            "required": false,
-            "type": "string"
-          }
-        ],
-        "tags": [
-          "Query"
-        ]
-      }
-    },
-    "/mhub2/v1/delegate_keys/external/{external_signer}": {
+    "/mhub2/v1/delegate_keys/external/{chain_id}/{external_signer}": {
       "get": {
         "operationId": "Query_DelegateKeysByExternalSigner",
         "responses": {
@@ -542,15 +512,15 @@
         },
         "parameters": [
           {
-            "name": "external_signer",
+            "name": "chain_id",
             "in": "path",
             "required": true,
             "type": "string"
           },
           {
-            "name": "chain_id",
-            "in": "query",
-            "required": false,
+            "name": "external_signer",
+            "in": "path",
+            "required": true,
             "type": "string"
           }
         ],
@@ -559,7 +529,7 @@
         ]
       }
     },
-    "/mhub2/v1/delegate_keys/orchestrator/{orchestrator_address}": {
+    "/mhub2/v1/delegate_keys/orchestrator/{chain_id}/{orchestrator_address}": {
       "get": {
         "operationId": "Query_DelegateKeysByOrchestrator",
         "responses": {
@@ -578,15 +548,15 @@
         },
         "parameters": [
           {
-            "name": "orchestrator_address",
+            "name": "chain_id",
             "in": "path",
             "required": true,
             "type": "string"
           },
           {
-            "name": "chain_id",
-            "in": "query",
-            "required": false,
+            "name": "orchestrator_address",
+            "in": "path",
+            "required": true,
             "type": "string"
           }
         ],
@@ -595,7 +565,7 @@
         ]
       }
     },
-    "/mhub2/v1/delegate_keys/validator/{validator_address}": {
+    "/mhub2/v1/delegate_keys/validator/{chain_id}/{validator_address}": {
       "get": {
         "summary": "delegate keys",
         "operationId": "Query_DelegateKeysByValidator",
@@ -615,15 +585,45 @@
         },
         "parameters": [
           {
-            "name": "validator_address",
+            "name": "chain_id",
             "in": "path",
             "required": true,
             "type": "string"
           },
           {
+            "name": "validator_address",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/mhub2/v1/delegate_keys/{chain_id}": {
+      "get": {
+        "operationId": "Query_DelegateKeys",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1DelegateKeysResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
             "name": "chain_id",
-            "in": "query",
-            "required": false,
+            "in": "path",
+            "required": true,
             "type": "string"
           }
         ],
@@ -1471,6 +1471,9 @@
         "eth_signature": {
           "type": "string",
           "format": "byte"
+        },
+        "chain_id": {
+          "type": "string"
         }
       },
       "description": "MsgDelegateKey allows validators to delegate their voting responsibilities\nto a given orchestrator address. This key is then used as an optional\nauthentication method for attesting events from External Chain."

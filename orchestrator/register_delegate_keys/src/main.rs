@@ -24,11 +24,12 @@ struct Args {
     flag_address_prefix: String,
     flag_cosmos_grpc: String,
     flag_fees: String,
+    flag_chain_id: String,
 }
 
 lazy_static! {
     pub static ref USAGE: String = format!(
-        "Usage: {} --validator-phrase=<key> --address-prefix=<prefix> [--cosmos-phrase=<key>] [--ethereum-key=<key>] --cosmos-grpc=<url> --fees=<denom>
+        "Usage: {} --chain-id=<id> --validator-phrase=<key> --address-prefix=<prefix> [--cosmos-phrase=<key>] [--ethereum-key=<key>] --cosmos-grpc=<url> --fees=<denom>
         Options:
             -h --help                 Show this screen.
             --validator-phrase=<vkey> The Cosmos private key of the validator. Must be saved when you generate your key
@@ -37,6 +38,7 @@ lazy_static! {
             --address-prefix=<prefix> The prefix for Addresses on this chain (eg 'cosmos')
             --cosmos-grpc=<curl>      The Cosmos RPC url, usually the validator. This will need to be manually enabled
             --fees=<denom>            The Cosmos Denom in which to pay Cosmos chain fees
+            --chain_id=<id>
         About:
             Special purpose binary for bootstrapping Gravity chains. This will submit and optionally
             generate an Ethereum key that will be used to sign messages on behalf of your Validator
@@ -119,6 +121,7 @@ async fn main() {
         validator_key,
         ethereum_key,
         fee.clone(),
+        args.flag_chain_id.clone(),
     )
     .await
     .expect("Failed to update Eth address");

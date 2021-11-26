@@ -47,20 +47,74 @@ func AddMigrateGenesisCmd(defaultNodeHome string) *cobra.Command {
 			if err := json.Unmarshal(appState["minter"], legacyMinterState); err != nil {
 				panic(err)
 			}
-			startMinterNonce, _ := strconv.Atoi(legacyMinterState.StartMinterNonce)
 
 			legacyOracleState := &legacyOracle{}
 			if err := json.Unmarshal(appState["oracle"], legacyOracleState); err != nil {
 				panic(err)
 			}
 
+			legacyPeggyState := &legacyPeggy{}
+			if err := json.Unmarshal(appState["peggy"], legacyPeggyState); err != nil {
+				panic(err)
+			}
+
+			var minterDelegatedKeys []*types.MsgDelegateKeys
+			var ethDelegatedKeys []*types.MsgDelegateKeys
+			var bscDelegatedKeys []*types.MsgDelegateKeys
+
+			for _, item := range legacyMinterState.MinterAddresses {
+				valAddress, err := sdk.ValAddressFromBech32(item.Validator)
+				if err != nil {
+					panic(err)
+				}
+
+				minterDelegatedKeys = append(minterDelegatedKeys, &types.MsgDelegateKeys{
+					ValidatorAddress:    valAddress.String(),
+					OrchestratorAddress: sdk.AccAddress(valAddress).String(),
+					ExternalAddress:     "0x" + item.Address[2:],
+					ChainId:             "minter",
+				})
+			}
+
+			for _, item := range legacyPeggyState.OrchestratorAddresses {
+				valAddress, err := sdk.ValAddressFromBech32(item.Validator)
+				if err != nil {
+					panic(err)
+				}
+
+				ethDelegatedKeys = append(ethDelegatedKeys, &types.MsgDelegateKeys{
+					ValidatorAddress:    valAddress.String(),
+					OrchestratorAddress: sdk.AccAddress(valAddress).String(),
+					ExternalAddress:     item.EthAddress,
+					ChainId:             "ethereum",
+				})
+
+				bscDelegatedKeys = append(bscDelegatedKeys, &types.MsgDelegateKeys{
+					ValidatorAddress:    valAddress.String(),
+					OrchestratorAddress: sdk.AccAddress(valAddress).String(),
+					ExternalAddress:     item.EthAddress,
+					ChainId:             "bsc",
+				})
+			}
+
+			startMinterNonce, _ := strconv.Atoi(legacyMinterState.StartMinterNonce)
+
 			defaultGenesis := types.DefaultGenesisState()
 			genState := &types.GenesisState{
 				Params: defaultGenesis.Params,
 				ExternalStates: []*types.ExternalState{
 					{
-						ChainId:  "minter",
-						Sequence: uint64(startMinterNonce),
+						ChainId:      "minter",
+						Sequence:     uint64(startMinterNonce),
+						DelegateKeys: minterDelegatedKeys,
+					},
+					{
+						ChainId:      "ethereum",
+						DelegateKeys: ethDelegatedKeys,
+					},
+					{
+						ChainId:      "bsc",
+						DelegateKeys: bscDelegatedKeys,
 					},
 				},
 				TokenInfos: &types.TokenInfos{
@@ -130,6 +184,18 @@ func AddMigrateGenesisCmd(defaultNodeHome string) *cobra.Command {
 
 type legacyMinter struct {
 	StartMinterNonce string `json:"start_minter_nonce"`
+	MinterAddresses  []struct {
+		Address   string `json:"address"`
+		Validator string `json:"validator"`
+	} `json:"minter_addresses"`
+}
+
+type legacyPeggy struct {
+	OrchestratorAddresses []struct {
+		EthAddress   string `json:"eth_address"`
+		Orchestrator string `json:"orchestrator"`
+		Validator    string `json:"validator"`
+	} `json:"orchestrator_addresses"`
 }
 
 type legacyOracle struct {

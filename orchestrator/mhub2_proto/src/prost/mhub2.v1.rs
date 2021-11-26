@@ -296,6 +296,8 @@ pub struct MsgDelegateKeys {
     pub external_address: ::prost::alloc::string::String,
     #[prost(bytes = "vec", tag = "4")]
     pub eth_signature: ::prost::alloc::vec::Vec<u8>,
+    #[prost(string, tag = "5")]
+    pub chain_id: ::prost::alloc::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgDelegateKeysResponse {}

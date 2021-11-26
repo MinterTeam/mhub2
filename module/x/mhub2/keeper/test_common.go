@@ -281,9 +281,9 @@ func SetupFiveValChain(t *testing.T) (TestInput, sdk.Context) {
 
 	// Register eth addresses for each validator
 	for i, addr := range ValAddrs {
-		input.Mhub2Keeper.setValidatorExternalAddress(input.Context, addr, EthAddrs[i])
-		input.Mhub2Keeper.SetOrchestratorValidatorAddress(input.Context, addr, AccAddrs[i])
-		input.Mhub2Keeper.setExternalOrchestratorAddress(input.Context, EthAddrs[i], AccAddrs[i])
+		input.Mhub2Keeper.setValidatorExternalAddress(input.Context, "ethereum", addr, EthAddrs[i])
+		input.Mhub2Keeper.SetOrchestratorValidatorAddress(input.Context, "ethereum", addr, AccAddrs[i])
+		input.Mhub2Keeper.setExternalOrchestratorAddress(input.Context, "ethereum", EthAddrs[i], AccAddrs[i])
 	}
 
 	// Return the test input

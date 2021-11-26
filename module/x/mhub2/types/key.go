@@ -68,22 +68,22 @@ const (
 // MakeOrchestratorValidatorAddressKey returns the following key format
 // prefix
 // [0xe8][cosmos1ahx7f8wyertuus9r20284ej0asrs085case3kn]
-func MakeOrchestratorValidatorAddressKey(orc sdk.AccAddress) []byte {
-	return append([]byte{OrchestratorValidatorAddressKey}, orc.Bytes()...)
+func MakeOrchestratorValidatorAddressKey(chainId ChainID, orc sdk.AccAddress) []byte {
+	return bytes.Join([][]byte{{OrchestratorValidatorAddressKey}, chainId.Bytes(), orc.Bytes()}, []byte{})
 }
 
 // MakeValidatorExternalAddressKey returns the following key format
 // prefix              cosmos-validator
 // [0x0][cosmosvaloper1ahx7f8wyertuus9r20284ej0asrs085case3kn]
-func MakeValidatorExternalAddressKey(validator sdk.ValAddress) []byte {
-	return append([]byte{ValidatorExternalAddressKey}, validator.Bytes()...)
+func MakeValidatorExternalAddressKey(chainId ChainID, validator sdk.ValAddress) []byte {
+	return bytes.Join([][]byte{{ValidatorExternalAddressKey}, chainId.Bytes(), validator.Bytes()}, []byte{})
 }
 
 // MakeExternalOrchestratorAddressKey returns the following key format
 // prefix              cosmos-validator
 // [0x0][cosmosvaloper1ahx7f8wyertuus9r20284ej0asrs085case3kn]
-func MakeExternalOrchestratorAddressKey(eth common.Address) []byte {
-	return append([]byte{ExternalOrchestratorAddressKey}, eth.Bytes()...)
+func MakeExternalOrchestratorAddressKey(chainId ChainID, eth common.Address) []byte {
+	return bytes.Join([][]byte{{ExternalOrchestratorAddressKey}, chainId.Bytes(), eth.Bytes()}, []byte{})
 }
 
 /////////////////////////

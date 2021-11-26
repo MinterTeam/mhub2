@@ -1379,10 +1379,6 @@ func local_request_Query_UnbatchedSendToExternals_0(ctx context.Context, marshal
 
 }
 
-var (
-	filter_Query_DelegateKeysByValidator_0 = &utilities.DoubleArray{Encoding: map[string]int{"validator_address": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
-)
-
 func request_Query_DelegateKeysByValidator_0(ctx context.Context, marshaler runtime.Marshaler, client QueryClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq DelegateKeysByValidatorRequest
 	var metadata runtime.ServerMetadata
@@ -1394,6 +1390,17 @@ func request_Query_DelegateKeysByValidator_0(ctx context.Context, marshaler runt
 		_   = err
 	)
 
+	val, ok = pathParams["chain_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "chain_id")
+	}
+
+	protoReq.ChainId, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "chain_id", err)
+	}
+
 	val, ok = pathParams["validator_address"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "validator_address")
@@ -1403,13 +1410,6 @@ func request_Query_DelegateKeysByValidator_0(ctx context.Context, marshaler runt
 
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "validator_address", err)
-	}
-
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_Query_DelegateKeysByValidator_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
 	msg, err := client.DelegateKeysByValidator(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -1428,6 +1428,17 @@ func local_request_Query_DelegateKeysByValidator_0(ctx context.Context, marshale
 		_   = err
 	)
 
+	val, ok = pathParams["chain_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "chain_id")
+	}
+
+	protoReq.ChainId, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "chain_id", err)
+	}
+
 	val, ok = pathParams["validator_address"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "validator_address")
@@ -1439,21 +1450,10 @@ func local_request_Query_DelegateKeysByValidator_0(ctx context.Context, marshale
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "validator_address", err)
 	}
 
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_Query_DelegateKeysByValidator_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-
 	msg, err := server.DelegateKeysByValidator(ctx, &protoReq)
 	return msg, metadata, err
 
 }
-
-var (
-	filter_Query_DelegateKeysByExternalSigner_0 = &utilities.DoubleArray{Encoding: map[string]int{"external_signer": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
-)
 
 func request_Query_DelegateKeysByExternalSigner_0(ctx context.Context, marshaler runtime.Marshaler, client QueryClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq DelegateKeysByExternalSignerRequest
@@ -1466,6 +1466,17 @@ func request_Query_DelegateKeysByExternalSigner_0(ctx context.Context, marshaler
 		_   = err
 	)
 
+	val, ok = pathParams["chain_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "chain_id")
+	}
+
+	protoReq.ChainId, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "chain_id", err)
+	}
+
 	val, ok = pathParams["external_signer"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "external_signer")
@@ -1475,13 +1486,6 @@ func request_Query_DelegateKeysByExternalSigner_0(ctx context.Context, marshaler
 
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "external_signer", err)
-	}
-
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_Query_DelegateKeysByExternalSigner_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
 	msg, err := client.DelegateKeysByExternalSigner(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -1500,6 +1504,17 @@ func local_request_Query_DelegateKeysByExternalSigner_0(ctx context.Context, mar
 		_   = err
 	)
 
+	val, ok = pathParams["chain_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "chain_id")
+	}
+
+	protoReq.ChainId, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "chain_id", err)
+	}
+
 	val, ok = pathParams["external_signer"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "external_signer")
@@ -1511,21 +1526,10 @@ func local_request_Query_DelegateKeysByExternalSigner_0(ctx context.Context, mar
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "external_signer", err)
 	}
 
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_Query_DelegateKeysByExternalSigner_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-
 	msg, err := server.DelegateKeysByExternalSigner(ctx, &protoReq)
 	return msg, metadata, err
 
 }
-
-var (
-	filter_Query_DelegateKeysByOrchestrator_0 = &utilities.DoubleArray{Encoding: map[string]int{"orchestrator_address": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
-)
 
 func request_Query_DelegateKeysByOrchestrator_0(ctx context.Context, marshaler runtime.Marshaler, client QueryClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq DelegateKeysByOrchestratorRequest
@@ -1538,6 +1542,17 @@ func request_Query_DelegateKeysByOrchestrator_0(ctx context.Context, marshaler r
 		_   = err
 	)
 
+	val, ok = pathParams["chain_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "chain_id")
+	}
+
+	protoReq.ChainId, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "chain_id", err)
+	}
+
 	val, ok = pathParams["orchestrator_address"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "orchestrator_address")
@@ -1547,13 +1562,6 @@ func request_Query_DelegateKeysByOrchestrator_0(ctx context.Context, marshaler r
 
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "orchestrator_address", err)
-	}
-
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_Query_DelegateKeysByOrchestrator_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
 	msg, err := client.DelegateKeysByOrchestrator(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -1572,6 +1580,17 @@ func local_request_Query_DelegateKeysByOrchestrator_0(ctx context.Context, marsh
 		_   = err
 	)
 
+	val, ok = pathParams["chain_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "chain_id")
+	}
+
+	protoReq.ChainId, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "chain_id", err)
+	}
+
 	val, ok = pathParams["orchestrator_address"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "orchestrator_address")
@@ -1583,31 +1602,31 @@ func local_request_Query_DelegateKeysByOrchestrator_0(ctx context.Context, marsh
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "orchestrator_address", err)
 	}
 
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_Query_DelegateKeysByOrchestrator_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-
 	msg, err := server.DelegateKeysByOrchestrator(ctx, &protoReq)
 	return msg, metadata, err
 
 }
 
-var (
-	filter_Query_DelegateKeys_0 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
-)
-
 func request_Query_DelegateKeys_0(ctx context.Context, marshaler runtime.Marshaler, client QueryClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq DelegateKeysRequest
 	var metadata runtime.ServerMetadata
 
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["chain_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "chain_id")
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_Query_DelegateKeys_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+
+	protoReq.ChainId, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "chain_id", err)
 	}
 
 	msg, err := client.DelegateKeys(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -1619,11 +1638,22 @@ func local_request_Query_DelegateKeys_0(ctx context.Context, marshaler runtime.M
 	var protoReq DelegateKeysRequest
 	var metadata runtime.ServerMetadata
 
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["chain_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "chain_id")
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_Query_DelegateKeys_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+
+	protoReq.ChainId, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "chain_id", err)
 	}
 
 	msg, err := server.DelegateKeys(ctx, &protoReq)
@@ -3009,13 +3039,13 @@ var (
 
 	pattern_Query_UnbatchedSendToExternals_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"mhub2", "v1", "query_unbatched_send_to_ext", "chain_id"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_Query_DelegateKeysByValidator_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"mhub2", "v1", "delegate_keys", "validator", "validator_address"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_DelegateKeysByValidator_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4, 1, 0, 4, 1, 5, 5}, []string{"mhub2", "v1", "delegate_keys", "validator", "chain_id", "validator_address"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_Query_DelegateKeysByExternalSigner_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"mhub2", "v1", "delegate_keys", "external", "external_signer"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_DelegateKeysByExternalSigner_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4, 1, 0, 4, 1, 5, 5}, []string{"mhub2", "v1", "delegate_keys", "external", "chain_id", "external_signer"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_Query_DelegateKeysByOrchestrator_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"mhub2", "v1", "delegate_keys", "orchestrator", "orchestrator_address"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_DelegateKeysByOrchestrator_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4, 1, 0, 4, 1, 5, 5}, []string{"mhub2", "v1", "delegate_keys", "orchestrator", "chain_id", "orchestrator_address"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_Query_DelegateKeys_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"mhub2", "v1", "delegate_keys"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_DelegateKeys_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"mhub2", "v1", "delegate_keys", "chain_id"}, "", runtime.AssumeColonVerbOpt(true)))
 
 	pattern_Query_TokenInfos_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"mhub2", "v1", "token_infos"}, "", runtime.AssumeColonVerbOpt(true)))
 
