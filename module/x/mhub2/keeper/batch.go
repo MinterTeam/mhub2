@@ -23,11 +23,11 @@ const BatchTxSize = 100
 // - emit an event
 func (k Keeper) BuildBatchTx(ctx sdk.Context, chainId types.ChainID, externalTokenId string, maxElements int) *types.BatchTx {
 	// if there is a more profitable batch for this token type do not create a new batch
-	//if lastBatch := k.getLastOutgoingBatchByTokenType(ctx, chainId, externalTokenId); lastBatch != nil {
-	//	if lastBatch.GetFees().GTE(k.getBatchFeesByTokenType(ctx, chainId, externalTokenId, maxElements)) {
-	//		return nil
-	//	}
-	//}
+	if lastBatch := k.getLastOutgoingBatchByTokenType(ctx, chainId, externalTokenId); lastBatch != nil {
+		if lastBatch.GetFees().GTE(k.getBatchFeesByTokenType(ctx, chainId, externalTokenId, maxElements)) {
+			//return nil
+		}
+	}
 
 	var selectedStes []*types.SendToExternal
 	k.iterateUnbatchedSendToExternalsByCoin(ctx, chainId, externalTokenId, func(ste *types.SendToExternal) bool {
@@ -100,7 +100,7 @@ func (k Keeper) batchTxExecuted(ctx sdk.Context, chainId types.ChainID, external
 			// If the iterated batches nonce is lower than the one that was just executed, cancel it
 			btx, _ := otx.(*types.BatchTx)
 			if (btx.BatchNonce < batchTx.BatchNonce) && (btx.ExternalTokenId == batchTx.ExternalTokenId) {
-				k.CancelBatchTx(ctx, chainId, externalTokenId, btx.BatchNonce)
+				k.CancelBatchTx(ctx, chainId, btx.ExternalTokenId, btx.BatchNonce)
 			}
 			return false
 		})
@@ -252,6 +252,10 @@ func (k Keeper) GetBatchFeesByTokenType(ctx sdk.Context, chainId types.ChainID, 
 
 // CancelBatchTx releases all TX in the batch and deletes the batch
 func (k Keeper) CancelBatchTx(ctx sdk.Context, chainId types.ChainID, externalTokenId string, nonce uint64) {
+	if chainId == "minter" {
+		panic("CANNOT CANCEL MINTER BATCH")
+	}
+
 	otx := k.GetOutgoingTx(ctx, chainId, types.MakeBatchTxKey(chainId, externalTokenId, nonce))
 	batch, _ := otx.(*types.BatchTx)
 

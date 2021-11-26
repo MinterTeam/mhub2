@@ -48,6 +48,9 @@ func getMinterCoinBalance(balances []*api_pb.AddressBalance, coin string) sdk.In
 }
 
 func sendMinterCoinToHub(privateKeyString string, sender common.Address, multisig string, client *grpc_client.Client, to string) {
+	minterSenderLock.Lock()
+	defer minterSenderLock.Unlock()
+
 	addr := "Mx" + sender.Hex()[2:]
 	tx, _ := transaction.NewBuilder(transaction.TestNetChainID).NewTransaction(
 		transaction.NewSendData().MustSetTo(multisig).SetCoin(1).SetValue(transaction.BipToPip(big.NewInt(1))),
@@ -69,6 +72,8 @@ func sendMinterCoinToHub(privateKeyString string, sender common.Address, multisi
 	if response.Code != 0 {
 		panic(response.Log)
 	}
+
+	waitMinterTx(client, response.Hash)
 }
 
 var minterSenderLock = sync.Mutex{}
@@ -195,15 +200,6 @@ func createMinterMultisig(prKey string, ethAddress common.Address, client *grpc_
 
 	if response.Code != 0 {
 		panic(response.Log)
-	}
-
-	for {
-		if _, err := client.Transaction(response.Hash); err != nil {
-			time.Sleep(time.Millisecond * 200)
-			continue
-		}
-
-		break
 	}
 
 	waitMinterTx(client, response.Hash)

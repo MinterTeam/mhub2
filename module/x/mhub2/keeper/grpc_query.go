@@ -3,6 +3,7 @@ package keeper
 import (
 	"bytes"
 	"context"
+	"sort"
 
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/types/query"
@@ -325,6 +326,11 @@ func (k Keeper) UnsignedBatchTxs(c context.Context, req *types.UnsignedBatchTxsR
 		}
 		return false
 	})
+
+	sort.Slice(batches, func(i, j int) bool {
+		return batches[i].BatchNonce < batches[j].BatchNonce
+	})
+
 	return &types.UnsignedBatchTxsResponse{Batches: batches}, nil
 }
 

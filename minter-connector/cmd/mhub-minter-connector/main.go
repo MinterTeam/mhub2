@@ -153,7 +153,7 @@ func relayBatches(ctx context.Context) {
 	}
 
 	sort.Slice(latestBatches.Batches, func(i, j int) bool {
-		return latestBatches.Batches[i].Sequence < latestBatches.Batches[j].Sequence
+		return latestBatches.Batches[i].Sequence > latestBatches.Batches[j].Sequence
 	})
 
 	var oldestSignedBatch *types.BatchTx
