@@ -1138,7 +1138,7 @@ func testBSCToEthereumTransfer(ctx *Context) {
 	ctx.TestsWg.Add(1)
 	randomPk, _ := crypto.GenerateKey()
 	recipient := crypto.PubkeyToAddress(randomPk.PublicKey).Hex()
-	sendERC20ToAnotherChain(ctx.EthPrivateKey, ctx.BscClient, ctx.BscContract, ctx.Bep20addr, recipient, bscChainId, "ethereum", big.NewInt(1e6))
+	sendERC20ToAnotherChain(ctx.EthPrivateKey, ctx.BscClient, ctx.BscContract, ctx.Bep20addr, recipient, bscChainId, "ethereum", big.NewInt(1e6), big.NewInt(100))
 
 	go func() {
 		expectedValue := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(1)))
@@ -1219,7 +1219,7 @@ func testEthereumToMinterTransfer(ctx *Context) {
 	ctx.TestsWg.Add(1)
 	randomPk, _ := crypto.GenerateKey()
 	recipient := crypto.PubkeyToAddress(randomPk.PublicKey).Hex()
-	sendERC20ToAnotherChain(ctx.EthPrivateKey, ctx.EthClient, ctx.EthContract, ctx.Erc20addr, recipient, ethChainId, "minter", big.NewInt(1e18))
+	sendERC20ToAnotherChain(ctx.EthPrivateKey, ctx.EthClient, ctx.EthContract, ctx.Erc20addr, recipient, ethChainId, "minter", big.NewInt(1e18), big.NewInt(100))
 
 	go func() {
 		expectedValue := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(1)))
@@ -1259,7 +1259,7 @@ func testValidatorsCommissions(ctx *Context) {
 	randomPk, _ := crypto.GenerateKey()
 	recipient := crypto.PubkeyToAddress(randomPk.PublicKey).Hex()
 	toSend := transaction.BipToPip(big.NewInt(999))
-	sendERC20ToAnotherChain(ctx.EthPrivateKey, ctx.EthClient, ctx.EthContract, ctx.Erc20addr, recipient, ethChainId, "minter", toSend)
+	sendERC20ToAnotherChain(ctx.EthPrivateKey, ctx.EthClient, ctx.EthContract, ctx.Erc20addr, recipient, ethChainId, "minter", toSend, big.NewInt(100))
 
 	go func() {
 		expectedValue := sdk.NewIntFromBigInt(toSend)
@@ -1378,7 +1378,7 @@ func testEthereumToBscTransfer(ctx *Context) {
 	ctx.TestsWg.Add(1)
 	randomPk, _ := crypto.GenerateKey()
 	recipient := crypto.PubkeyToAddress(randomPk.PublicKey).Hex()
-	sendERC20ToAnotherChain(ctx.EthPrivateKey, ctx.EthClient, ctx.EthContract, ctx.Erc20addr, recipient, ethChainId, "bsc", big.NewInt(1e18))
+	sendERC20ToAnotherChain(ctx.EthPrivateKey, ctx.EthClient, ctx.EthContract, ctx.Erc20addr, recipient, ethChainId, "bsc", big.NewInt(1e18), big.NewInt(100))
 
 	go func() {
 		expectedValue := sdk.NewInt(1e18)

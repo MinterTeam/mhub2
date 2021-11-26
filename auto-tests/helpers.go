@@ -412,7 +412,7 @@ func sendEthToAnotherChain(privateKey *ecdsa.PrivateKey, client *ethclient.Clien
 	waitEthTx(response.Hash(), client)
 }
 
-func sendERC20ToAnotherChain(privateKey *ecdsa.PrivateKey, client *ethclient.Client, hub2Addr string, erc20addr string, to string, chainId int64, destChain string, value *big.Int) {
+func sendERC20ToAnotherChain(privateKey *ecdsa.PrivateKey, client *ethclient.Client, hub2Addr string, erc20addr string, to string, chainId int64, destChain string, value, fee *big.Int) {
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
 	nonce, err := client.PendingNonceAt(context.TODO(), addr)
 	if err != nil {
@@ -449,7 +449,7 @@ func sendERC20ToAnotherChain(privateKey *ecdsa.PrivateKey, client *ethclient.Cli
 	destinationChain := [32]byte{}
 	copy(destinationChain[:], destChain)
 
-	response, err := hub2Instance.TransferToChain(auth, common.HexToAddress(erc20addr), destinationChain, rec, value, big.NewInt(100))
+	response, err := hub2Instance.TransferToChain(auth, common.HexToAddress(erc20addr), destinationChain, rec, value, fee)
 	if err != nil {
 		panic(err)
 	}
