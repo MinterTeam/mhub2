@@ -198,19 +198,17 @@ func relayBatches(ctx context.Context) {
 		panic(err)
 	}
 
-	lastValset, err := cosmosClient.LatestSignerSetTx(c.Background(), &types.LatestSignerSetTxRequest{
-		ChainId: "minter",
-	})
+	msig, err := ctx.MinterClient.Address(ctx.MinterMultisigAddr)
 	if err != nil {
 		println(err.Error())
 		time.Sleep(time.Second)
 		return
 	}
 
-	// Check if signer is in the last confirmed valset
+	// Check if signer is in the signer set of multisig
 	for _, sig := range oldestSignatures {
-		for _, member := range lastValset.GetSignerSet().GetSigners() {
-			if strings.ToLower(member.ExternalAddress[2:]) == strings.ToLower(sig.ExternalSigner[2:]) {
+		for _, member := range msig.Multisig.Addresses {
+			if strings.ToLower(member[2:]) == strings.ToLower(sig.ExternalSigner[2:]) {
 				signedTx, err = signedTx.AddSignature(fmt.Sprintf("%x", sig.Signature))
 				if err != nil {
 					panic(err)

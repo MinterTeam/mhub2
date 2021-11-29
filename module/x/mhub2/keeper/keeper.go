@@ -803,8 +803,10 @@ func (k Keeper) CheckChainID(ctx sdk.Context, id types.ChainID) error {
 	return errors.New("invalid chain id")
 }
 
-func (k *Keeper) SetStakingKeeper(keeper stakingkeeper.Keeper) {
+func (k *Keeper) SetStakingKeeper(keeper stakingkeeper.Keeper) *Keeper {
 	k.StakingKeeper = keeper
+
+	return k
 }
 
 func convertDecimals(fromDecimals uint64, toDecimals uint64, amount sdk.Int) sdk.Int {

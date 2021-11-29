@@ -392,7 +392,7 @@ func NewMhub2App(
 		stakingKeeper,
 	)
 
-	app.mhub2Keeper = keeper.NewKeeper(
+	mhub2Keeper := keeper.NewKeeper(
 		appCodec,
 		keys[mhub2types.StoreKey],
 		app.GetSubspace(mhub2types.ModuleName),
@@ -411,8 +411,7 @@ func NewMhub2App(
 		),
 	)
 
-	app.mhub2Keeper.SetStakingKeeper(stakingKeeper)
-
+	app.mhub2Keeper = *mhub2Keeper.SetStakingKeeper(stakingKeeper)
 	app.oracleKeeper = app.oracleKeeper.SetMhub2Keeper(app.mhub2Keeper)
 
 	govRouter := govtypes.NewRouter()
