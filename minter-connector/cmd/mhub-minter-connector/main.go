@@ -402,7 +402,7 @@ func relayValsets(ctx context.Context) {
 		hasMember := false
 		if msig.Multisig != nil {
 			for _, member := range msig.Multisig.Addresses {
-				if strings.ToLower(member) == strings.ToLower(sig.ExternalSigner) {
+				if strings.ToLower(member[2:]) == strings.ToLower(sig.ExternalSigner[2:]) {
 					hasMember = true
 				}
 			}
