@@ -390,9 +390,7 @@ func relayValsets(ctx context.Context) {
 		panic(err)
 	}
 
-	lastValset, err := cosmosClient.LatestSignerSetTx(c.Background(), &types.LatestSignerSetTxRequest{
-		ChainId: "minter",
-	})
+	msig, err := ctx.MinterClient.Address(ctx.MinterMultisigAddr)
 	if err != nil {
 		println(err.Error())
 		time.Sleep(time.Second)
@@ -402,13 +400,15 @@ func relayValsets(ctx context.Context) {
 	// Check if signer is in the last confirmed valset
 	for _, sig := range oldestSignatures {
 		hasMember := false
-		for _, member := range lastValset.GetSignerSet().GetSigners() {
-			if strings.ToLower(member.ExternalAddress) == strings.ToLower(sig.ExternalSigner) {
-				hasMember = true
+		if msig.Multisig != nil {
+			for _, member := range msig.Multisig.Addresses {
+				if strings.ToLower(member) == strings.ToLower(sig.ExternalSigner) {
+					hasMember = true
+				}
 			}
 		}
 
-		if hasMember || len(lastValset.GetSignerSet().GetSigners()) == 0 {
+		if hasMember || msig.Multisig == nil {
 			signedTx, err = signedTx.AddSignature(fmt.Sprintf("%x", sig.Signature))
 			if err != nil {
 				panic(err)
@@ -454,7 +454,7 @@ func relayMinterEvents(ctx context.Context) context.Context {
 			to = latestBlock
 		}
 
-		blocks, err := ctx.MinterClient.Blocks(from, to, false)
+		blocks, err := ctx.MinterClient.Blocks(from, to, false, false)
 		if err != nil {
 			ctx.Logger.Info("Error getting minter blocks", "err", err.Error())
 			time.Sleep(time.Second)

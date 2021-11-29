@@ -40,7 +40,7 @@ func GetLatestMinterBlockAndNonce(ctx context.Context, currentNonce uint64) cont
 			to = latestBlock
 		}
 
-		blocks, err := ctx.MinterClient.Blocks(from, to, false)
+		blocks, err := ctx.MinterClient.Blocks(from, to, false, false)
 		if err != nil {
 			ctx.Logger.Error("Error while getting minter blocks", "err", err.Error())
 			time.Sleep(time.Second)

@@ -13,6 +13,8 @@ import (
 	"strings"
 	"time"
 
+	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
+
 	errors2 "github.com/cosmos/cosmos-sdk/types/errors"
 
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -55,7 +57,6 @@ func NewKeeper(
 	storeKey sdk.StoreKey,
 	paramSpace paramtypes.Subspace,
 	accKeeper types.AccountKeeper,
-	stakingKeeper types.StakingKeeper,
 	bankKeeper types.BankKeeper,
 	slashingKeeper types.SlashingKeeper,
 	oracleKeeper types.OracleKeeper,
@@ -71,7 +72,6 @@ func NewKeeper(
 		paramSpace:     paramSpace,
 		storeKey:       storeKey,
 		accountKeeper:  accKeeper,
-		StakingKeeper:  stakingKeeper,
 		oracleKeeper:   oracleKeeper,
 		bankKeeper:     bankKeeper,
 		SlashingKeeper: slashingKeeper,
@@ -801,6 +801,10 @@ func (k Keeper) CheckChainID(ctx sdk.Context, id types.ChainID) error {
 	}
 
 	return errors.New("invalid chain id")
+}
+
+func (k *Keeper) SetStakingKeeper(keeper stakingkeeper.Keeper) {
+	k.StakingKeeper = keeper
 }
 
 func convertDecimals(fromDecimals uint64, toDecimals uint64, amount sdk.Int) sdk.Int {

@@ -447,7 +447,6 @@ func CreateTestEnv(t *testing.T) TestInput {
 		mhub2key,
 		getSubspace(paramsKeeper, types.DefaultParamspace),
 		accountKeeper,
-		stakingKeeper,
 		bankKeeper,
 		slashingKeeper,
 		MockOracleKeeper{},
@@ -461,6 +460,8 @@ func CreateTestEnv(t *testing.T) TestInput {
 			k.Hooks(),
 		),
 	)
+
+	k.SetStakingKeeper(stakingKeeper)
 
 	k.setParams(ctx, TestingMhub2Params)
 	k.SetTokenInfos(ctx, types.DefaultGenesisState().TokenInfos)
