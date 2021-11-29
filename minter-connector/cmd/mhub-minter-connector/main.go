@@ -350,6 +350,7 @@ func relayValsets(ctx context.Context) {
 		if sigs.Size() > 0 { // todo: check if we have enough votes
 			oldestSignedValset = valset
 			oldestSignatures = sigs.Signatures
+			break
 		}
 	}
 
