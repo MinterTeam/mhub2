@@ -75,10 +75,6 @@ func NewKeeper(
 		SlashingKeeper: slashingKeeper,
 		PowerReduction: powerReduction,
 	}
-	k.ExternalEventProcessor = ExternalEventProcessor{
-		keeper:     k,
-		bankKeeper: bankKeeper,
-	}
 
 	return k
 }
@@ -801,8 +797,12 @@ func (k Keeper) CheckChainID(ctx sdk.Context, id types.ChainID) error {
 	return errors.New("invalid chain id")
 }
 
-func (k *Keeper) SetStakingKeeper(keeper types.StakingKeeper) *Keeper {
+func (k Keeper) SetStakingKeeper(keeper types.StakingKeeper) Keeper {
 	k.StakingKeeper = keeper
+	k.ExternalEventProcessor = ExternalEventProcessor{
+		keeper:     k,
+		bankKeeper: k.bankKeeper,
+	}
 
 	return k
 }
