@@ -13,8 +13,6 @@ import (
 	"strings"
 	"time"
 
-	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
-
 	errors2 "github.com/cosmos/cosmos-sdk/types/errors"
 
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -803,7 +801,7 @@ func (k Keeper) CheckChainID(ctx sdk.Context, id types.ChainID) error {
 	return errors.New("invalid chain id")
 }
 
-func (k *Keeper) SetStakingKeeper(keeper stakingkeeper.Keeper) *Keeper {
+func (k *Keeper) SetStakingKeeper(keeper types.StakingKeeper) *Keeper {
 	k.StakingKeeper = keeper
 
 	return k
