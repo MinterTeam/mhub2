@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"time"
 
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+
 	oracletypes "github.com/MinterTeam/mhub2/module/x/oracle/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -165,6 +167,15 @@ func AddMigrateGenesisCmd(defaultNodeHome string) *cobra.Command {
 				return fmt.Errorf("failed to marshal genesis state: %w", err)
 			}
 			appState[oracletypes.ModuleName] = oracleGenStateJson
+
+			govState := govtypes.DefaultGenesisState()
+			govState.DepositParams.MinDeposit = sdk.NewCoins(sdk.NewInt64Coin("hub", 1e18))
+			govState.VotingParams.VotingPeriod = time.Hour * 3
+			govStateJson, err := cdc.MarshalJSON(govState)
+			if err != nil {
+				return fmt.Errorf("failed to marshal genesis state: %w", err)
+			}
+			appState[govtypes.ModuleName] = govStateJson
 
 			appStateJSON, err := json.Marshal(appState)
 			if err != nil {
