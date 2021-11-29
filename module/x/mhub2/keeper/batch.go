@@ -120,6 +120,9 @@ func (k Keeper) batchTxExecuted(ctx sdk.Context, chainId types.ChainID, external
 		k.SetTxStatus(ctx, tx.TxHash, types.TX_STATUS_BATCH_EXECUTED, txHash)
 	}
 
+	totalValCommission.Amount = k.ConvertFromExternalValue(ctx, chainId, tokenInfo.ExternalTokenId, totalValCommission.Amount)
+	totalFee.Amount = k.ConvertFromExternalValue(ctx, chainId, tokenInfo.ExternalTokenId, totalFee.Amount)
+
 	// pay val's commissions
 	if totalValCommission.IsPositive() {
 		valset := k.CurrentSignerSet(ctx, chainId)
@@ -192,17 +195,19 @@ func (k Keeper) batchTxExecuted(ctx sdk.Context, chainId types.ChainID, external
 				averageFeePaid := fee.Amount.QuoRaw(int64(len(batchTx.Transactions)))
 				totalGoodFeePaid := sdk.NewInt(0)
 				for _, tx := range batchTx.Transactions {
-					if tx.Fee.Amount.GTE(averageFeePaid) {
-						totalGoodFeePaid = totalGoodFeePaid.Add(tx.Fee.Amount)
+					convertedTxFee := k.ConvertFromExternalValue(ctx, chainId, tokenInfo.ExternalTokenId, tx.Fee.Amount)
+					if convertedTxFee.GTE(averageFeePaid) {
+						totalGoodFeePaid = totalGoodFeePaid.Add(convertedTxFee)
 					}
 				}
 
 				for _, tx := range batchTx.Transactions {
-					if tx.Fee.Amount.LT(averageFeePaid) {
+					convertedTxFee := k.ConvertFromExternalValue(ctx, chainId, tokenInfo.ExternalTokenId, tx.Fee.Amount)
+					if convertedTxFee.LT(averageFeePaid) {
 						continue
 					}
 
-					toRefund := feeLeft.Amount.Mul(tx.Fee.Amount).Quo(totalGoodFeePaid)
+					toRefund := feeLeft.Amount.Mul(convertedTxFee).Quo(totalGoodFeePaid)
 					if tx.RefundChainId != "minter" { // we only can refund fee to minter
 						continue
 					}
