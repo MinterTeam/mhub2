@@ -53,7 +53,7 @@ pub async fn relayer_main_loop(
             get_gravity_id(gravity_contract_address, our_ethereum_address, &web3).await;
         if gravity_id.is_err() {
             error!("Failed to get GravityID, check your Eth node");
-            return;
+            continue;
         }
         let gravity_id = gravity_id.unwrap();
         let gravity_id = String::from_utf8(gravity_id.clone()).expect("Invalid GravityID");

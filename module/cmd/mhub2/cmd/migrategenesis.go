@@ -151,6 +151,30 @@ func AddMigrateGenesisCmd(defaultNodeHome string) *cobra.Command {
 					ExternalDecimals: uint64(ethDecimals),
 					Commission:       sdk.MustNewDecFromStr(coin.CustomCommission),
 				})
+
+				if coin.Denom == "bipx" {
+					id++
+					genState.TokenInfos.TokenInfos = append(genState.TokenInfos.TokenInfos, &types.TokenInfo{
+						Id:               id,
+						Denom:            coin.Denom,
+						ChainId:          "bsc",
+						ExternalTokenId:  "0xf2Ba89A6f9670459ed5AeEfbd8Db52Be912228b8",
+						ExternalDecimals: 18,
+						Commission:       sdk.MustNewDecFromStr(coin.CustomCommission),
+					})
+				}
+
+				if coin.Denom == "hub" {
+					id++
+					genState.TokenInfos.TokenInfos = append(genState.TokenInfos.TokenInfos, &types.TokenInfo{
+						Id:               id,
+						Denom:            coin.Denom,
+						ChainId:          "bsc",
+						ExternalTokenId:  "0x8aC0A467f878f3561D309cF9B0994b0530b0a9d2",
+						ExternalDecimals: 18,
+						Commission:       sdk.MustNewDecFromStr(coin.CustomCommission),
+					})
+				}
 			}
 
 			genStateJson, err := cdc.MarshalJSON(genState)
