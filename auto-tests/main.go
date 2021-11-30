@@ -30,6 +30,7 @@ import (
 	"math"
 	"math/big"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -53,6 +54,7 @@ const (
 	ethChainId         = 15
 	bscChainId         = 16
 	ethSignaturePrefix = "\x19Ethereum Signed Message:\n32"
+	minterCoinId       = 0
 )
 
 type Context struct {
@@ -162,7 +164,7 @@ func main() {
 	hubAddress := strings.Trim(runOrPanic("mhub2 keys show validator1 -a --keyring-backend test"), "\n")
 
 	runOrPanic("mhub2 add-genesis-account --keyring-backend test validator1 100000000000000000000000000%s,100000000000000000000000000hub", denom)
-	runOrPanic("mhub2 prepare-genesis-for-tests %s %s %s %s %s", erc20addr, bep20addr, "1", "2", wethAddr)
+	runOrPanic("mhub2 prepare-genesis-for-tests %s %s %s %s %s", erc20addr, bep20addr, strconv.Itoa(minterCoinId), "2", wethAddr)
 
 	valAddress, _ := cosmos.GetAccount(cosmosMnemonic)
 	signMsgBz := app.MakeEncodingConfig().Marshaler.MustMarshal(&types.DelegateKeysSignMsg{
@@ -381,7 +383,7 @@ func testColdStorageTransfer(ctx *Context) {
 					panic(err)
 				}
 
-				hubBalance := getMinterCoinBalance(response.Balance, "HUB")
+				hubBalance := getMinterCoinBalance(response.Balance, minterCoinId)
 				if hubBalance.IsZero() {
 					if time.Now().Sub(startTime).Seconds() > testTimeout.Seconds() {
 						panic("Timeout waiting for the balance to update")
@@ -508,7 +510,7 @@ func testFeeForTransactionRelayer(ctx *Context) {
 	randomPk, _ := crypto.GenerateKey()
 	recipient := crypto.PubkeyToAddress(randomPk.PublicKey).Hex()
 	fee := sdk.NewInt(8888)
-	sendMinterCoinToEthereum(ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterMultisig, ctx.MinterClient, 1, recipient, sdk.NewInt(1e18), fee)
+	sendMinterCoinToEthereum(ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterMultisig, ctx.MinterClient, minterCoinId, recipient, sdk.NewInt(1e18), fee)
 	minterStatus, err := ctx.MinterClient.Status()
 	if err != nil {
 		panic(err)
@@ -542,7 +544,7 @@ func testFeeForTransactionRelayer(ctx *Context) {
 					}
 
 					for _, item := range data.List {
-						if item.Coin.Id == 1 && strings.ToLower(ctx.EthAddress.String())[2:] == item.To[2:] && item.Value == fee.String() {
+						if item.Coin.Id == minterCoinId && strings.ToLower(ctx.EthAddress.String())[2:] == item.To[2:] && item.Value == fee.String() {
 							println("SUCCESS: test fee for transaction relayer")
 							ctx.TestsWg.Done()
 							return
@@ -557,7 +559,7 @@ func testFeeForTransactionRelayer(ctx *Context) {
 }
 
 func testDiscountForHolder(ctx *Context, recipient string) {
-	sendMinterCoinToEthereum(ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterMultisig, ctx.MinterClient, 1, recipient, sdk.NewInt(1e18), sdk.NewInt(100))
+	sendMinterCoinToEthereum(ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterMultisig, ctx.MinterClient, minterCoinId, recipient, sdk.NewInt(1e18), sdk.NewInt(100))
 
 	fee := int64(100)
 	expectedValue := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(1)))
@@ -685,7 +687,7 @@ func testMinterToEthereumTransfer(ctx *Context) {
 	ctx.TestsWg.Add(1)
 	randomPk, _ := crypto.GenerateKey()
 	recipient := crypto.PubkeyToAddress(randomPk.PublicKey).Hex()
-	sendMinterCoinToEthereum(ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterMultisig, ctx.MinterClient, 1, recipient, sdk.NewInt(1e18), sdk.NewInt(100))
+	sendMinterCoinToEthereum(ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterMultisig, ctx.MinterClient, minterCoinId, recipient, sdk.NewInt(1e18), sdk.NewInt(100))
 
 	go func() {
 		fee := int64(100)
@@ -773,7 +775,7 @@ func testTxTimeout(ctx *Context) {
 	randomPk, _ := crypto.GenerateKey()
 	recipient := crypto.PubkeyToAddress(randomPk.PublicKey).Hex()
 	value := big.NewInt(1e18)
-	sendMinterCoinToEthereum(ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterMultisig, ctx.MinterClient, 1, recipient, sdk.NewInt(1e18), sdk.NewInt(100))
+	sendMinterCoinToEthereum(ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterMultisig, ctx.MinterClient, minterCoinId, recipient, sdk.NewInt(1e18), sdk.NewInt(100))
 
 	minterStatus, err := ctx.MinterClient.Status()
 	if err != nil {
@@ -853,7 +855,7 @@ func testTxTimeout(ctx *Context) {
 					}
 
 					for _, item := range data.List {
-						if item.Coin.Id == 1 && strings.ToLower(ctx.EthAddress.String())[2:] == item.To[2:] && item.Value == value.String() { // todo???
+						if item.Coin.Id == minterCoinId && strings.ToLower(ctx.EthAddress.String())[2:] == item.To[2:] && item.Value == value.String() { // todo???
 							println("SUCCESS: test refunds")
 							ctx.TestsWg.Done()
 							return
@@ -953,7 +955,7 @@ func testTxTimeoutDifferentDecimals(ctx *Context) {
 					}
 
 					for _, item := range data.List {
-						if item.Coin.Id == 1 && strings.ToLower(ctx.EthAddress.String())[2:] == item.To[2:] && item.Value == expectedValue.String() {
+						if item.Coin.Id == minterCoinId && strings.ToLower(ctx.EthAddress.String())[2:] == item.To[2:] && item.Value == expectedValue.String() {
 							println("SUCCESS: test refunds with different decimals")
 							ctx.TestsWg.Done()
 							return
@@ -1104,7 +1106,7 @@ func testHubToMinterTransfer(ctx *Context) {
 				panic(err)
 			}
 
-			hubBalance := getMinterCoinBalance(response.Balance, "HUB")
+			hubBalance := getMinterCoinBalance(response.Balance, minterCoinId)
 			if hubBalance.IsZero() {
 				if time.Now().Sub(startTime).Seconds() > testTimeout.Seconds() {
 					panic("Timeout waiting for the balance to update")
@@ -1303,7 +1305,7 @@ func testEthEthereumToMinterTransfer(ctx *Context) {
 				panic(err)
 			}
 
-			hubBalance := getMinterCoinBalance(response.Balance, "ETH")
+			hubBalance := getMinterCoinBalance(response.Balance, 2)
 			if hubBalance.IsZero() {
 				if time.Now().Sub(startTime).Seconds() > testTimeout.Seconds() {
 					panic("Timeout waiting for the balance to update")
@@ -1342,7 +1344,7 @@ func testEthereumToMinterTransfer(ctx *Context) {
 				panic(err)
 			}
 
-			hubBalance := getMinterCoinBalance(response.Balance, "HUB")
+			hubBalance := getMinterCoinBalance(response.Balance, minterCoinId)
 			if hubBalance.IsZero() {
 				if time.Now().Sub(startTime).Seconds() > testTimeout.Seconds() {
 					panic("Timeout waiting for the balance to update")
@@ -1404,7 +1406,7 @@ func testValidatorsCommissionsWithDifferentDecimals(ctx *Context) {
 					}
 
 					for _, item := range data.List {
-						if item.Coin.Id == 1 && strings.ToLower(ctx.EthAddress.String())[2:] == item.To[2:] && item.Value == expectedValue.String() {
+						if item.Coin.Id == minterCoinId && strings.ToLower(ctx.EthAddress.String())[2:] == item.To[2:] && item.Value == expectedValue.String() {
 							println("SUCCESS: test commission for validator with different decimals")
 							ctx.TestsWg.Done()
 							return
@@ -1460,7 +1462,7 @@ func testValidatorsCommissions(ctx *Context) {
 					}
 
 					for _, item := range data.List {
-						if item.Coin.Id == 1 && strings.ToLower(ctx.EthAddress.String())[2:] == item.To[2:] && item.Value == expectedValue.String() {
+						if item.Coin.Id == minterCoinId && strings.ToLower(ctx.EthAddress.String())[2:] == item.To[2:] && item.Value == expectedValue.String() {
 							println("SUCCESS: test commission for validator")
 							ctx.TestsWg.Done()
 							return
@@ -1483,7 +1485,7 @@ func testFeeRefund(ctx *Context) {
 	fee := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(15000)))
 	fundMinterAddress("Mx"+recipient[2:], ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterClient)
 
-	sendMinterCoinToEthereum(randomPkString, common.HexToAddress(recipient), ctx.MinterMultisig, ctx.MinterClient, 1, recipient, value, fee)
+	sendMinterCoinToEthereum(randomPkString, common.HexToAddress(recipient), ctx.MinterMultisig, ctx.MinterClient, minterCoinId, recipient, value, fee)
 
 	go func() {
 		expectedValue := fee // todo: calculate this value somehow
@@ -1519,7 +1521,7 @@ func testFeeRefund(ctx *Context) {
 					}
 
 					for _, item := range data.List {
-						if item.Coin.Id != 1 || strings.ToLower(recipient)[2:] != item.To[2:] {
+						if item.Coin.Id != minterCoinId || strings.ToLower(recipient)[2:] != item.To[2:] {
 							continue
 						}
 
@@ -1583,7 +1585,7 @@ func testFeeRefundWithDifferentDecimals(ctx *Context) {
 					}
 
 					for _, item := range data.List {
-						if item.Coin.Id != 1 || strings.ToLower(recipient)[2:] != item.To[2:] {
+						if item.Coin.Id != minterCoinId || strings.ToLower(recipient)[2:] != item.To[2:] {
 							continue
 						}
 

@@ -36,9 +36,9 @@ import (
 	"time"
 )
 
-func getMinterCoinBalance(balances []*api_pb.AddressBalance, coin string) sdk.Int {
+func getMinterCoinBalance(balances []*api_pb.AddressBalance, id uint64) sdk.Int {
 	for _, balance := range balances {
-		if balance.Coin.Symbol == coin {
+		if balance.Coin.Id == id {
 			b, _ := sdk.NewIntFromString(balance.Value)
 			return b
 		}
@@ -53,7 +53,7 @@ func sendMinterCoinToHub(privateKeyString string, sender common.Address, multisi
 
 	addr := "Mx" + sender.Hex()[2:]
 	tx, _ := transaction.NewBuilder(transaction.TestNetChainID).NewTransaction(
-		transaction.NewSendData().MustSetTo(multisig).SetCoin(1).SetValue(transaction.BipToPip(big.NewInt(1))),
+		transaction.NewSendData().MustSetTo(multisig).SetCoin(minterCoinId).SetValue(transaction.BipToPip(big.NewInt(1))),
 	)
 
 	nonce, err := client.Nonce(addr)
@@ -113,7 +113,7 @@ func sendMinterCoinToBsc(privateKeyString string, sender common.Address, multisi
 
 	addr := "Mx" + sender.Hex()[2:]
 	tx, _ := transaction.NewBuilder(transaction.TestNetChainID).NewTransaction(
-		transaction.NewSendData().MustSetTo(multisig).SetCoin(1).SetValue(value.BigInt()),
+		transaction.NewSendData().MustSetTo(multisig).SetCoin(minterCoinId).SetValue(value.BigInt()),
 	)
 
 	nonce, err := client.Nonce(addr)
