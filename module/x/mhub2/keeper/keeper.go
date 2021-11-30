@@ -411,6 +411,7 @@ func (k Keeper) getDelegateKeys(ctx sdk.Context, chainId types.ChainID) (out []*
 		out = append(out, &types.MsgDelegateKeys{
 			ValidatorAddress: sdk.ValAddress(iter.Key()).String(),
 			ExternalAddress:  common.BytesToAddress(iter.Value()).Hex(),
+			ChainId:          chainId.String(),
 		})
 	}
 	iter.Close()
