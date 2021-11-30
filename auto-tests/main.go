@@ -54,7 +54,7 @@ const (
 	ethChainId         = 15
 	bscChainId         = 16
 	ethSignaturePrefix = "\x19Ethereum Signed Message:\n32"
-	minterCoinId       = 0
+	minterCoinId       = 1
 )
 
 type Context struct {
