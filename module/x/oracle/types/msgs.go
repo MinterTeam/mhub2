@@ -2,6 +2,7 @@ package types
 
 import (
 	"fmt"
+	"strings"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -55,7 +56,7 @@ func (e *GenericClaim) GetClaimer() sdk.AccAddress {
 	return val
 }
 
-func GenericClaimfromInterface(claim Claim) (*GenericClaim, error) {
+func GenericClaimFromInterface(claim Claim) (*GenericClaim, error) {
 	err := claim.ValidateBasic()
 	if err != nil {
 		return nil, err
@@ -150,6 +151,16 @@ func (e *MsgHoldersClaim) ValidateBasic() error {
 	if e.Epoch == 0 {
 		return fmt.Errorf("nonce == 0")
 	}
+
+	addresses := map[string]bool{}
+	for _, item := range e.Holders.List {
+		address := strings.ToLower(item.Address)
+		if addresses[address] {
+			return fmt.Errorf("duplicated address %s", address)
+		}
+		addresses[address] = true
+	}
+
 	return nil
 }
 

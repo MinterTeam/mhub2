@@ -33,7 +33,10 @@ func (k Keeper) AddClaim(ctx sdk.Context, details types.Claim) (*types.Attestati
 // storeClaim persists a claim. Fails when a claim submitted by an Eth signer does not increment the event nonce by exactly 1.
 func (k Keeper) storeClaim(ctx sdk.Context, details types.Claim) error {
 	// Store the claim
-	genericClaim, _ := types.GenericClaimfromInterface(details)
+	genericClaim, err := types.GenericClaimFromInterface(details)
+	if err != nil {
+		return err
+	}
 	store := ctx.KVStore(k.storeKey)
 	cKey := types.GetClaimKey(details)
 	store.Set(cKey, k.cdc.MustMarshal(genericClaim))
