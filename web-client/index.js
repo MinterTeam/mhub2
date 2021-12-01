@@ -1,6 +1,6 @@
 const atob = require('./utils/node-atob.js');
 
-const {TokenInfosRequest, TransactionStatusRequest} = require('./gen/mhub2/v1/query_pb.js')
+const {TokenInfosRequest, TransactionStatusRequest, DiscountForHolderRequest} = require('./gen/mhub2/v1/query_pb.js')
 const {QueryClient: HubService} = require('./gen/mhub2/v1/query_grpc_web_pb.js')
 
 const {QueryPricesRequest, QueryEthFeeRequest, QueryBscFeeRequest} = require('./gen/oracle/v1/query_pb.js')
@@ -41,6 +41,22 @@ function MinterHub(hostname) {
                     reject(err);
                 } else {
                     resolve(response.toObject().status);
+                }
+            });
+        });
+    }
+
+    /**
+     * @param {string} address
+     * @return {Promise<TxStatus.AsObject>}
+     */
+    this.getDiscountForHolder = function(address) {
+        return new Promise((resolve, reject) => {
+            hubService.discountForHolder(new DiscountForHolderRequest([address]), {}, function(err, response) {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(atob(response.toObject().discount));
                 }
             });
         });
