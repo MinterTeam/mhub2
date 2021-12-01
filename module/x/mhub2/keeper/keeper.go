@@ -55,7 +55,6 @@ func NewKeeper(
 	storeKey sdk.StoreKey,
 	paramSpace paramtypes.Subspace,
 	accKeeper types.AccountKeeper,
-	stakingKeeper types.StakingKeeper,
 	bankKeeper types.BankKeeper,
 	slashingKeeper types.SlashingKeeper,
 	oracleKeeper types.OracleKeeper,
@@ -71,15 +70,10 @@ func NewKeeper(
 		paramSpace:     paramSpace,
 		storeKey:       storeKey,
 		accountKeeper:  accKeeper,
-		StakingKeeper:  stakingKeeper,
 		oracleKeeper:   oracleKeeper,
 		bankKeeper:     bankKeeper,
 		SlashingKeeper: slashingKeeper,
 		PowerReduction: powerReduction,
-	}
-	k.ExternalEventProcessor = ExternalEventProcessor{
-		keeper:     k,
-		bankKeeper: bankKeeper,
 	}
 
 	return k
@@ -118,7 +112,7 @@ func (k Keeper) GetLatestSignerSetTx(ctx sdk.Context, chainId types.ChainID) *ty
 }
 
 //////////////////////////////
-// LastUnbondingBlockHeight // // todo
+// LastUnbondingBlockHeight //
 //////////////////////////////
 
 // setLastUnbondingBlockHeight sets the last unbonding block height
@@ -176,52 +170,57 @@ func (k Keeper) iterateExternalSignatures(ctx sdk.Context, chainId types.ChainID
 }
 
 /////////////////////////
-//  ORC -> VAL ADDRESS // todo
+//  ORC -> VAL ADDRESS //
 /////////////////////////
 
 // SetOrchestratorValidatorAddress sets the Orchestrator key for a given validator.
-func (k Keeper) SetOrchestratorValidatorAddress(ctx sdk.Context, val sdk.ValAddress, orchAddr sdk.AccAddress) {
+func (k Keeper) SetOrchestratorValidatorAddress(ctx sdk.Context, chainId types.ChainID, val sdk.ValAddress, orchAddr sdk.AccAddress) {
 	store := ctx.KVStore(k.storeKey)
-	key := types.MakeOrchestratorValidatorAddressKey(orchAddr)
+	key := types.MakeOrchestratorValidatorAddressKey(chainId, orchAddr)
 
 	store.Set(key, val.Bytes())
 }
 
 // GetOrchestratorValidatorAddress returns the validator key associated with an
 // orchestrator key.
-func (k Keeper) GetOrchestratorValidatorAddress(ctx sdk.Context, orchAddr sdk.AccAddress) sdk.ValAddress {
+func (k Keeper) GetOrchestratorValidatorAddress(ctx sdk.Context, chainId types.ChainID, orchAddr sdk.AccAddress) sdk.ValAddress {
 	store := ctx.KVStore(k.storeKey)
-	key := types.MakeOrchestratorValidatorAddressKey(orchAddr)
+	key := types.MakeOrchestratorValidatorAddressKey(chainId, orchAddr)
 
 	return store.Get(key)
 }
 
 ////////////////////////
-// VAL -> ETH ADDRESS // todo
+// VAL -> ETH ADDRESS //
 ////////////////////////
 
 // setValidatorExternalAddress sets the ethereum address for a given validator
-func (k Keeper) setValidatorExternalAddress(ctx sdk.Context, valAddr sdk.ValAddress, ethAddr common.Address) {
+func (k Keeper) setValidatorExternalAddress(ctx sdk.Context, chainId types.ChainID, valAddr sdk.ValAddress, ethAddr common.Address) {
 	store := ctx.KVStore(k.storeKey)
-	key := types.MakeValidatorExternalAddressKey(valAddr)
+	key := types.MakeValidatorExternalAddressKey(chainId, valAddr)
 
 	store.Set(key, ethAddr.Bytes())
 }
 
 // GetValidatorExternalAddress returns the eth address for a given mhub2 validator.
-func (k Keeper) GetValidatorExternalAddress(ctx sdk.Context, valAddr sdk.ValAddress) common.Address {
+func (k Keeper) GetValidatorExternalAddress(ctx sdk.Context, chainId types.ChainID, valAddr sdk.ValAddress) common.Address {
 	store := ctx.KVStore(k.storeKey)
-	key := types.MakeValidatorExternalAddressKey(valAddr)
+	key := types.MakeValidatorExternalAddressKey(chainId, valAddr)
 
 	return common.BytesToAddress(store.Get(key))
 }
 
-func (k Keeper) getValidatorsByExternalAddress(ctx sdk.Context, ethAddr common.Address) (vals []sdk.ValAddress) {
+func (k Keeper) getValidatorsByExternalAddress(ctx sdk.Context, chainId types.ChainID, ethAddr common.Address) (vals []sdk.ValAddress) {
 	iter := ctx.KVStore(k.storeKey).Iterator(nil, nil)
 
 	for ; iter.Valid(); iter.Next() {
 		if common.BytesToAddress(iter.Value()) == ethAddr {
 			valBs := bytes.TrimPrefix(iter.Key(), []byte{types.ValidatorExternalAddressKey})
+			if !bytes.HasPrefix(valBs, chainId.Bytes()) {
+				continue
+			}
+			valBs = bytes.TrimPrefix(valBs, chainId.Bytes())
+
 			val := sdk.ValAddress(valBs)
 			vals = append(vals, val)
 		}
@@ -231,31 +230,36 @@ func (k Keeper) getValidatorsByExternalAddress(ctx sdk.Context, ethAddr common.A
 }
 
 ////////////////////////
-// ETH -> ORC ADDRESS // todo
+// ETH -> ORC ADDRESS //
 ////////////////////////
 
 // setExternalOrchestratorAddress sets the eth orch addr mapping
-func (k Keeper) setExternalOrchestratorAddress(ctx sdk.Context, ethAddr common.Address, orch sdk.AccAddress) {
+func (k Keeper) setExternalOrchestratorAddress(ctx sdk.Context, chainId types.ChainID, ethAddr common.Address, orch sdk.AccAddress) {
 	store := ctx.KVStore(k.storeKey)
-	key := types.MakeExternalOrchestratorAddressKey(ethAddr)
+	key := types.MakeExternalOrchestratorAddressKey(chainId, ethAddr)
 
 	store.Set(key, orch.Bytes())
 }
 
 // GetExternalOrchestratorAddress gets the orch address for a given eth address
-func (k Keeper) GetExternalOrchestratorAddress(ctx sdk.Context, ethAddr common.Address) sdk.AccAddress {
+func (k Keeper) GetExternalOrchestratorAddress(ctx sdk.Context, chainId types.ChainID, ethAddr common.Address) sdk.AccAddress {
 	store := ctx.KVStore(k.storeKey)
-	key := types.MakeExternalOrchestratorAddressKey(ethAddr)
+	key := types.MakeExternalOrchestratorAddressKey(chainId, ethAddr)
 
 	return store.Get(key)
 }
 
-func (k Keeper) getExternalAddressesByOrchestrator(ctx sdk.Context, orch sdk.AccAddress) (ethAddrs []common.Address) {
+func (k Keeper) getExternalAddressesByOrchestrator(ctx sdk.Context, chainId types.ChainID, orch sdk.AccAddress) (ethAddrs []common.Address) {
 	iter := ctx.KVStore(k.storeKey).Iterator(nil, nil)
 
 	for ; iter.Valid(); iter.Next() {
 		if sdk.AccAddress(iter.Value()).String() == orch.String() {
 			ethBs := bytes.TrimPrefix(iter.Key(), []byte{types.ExternalOrchestratorAddressKey})
+			if !bytes.HasPrefix(ethBs, chainId.Bytes()) {
+				continue
+			}
+			ethBs = bytes.TrimPrefix(ethBs, chainId.Bytes())
+
 			ethAddr := common.BytesToAddress(ethBs)
 			ethAddrs = append(ethAddrs, ethAddr)
 		}
@@ -266,9 +270,9 @@ func (k Keeper) getExternalAddressesByOrchestrator(ctx sdk.Context, orch sdk.Acc
 
 // CreateSignerSetTx gets the current signer set from the staking keeper, increments the nonce,
 // creates the signer set tx object, emits an event and sets the signer set in state
-func (k Keeper) CreateSignerSetTx(ctx sdk.Context, chainId types.ChainID) *types.SignerSetTx { // todo: should we have distinct sets for each external chain?
+func (k Keeper) CreateSignerSetTx(ctx sdk.Context, chainId types.ChainID) *types.SignerSetTx {
 	nonce := k.incrementLatestSignerSetTxNonce(ctx, chainId)
-	currSignerSet := k.CurrentSignerSet(ctx)
+	currSignerSet := k.CurrentSignerSet(ctx, chainId)
 	newSignerSetTx := types.NewSignerSetTx(nonce, uint64(ctx.BlockHeight()), currSignerSet)
 
 	ctx.EventManager().EmitEvent(
@@ -301,7 +305,7 @@ func (k Keeper) CreateSignerSetTx(ctx sdk.Context, chainId types.ChainID) *types
 // total voting power. This is an acceptable rounding error since floating
 // point may cause consensus problems if different floating point unit
 // implementations are involved.
-func (k Keeper) CurrentSignerSet(ctx sdk.Context) types.ExternalSigners {
+func (k Keeper) CurrentSignerSet(ctx sdk.Context, chainId types.ChainID) types.ExternalSigners {
 	validators := k.StakingKeeper.GetBondedValidatorsByPower(ctx)
 	externalSigners := make([]*types.ExternalSigner, 0)
 	var totalPower uint64
@@ -310,7 +314,7 @@ func (k Keeper) CurrentSignerSet(ctx sdk.Context) types.ExternalSigners {
 
 		p := uint64(k.StakingKeeper.GetLastValidatorPower(ctx, val))
 
-		if extAddr := k.GetValidatorExternalAddress(ctx, val); extAddr.Hex() != "0x0000000000000000000000000000000000000000" {
+		if extAddr := k.GetValidatorExternalAddress(ctx, chainId, val); extAddr.Hex() != "0x0000000000000000000000000000000000000000" {
 			es := &types.ExternalSigner{Power: p, ExternalAddress: extAddr.Hex()}
 			externalSigners = append(externalSigners, es)
 			totalPower += p
@@ -400,19 +404,20 @@ func (k Keeper) getGravityID(ctx sdk.Context) string {
 // address mapping will mean having to keep two of the same data around just to provide lookups.
 //
 // For the time being this will serve
-func (k Keeper) getDelegateKeys(ctx sdk.Context) (out []*types.MsgDelegateKeys) {
+func (k Keeper) getDelegateKeys(ctx sdk.Context, chainId types.ChainID) (out []*types.MsgDelegateKeys) {
 	store := ctx.KVStore(k.storeKey)
-	iter := prefix.NewStore(store, []byte{types.ValidatorExternalAddressKey}).Iterator(nil, nil)
+	iter := prefix.NewStore(store, append([]byte{types.ValidatorExternalAddressKey}, chainId.Bytes()...)).Iterator(nil, nil)
 	for ; iter.Valid(); iter.Next() {
 		out = append(out, &types.MsgDelegateKeys{
 			ValidatorAddress: sdk.ValAddress(iter.Key()).String(),
 			ExternalAddress:  common.BytesToAddress(iter.Value()).Hex(),
+			ChainId:          chainId.String(),
 		})
 	}
 	iter.Close()
 
 	for _, msg := range out {
-		msg.OrchestratorAddress = k.GetExternalOrchestratorAddress(ctx, common.HexToAddress(msg.ExternalAddress)).String()
+		msg.OrchestratorAddress = k.GetExternalOrchestratorAddress(ctx, chainId, common.HexToAddress(msg.ExternalAddress)).String()
 	}
 
 	// we iterated over a map, so now we have to sort to ensure the
@@ -437,7 +442,6 @@ func (k Keeper) GetUnbondingvalidators(unbondingVals []byte) stakingtypes.ValAdd
 // OUTGOING TX //
 /////////////////
 
-// GetOutgoingTx todo: outgoingTx prefix byte
 func (k Keeper) GetOutgoingTx(ctx sdk.Context, chainId types.ChainID, storeIndex []byte) (out types.OutgoingTx) {
 	if err := k.cdc.UnmarshalInterface(ctx.KVStore(k.storeKey).Get(types.MakeOutgoingTxKey(chainId, storeIndex)), &out); err != nil {
 		panic(err)
@@ -781,6 +785,26 @@ func (k Keeper) GetOutgoingTxTimeout(ctx sdk.Context) time.Duration {
 	var a uint64
 	k.paramSpace.Get(ctx, types.ParamOutgoingTxTimeout, &a)
 	return time.Duration(a) * time.Millisecond
+}
+
+func (k Keeper) CheckChainID(ctx sdk.Context, id types.ChainID) error {
+	for _, c := range k.GetChains(ctx) {
+		if c.String() == id.String() {
+			return nil
+		}
+	}
+
+	return errors.New("invalid chain id")
+}
+
+func (k Keeper) SetStakingKeeper(keeper types.StakingKeeper) Keeper {
+	k.StakingKeeper = keeper
+	k.ExternalEventProcessor = ExternalEventProcessor{
+		keeper:     k,
+		bankKeeper: k.bankKeeper,
+	}
+
+	return k
 }
 
 func convertDecimals(fromDecimals uint64, toDecimals uint64, amount sdk.Int) sdk.Int {

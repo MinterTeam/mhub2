@@ -185,14 +185,18 @@ $ %s gentx my-key-name 1000000stake 0x033030FEeBd93E3178487c35A9c8cA80874353C9 c
 				return err
 			}
 
-			delegateMhub2Msg := &mhub2types.MsgDelegateKeys{
-				ValidatorAddress:    sdk.ValAddress(key.GetAddress()).String(),
-				OrchestratorAddress: orchAddress.String(),
-				ExternalAddress:     ethAddress,
-				EthSignature:        ethSig,
-			}
+			msgs := []sdk.Msg{msg}
 
-			msgs := []sdk.Msg{msg, delegateMhub2Msg}
+			chains := []mhub2types.ChainID{"ethereum", "minter", "bsc"}
+			for _, chain := range chains {
+				msgs = append(msgs, &mhub2types.MsgDelegateKeys{
+					ValidatorAddress:    sdk.ValAddress(key.GetAddress()).String(),
+					OrchestratorAddress: orchAddress.String(),
+					ExternalAddress:     ethAddress,
+					EthSignature:        ethSig,
+					ChainId:             chain.String(),
+				})
+			}
 
 			if key.GetType() == keyring.TypeOffline || key.GetType() == keyring.TypeMulti {
 				cmd.PrintErrln("Offline key passed in. Use `tx sign` command to sign.")

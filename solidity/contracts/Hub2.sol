@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 pragma solidity ^0.6.6;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
@@ -27,12 +29,12 @@ struct LogicCallArgs {
 
 interface IWETH {
     function deposit() external payable;
-    function transfer(address to, uint value) external returns (bool);
     function withdraw(uint) external;
 }
 
 contract Hub2 is ReentrancyGuard {
 	using SafeMath for uint256;
+	using SafeMath for uint;
 	using SafeERC20 for IERC20;
 
 	// These are updated often
@@ -49,6 +51,8 @@ contract Hub2 is ReentrancyGuard {
 	uint256 public state_powerThreshold;
 
 	address public wethAddress;
+
+	address public guardian;
 
 	// TransactionBatchExecutedEvent and TransferToChain both include the field _eventNonce.
 	// This is incremented every time one of these events is emitted. It is checked by the
@@ -83,38 +87,9 @@ contract Hub2 is ReentrancyGuard {
 		bytes _returnData
 	);
 
-	// TEST FIXTURES
-	// These are here to make it easier to measure gas usage. They should be removed before production
-	function testMakeCheckpoint(
-		address[] memory _validators,
-		uint256[] memory _powers,
-		uint256 _valsetNonce,
-		bytes32 _gravityId
-	) public pure {
-		makeCheckpoint(_validators, _powers, _valsetNonce, _gravityId);
-	}
-
-	function testCheckValidatorSignatures(
-		address[] memory _currentValidators,
-		uint256[] memory _currentPowers,
-		uint8[] memory _v,
-		bytes32[] memory _r,
-		bytes32[] memory _s,
-		bytes32 _theHash,
-		uint256 _powerThreshold
-	) public pure {
-		checkValidatorSignatures(
-			_currentValidators,
-			_currentPowers,
-			_v,
-			_r,
-			_s,
-			_theHash,
-			_powerThreshold
-		);
-	}
-
-	// END TEST FIXTURES
+	receive() external payable {
+        assert(msg.sender == wethAddress); // only accept ETH via fallback from the WETH contract
+    }
 
 	function lastBatchNonce(address _erc20Address) public view returns (uint256) {
 		return state_lastBatchNonces[_erc20Address];
@@ -372,17 +347,15 @@ contract Hub2 is ReentrancyGuard {
 			// Store batch nonce
 			state_lastBatchNonces[_tokenContract] = _batchNonce;
 
-			{
-				// Send transaction amounts to destinations
-				if (_tokenContract == wethAddress) {
-					for (uint256 i = 0; i < _amounts.length; i++) {
-						IWETH(wethAddress).withdraw(_amounts[i]);
-						require(_destinations[i].send(_amounts[i]));
-					}
-				} else {
-					for (uint256 i = 0; i < _amounts.length; i++) {
-						IERC20(_tokenContract).safeTransfer(_destinations[i], _amounts[i]);
-					}
+			// Send transaction amounts to destinations
+			if (_tokenContract == wethAddress) {
+				for (uint256 i = 0; i < _amounts.length; i++) {
+					IWETH(wethAddress).withdraw(_amounts[i]);
+					TransferHelper.safeTransferETH(_destinations[i], _amounts[i]);
+				}
+			} else {
+				for (uint256 i = 0; i < _amounts.length; i++) {
+					IERC20(_tokenContract).safeTransfer(_destinations[i], _amounts[i]);
 				}
 			}
 		}
@@ -561,6 +534,21 @@ contract Hub2 is ReentrancyGuard {
 		);
 	}
 
+	function changeGuardian(address _guardian) public {
+		require(msg.sender == guardian, "permission denied");
+
+		guardian = _guardian;
+	}
+
+	function panicHalt(address[] memory _tokenContracts, address _safeAddress) public {
+		require(msg.sender == guardian, "permission denied");
+
+		for (uint256 i = 0; i < _tokenContracts.length; i++) {
+			IERC20 token = IERC20(_tokenContracts[i]);
+			token.safeTransfer(_safeAddress, token.balanceOf(address(this)));
+		}
+	}
+
 	constructor(
 		// A unique identifier for this gravity instance to use in signatures
 		bytes32 _gravityId,
@@ -568,7 +556,9 @@ contract Hub2 is ReentrancyGuard {
 		uint256 _powerThreshold,
 		// The validator set
 		address[] memory _validators,
-		uint256[] memory _powers
+		uint256[] memory _powers,
+		address _wethAddress,
+		address _guardian
 	) public {
 		// CHECKS
 
@@ -597,10 +587,36 @@ contract Hub2 is ReentrancyGuard {
 		state_powerThreshold = _powerThreshold;
 		state_lastValsetCheckpoint = newCheckpoint;
 
-		wethAddress = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+		wethAddress = _wethAddress;
+		guardian = _guardian;
 
 		// LOGS
 
 		emit ValsetUpdatedEvent(state_lastValsetNonce, state_lastEventNonce, _validators, _powers);
 	}
+}
+
+library TransferHelper {
+    function safeApprove(address token, address to, uint value) internal {
+        // bytes4(keccak256(bytes('approve(address,uint256)')));
+        (bool success, bytes memory data) = token.call(abi.encodeWithSelector(0x095ea7b3, to, value));
+        require(success && (data.length == 0 || abi.decode(data, (bool))), 'TransferHelper: APPROVE_FAILED');
+    }
+
+    function safeTransfer(address token, address to, uint value) internal {
+        // bytes4(keccak256(bytes('transfer(address,uint256)')));
+        (bool success, bytes memory data) = token.call(abi.encodeWithSelector(0xa9059cbb, to, value));
+        require(success && (data.length == 0 || abi.decode(data, (bool))), 'TransferHelper: TRANSFER_FAILED');
+    }
+
+    function safeTransferFrom(address token, address from, address to, uint value) internal {
+        // bytes4(keccak256(bytes('transferFrom(address,address,uint256)')));
+        (bool success, bytes memory data) = token.call(abi.encodeWithSelector(0x23b872dd, from, to, value));
+        require(success && (data.length == 0 || abi.decode(data, (bool))), 'TransferHelper: TRANSFER_FROM_FAILED');
+    }
+
+    function safeTransferETH(address to, uint value) internal {
+        (bool success,) = to.call{value:value}(new bytes(0));
+        require(success, 'TransferHelper: ETH_TRANSFER_FAILED');
+    }
 }

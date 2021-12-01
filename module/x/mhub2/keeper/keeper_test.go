@@ -39,7 +39,7 @@ func TestCurrentValsetNormalization(t *testing.T) {
 					Operator: cAddr,
 					Power:    int64(v),
 				}
-				input.Mhub2Keeper.setValidatorExternalAddress(ctx, cAddr, common.HexToAddress("0xf71402f886b45c134743F4c00750823Bbf5Fd045"))
+				input.Mhub2Keeper.setValidatorExternalAddress(ctx, chainId, cAddr, common.HexToAddress("0xf71402f886b45c134743F4c00750823Bbf5Fd045"))
 			}
 			input.Mhub2Keeper.StakingKeeper = NewStakingKeeperWeightedMock(operators...)
 			r := input.Mhub2Keeper.CreateSignerSetTx(ctx, chainId)
@@ -118,11 +118,11 @@ func TestDelegateKeys(t *testing.T) {
 		require.NoError(t, err1)
 		require.NoError(t, err2)
 
-		k.SetOrchestratorValidatorAddress(ctx, val, orch)
-		k.setValidatorExternalAddress(ctx, val, ethAddrs[i])
-		k.setExternalOrchestratorAddress(ctx, ethAddrs[i], orch)
+		k.SetOrchestratorValidatorAddress(ctx, chainId, val, orch)
+		k.setValidatorExternalAddress(ctx, chainId, val, ethAddrs[i])
+		k.setExternalOrchestratorAddress(ctx, chainId, ethAddrs[i], orch)
 	}
-	addresses := k.getDelegateKeys(ctx)
+	addresses := k.getDelegateKeys(ctx, chainId)
 	for i := range addresses {
 		res := addresses[i]
 		assert.Equal(t, valAddrs[i], res.ValidatorAddress)

@@ -3,6 +3,7 @@ package keeper
 import (
 	"bytes"
 	"context"
+	"sort"
 
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/types/query"
@@ -39,13 +40,14 @@ func (k Keeper) Params(c context.Context, _ *types.ParamsRequest) (*types.Params
 
 func (k Keeper) LastSubmittedExternalEvent(c context.Context, req *types.LastSubmittedExternalEventRequest) (*types.LastSubmittedExternalEventResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)
-	valAddr, err := k.getSignerValidator(ctx, req.Address)
+	chainId := types.ChainID(req.ChainId)
+	valAddr, err := k.getSignerValidator(ctx, chainId, req.Address)
 	if err != nil {
 		return nil, err
 	}
 
 	return &types.LastSubmittedExternalEventResponse{
-		EventNonce: k.getLastEventNonceByValidator(ctx, types.ChainID(req.ChainId), valAddr),
+		EventNonce: k.getLastEventNonceByValidator(ctx, chainId, valAddr),
 	}, nil
 }
 
@@ -95,10 +97,11 @@ func (k Keeper) UnbatchedSendToExternals(c context.Context, req *types.Unbatched
 
 func (k Keeper) DelegateKeysByExternalSigner(c context.Context, req *types.DelegateKeysByExternalSignerRequest) (*types.DelegateKeysByExternalSignerResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)
+	chainId := types.ChainID(req.ChainId)
 
 	ethAddr := common.HexToAddress(req.ExternalSigner)
-	orchAddr := k.GetExternalOrchestratorAddress(ctx, ethAddr)
-	valAddr := k.GetOrchestratorValidatorAddress(ctx, orchAddr)
+	orchAddr := k.GetExternalOrchestratorAddress(ctx, chainId, ethAddr)
+	valAddr := k.GetOrchestratorValidatorAddress(ctx, chainId, orchAddr)
 	res := &types.DelegateKeysByExternalSignerResponse{
 		ValidatorAddress:    valAddr.String(),
 		OrchestratorAddress: orchAddr.String(),
@@ -234,13 +237,15 @@ func (k Keeper) ContractCallTxs(c context.Context, req *types.ContractCallTxsReq
 
 func (k Keeper) SignerSetTxConfirmations(c context.Context, req *types.SignerSetTxConfirmationsRequest) (*types.SignerSetTxConfirmationsResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)
-	key := types.MakeSignerSetTxKey(types.ChainID(req.ChainId), req.SignerSetNonce)
+	chainId := types.ChainID(req.ChainId)
+
+	key := types.MakeSignerSetTxKey(chainId, req.SignerSetNonce)
 
 	var out []*types.SignerSetTxConfirmation
-	k.iterateExternalSignatures(ctx, types.ChainID(req.ChainId), key, func(val sdk.ValAddress, sig []byte) bool {
+	k.iterateExternalSignatures(ctx, chainId, key, func(val sdk.ValAddress, sig []byte) bool {
 		out = append(out, &types.SignerSetTxConfirmation{
 			SignerSetNonce: req.SignerSetNonce,
-			ExternalSigner: k.GetValidatorExternalAddress(ctx, val).Hex(),
+			ExternalSigner: k.GetValidatorExternalAddress(ctx, chainId, val).Hex(),
 			Signature:      sig,
 		})
 		return false
@@ -251,15 +256,16 @@ func (k Keeper) SignerSetTxConfirmations(c context.Context, req *types.SignerSet
 
 func (k Keeper) BatchTxConfirmations(c context.Context, req *types.BatchTxConfirmationsRequest) (*types.BatchTxConfirmationsResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)
+	chainId := types.ChainID(req.ChainId)
 
-	key := types.MakeBatchTxKey(types.ChainID(req.ChainId), req.ExternalTokenId, req.BatchNonce)
+	key := types.MakeBatchTxKey(chainId, req.ExternalTokenId, req.BatchNonce)
 
 	var out []*types.BatchTxConfirmation
-	k.iterateExternalSignatures(ctx, types.ChainID(req.ChainId), key, func(val sdk.ValAddress, sig []byte) bool {
+	k.iterateExternalSignatures(ctx, chainId, key, func(val sdk.ValAddress, sig []byte) bool {
 		out = append(out, &types.BatchTxConfirmation{
 			ExternalTokenId: req.ExternalTokenId,
 			BatchNonce:      req.BatchNonce,
-			ExternalSigner:  k.GetValidatorExternalAddress(ctx, val).Hex(),
+			ExternalSigner:  k.GetValidatorExternalAddress(ctx, chainId, val).Hex(),
 			Signature:       sig,
 		})
 		return false
@@ -269,14 +275,16 @@ func (k Keeper) BatchTxConfirmations(c context.Context, req *types.BatchTxConfir
 
 func (k Keeper) ContractCallTxConfirmations(c context.Context, req *types.ContractCallTxConfirmationsRequest) (*types.ContractCallTxConfirmationsResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)
-	key := types.MakeContractCallTxKey(types.ChainID(req.ChainId), req.InvalidationScope, req.InvalidationNonce)
+	chainId := types.ChainID(req.ChainId)
+
+	key := types.MakeContractCallTxKey(chainId, req.InvalidationScope, req.InvalidationNonce)
 
 	var out []*types.ContractCallTxConfirmation
-	k.iterateExternalSignatures(ctx, types.ChainID(req.ChainId), key, func(val sdk.ValAddress, sig []byte) bool {
+	k.iterateExternalSignatures(ctx, chainId, key, func(val sdk.ValAddress, sig []byte) bool {
 		out = append(out, &types.ContractCallTxConfirmation{
 			InvalidationScope: req.InvalidationScope,
 			InvalidationNonce: req.InvalidationNonce,
-			ExternalSigner:    k.GetValidatorExternalAddress(ctx, val).Hex(),
+			ExternalSigner:    k.GetValidatorExternalAddress(ctx, chainId, val).Hex(),
 			Signature:         sig,
 		})
 		return false
@@ -287,7 +295,7 @@ func (k Keeper) ContractCallTxConfirmations(c context.Context, req *types.Contra
 func (k Keeper) UnsignedSignerSetTxs(c context.Context, req *types.UnsignedSignerSetTxsRequest) (*types.UnsignedSignerSetTxsResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)
 	chainId := types.ChainID(req.ChainId)
-	val, err := k.getSignerValidator(ctx, req.Address)
+	val, err := k.getSignerValidator(ctx, chainId, req.Address)
 	if err != nil {
 		return nil, err
 	}
@@ -308,12 +316,12 @@ func (k Keeper) UnsignedSignerSetTxs(c context.Context, req *types.UnsignedSigne
 
 func (k Keeper) UnsignedBatchTxs(c context.Context, req *types.UnsignedBatchTxsRequest) (*types.UnsignedBatchTxsResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)
-	val, err := k.getSignerValidator(ctx, req.Address)
+	chainId := types.ChainID(req.ChainId)
+	val, err := k.getSignerValidator(ctx, chainId, req.Address)
 	if err != nil {
 		return nil, err
 	}
 	var batches []*types.BatchTx
-	chainId := types.ChainID(req.ChainId)
 	k.IterateOutgoingTxsByType(ctx, chainId, types.BatchTxPrefixByte, func(_ []byte, otx types.OutgoingTx) bool {
 		sig := k.getExternalSignature(ctx, chainId, otx.GetStoreIndex(chainId), val)
 		if len(sig) == 0 { // it's pending
@@ -325,17 +333,23 @@ func (k Keeper) UnsignedBatchTxs(c context.Context, req *types.UnsignedBatchTxsR
 		}
 		return false
 	})
+
+	sort.Slice(batches, func(i, j int) bool {
+		return batches[i].BatchNonce < batches[j].BatchNonce
+	})
+
 	return &types.UnsignedBatchTxsResponse{Batches: batches}, nil
 }
 
 func (k Keeper) UnsignedContractCallTxs(c context.Context, req *types.UnsignedContractCallTxsRequest) (*types.UnsignedContractCallTxsResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)
-	val, err := k.getSignerValidator(ctx, req.Address)
+	chainId := types.ChainID(req.ChainId)
+	val, err := k.getSignerValidator(ctx, chainId, req.Address)
 	if err != nil {
 		return nil, err
 	}
 	var calls []*types.ContractCallTx
-	chainId := types.ChainID(req.ChainId)
+
 	k.IterateOutgoingTxsByType(ctx, chainId, types.ContractCallTxPrefixByte, func(_ []byte, otx types.OutgoingTx) bool {
 		sig := k.getExternalSignature(ctx, chainId, otx.GetStoreIndex(chainId), val)
 		if len(sig) == 0 { // it's pending
@@ -401,12 +415,14 @@ func (k Keeper) DenomToExternalId(c context.Context, req *types.DenomToExternalI
 
 func (k Keeper) DelegateKeysByValidator(c context.Context, req *types.DelegateKeysByValidatorRequest) (*types.DelegateKeysByValidatorResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)
+	chainId := types.ChainID(req.ChainId)
+
 	valAddr, err := sdk.ValAddressFromBech32(req.ValidatorAddress)
 	if err != nil {
 		return nil, err
 	}
-	ethAddr := k.GetValidatorExternalAddress(ctx, valAddr)
-	orchAddr := k.GetExternalOrchestratorAddress(ctx, ethAddr)
+	ethAddr := k.GetValidatorExternalAddress(ctx, chainId, valAddr)
+	orchAddr := k.GetExternalOrchestratorAddress(ctx, chainId, ethAddr)
 	res := &types.DelegateKeysByValidatorResponse{
 		EthAddress:          ethAddr.Hex(),
 		OrchestratorAddress: orchAddr.String(),
@@ -416,12 +432,13 @@ func (k Keeper) DelegateKeysByValidator(c context.Context, req *types.DelegateKe
 
 func (k Keeper) DelegateKeysByOrchestrator(c context.Context, req *types.DelegateKeysByOrchestratorRequest) (*types.DelegateKeysByOrchestratorResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)
+	chainId := types.ChainID(req.ChainId)
 	orchAddr, err := sdk.AccAddressFromBech32(req.OrchestratorAddress)
 	if err != nil {
 		return nil, err
 	}
-	valAddr := k.GetOrchestratorValidatorAddress(ctx, orchAddr)
-	ethAddr := k.GetValidatorExternalAddress(ctx, valAddr)
+	valAddr := k.GetOrchestratorValidatorAddress(ctx, chainId, orchAddr)
+	ethAddr := k.GetValidatorExternalAddress(ctx, chainId, valAddr)
 	res := &types.DelegateKeysByOrchestratorResponse{
 		ValidatorAddress: valAddr.String(),
 		ExternalSigner:   ethAddr.Hex(),
@@ -431,7 +448,9 @@ func (k Keeper) DelegateKeysByOrchestrator(c context.Context, req *types.Delegat
 
 func (k Keeper) DelegateKeys(c context.Context, req *types.DelegateKeysRequest) (*types.DelegateKeysResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)
-	delegateKeys := k.getDelegateKeys(ctx)
+	chainId := types.ChainID(req.ChainId)
+
+	delegateKeys := k.getDelegateKeys(ctx, chainId)
 
 	res := &types.DelegateKeysResponse{
 		DelegateKeys: delegateKeys,

@@ -30,6 +30,7 @@ import (
 	"math"
 	"math/big"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -53,6 +54,7 @@ const (
 	ethChainId         = 15
 	bscChainId         = 16
 	ethSignaturePrefix = "\x19Ethereum Signed Message:\n32"
+	minterCoinId       = 1
 )
 
 type Context struct {
@@ -70,9 +72,14 @@ type Context struct {
 	EthAddress          common.Address
 	MinterMultisig      string
 	CosmosMnemonic      string
+	WethAddr            string
+	WbnbAddr            string
 }
 
-var bridgeCommission, _ = sdk.NewDecFromStr("0.01")
+var (
+	bridgeCommission, _ = sdk.NewDecFromStr("0.01")
+	testTimeout         = time.Minute * 10
+)
 
 func main() {
 
@@ -124,15 +131,17 @@ func main() {
 		ethClient   *ethclient.Client
 		ethContract string
 		erc20addr   string
+		wethAddr    string
 
 		bscClient   *ethclient.Client
 		bscContract string
 		bep20addr   string
+		wbnbAddr    string
 	)
 
 	wg.Add(2)
 	go func() {
-		ethClient, err, ethContract, erc20addr = runEvmChain(ethChainId, wd, ethAddress, ethPrivateKey, ethPrivateKeyString, "8545")
+		ethClient, err, ethContract, erc20addr, wethAddr = runEvmChain(ethChainId, wd, ethAddress, ethPrivateKey, ethPrivateKeyString, "8545")
 		if err != nil {
 			panic(err)
 		}
@@ -140,7 +149,7 @@ func main() {
 	}()
 
 	go func() {
-		bscClient, err, bscContract, bep20addr = runEvmChain(bscChainId, wd, ethAddress, ethPrivateKey, ethPrivateKeyString, "8546")
+		bscClient, err, bscContract, bep20addr, wbnbAddr = runEvmChain(bscChainId, wd, ethAddress, ethPrivateKey, ethPrivateKeyString, "8546")
 		if err != nil {
 			panic(err)
 		}
@@ -155,7 +164,7 @@ func main() {
 	hubAddress := strings.Trim(runOrPanic("mhub2 keys show validator1 -a --keyring-backend test"), "\n")
 
 	runOrPanic("mhub2 add-genesis-account --keyring-backend test validator1 100000000000000000000000000%s,100000000000000000000000000hub", denom)
-	runOrPanic("mhub2 prepare-genesis-for-tests %s %s %s", erc20addr, bep20addr, "1")
+	runOrPanic("mhub2 prepare-genesis-for-tests %s %s %s %s %s", erc20addr, bep20addr, strconv.Itoa(minterCoinId), "2", wethAddr)
 
 	valAddress, _ := cosmos.GetAccount(cosmosMnemonic)
 	signMsgBz := app.MakeEncodingConfig().Marshaler.MustMarshal(&types.DelegateKeysSignMsg{
@@ -190,6 +199,7 @@ func main() {
 	go runOrPanic("orchestrator --chain-id=bsc --eth-fee-calculator-url=http://localhost:8840 --cosmos-phrase=%s --ethereum-key=%s --cosmos-grpc=%s --ethereum-rpc=%s --contract-address=%s --fees=%s --address-prefix=hub --metrics-listen=127.0.0.1:3001", cosmosMnemonic, ethPrivateKeyString, "http://localhost:9090", "http://localhost:8546", bscContract, denom)
 	approveERC20ToHub(ethPrivateKey, ethClient, ethContract, erc20addr, ethChainId)
 	approveERC20ToHub(ethPrivateKey, bscClient, bscContract, bep20addr, bscChainId)
+
 	time.Sleep(time.Second * 10)
 
 	ctx := &Context{
@@ -207,6 +217,8 @@ func main() {
 		MinterClient:        minterClient,
 		MinterMultisig:      minterMultisig,
 		CosmosMnemonic:      cosmosMnemonic,
+		WethAddr:            wethAddr,
+		WbnbAddr:            wbnbAddr,
 	}
 
 	println("Start running preparation tests")
@@ -219,17 +231,18 @@ func main() {
 	println("Start real tests")
 	testEthereumToMinterTransfer(ctx)
 	testEthereumToBscTransfer(ctx)
-	testBSCToEthereumTransfer(ctx)
 	testEthereumToHubTransfer(ctx)
+	testBSCToEthereumTransfer(ctx)
 	testBSCToHubTransfer(ctx)
-	testMinterToHubTransfer(ctx)
 	testHubToMinterTransfer(ctx)
 	testHubToEthereumTransfer(ctx)
 	testHubToBSCTransfer(ctx)
+	testMinterToHubTransfer(ctx)
 	testMinterToEthereumTransfer(ctx)
 	testMinterToBscTransfer(ctx)
-	testFeeRefund(ctx)
 	testColdStorageTransfer(ctx)
+	testEthEthereumToMinterTransfer(ctx)
+	testEthMinterToEthereumTransfer(ctx)
 
 	// tests associated with holders
 	ctx.TestsWg.Add(2)
@@ -242,6 +255,14 @@ func main() {
 	}()
 	ctx.TestsWg.Wait()
 
+	println("Running test for fee refund")
+	testFeeRefund(ctx)
+	ctx.TestsWg.Wait()
+
+	println("Running test for fee refund with different decimals")
+	testFeeRefundWithDifferentDecimals(ctx)
+	ctx.TestsWg.Wait()
+
 	println("Running test for transaction relayer fee")
 	testFeeForTransactionRelayer(ctx)
 	ctx.TestsWg.Wait()
@@ -250,9 +271,14 @@ func main() {
 	testValidatorsCommissions(ctx)
 	ctx.TestsWg.Wait()
 
+	println("Running test for validator's commission with different decimals")
+	testValidatorsCommissionsWithDifferentDecimals(ctx)
+	ctx.TestsWg.Wait()
+
 	println("Killing orchestrator")
 	stopProcess("orchestrator")
 	testTxTimeout(ctx)
+	testTxTimeoutDifferentDecimals(ctx)
 	ctx.TestsWg.Wait()
 
 	println("All tests are done")
@@ -301,7 +327,6 @@ func testColdStorageTransfer(ctx *Context) {
 		expectedValue := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(1)))
 
 		startTime := time.Now()
-		timeout := time.Minute * 5
 
 		hubContractEth, _ := erc20.NewErc20(common.HexToAddress(ctx.Erc20addr), ctx.EthClient)
 		hubContractBsc, _ := erc20.NewErc20(common.HexToAddress(ctx.Bep20addr), ctx.BscClient)
@@ -316,7 +341,7 @@ func testColdStorageTransfer(ctx *Context) {
 
 				hubBalanceEth := sdk.NewIntFromBigInt(hubBalanceEthInt)
 				if hubBalanceEth.IsZero() {
-					if time.Now().Sub(startTime).Seconds() > timeout.Seconds() {
+					if time.Now().Sub(startTime).Seconds() > testTimeout.Seconds() {
 						panic("Timeout waiting for the balance to update")
 					}
 
@@ -338,7 +363,7 @@ func testColdStorageTransfer(ctx *Context) {
 
 				hubBalanceBsc := sdk.NewIntFromBigInt(hubBalanceBscInt)
 				if hubBalanceBsc.IsZero() {
-					if time.Now().Sub(startTime).Seconds() > timeout.Seconds() {
+					if time.Now().Sub(startTime).Seconds() > testTimeout.Seconds() {
 						panic("Timeout waiting for the balance to update")
 					}
 
@@ -358,9 +383,9 @@ func testColdStorageTransfer(ctx *Context) {
 					panic(err)
 				}
 
-				hubBalance := getMinterCoinBalance(response.Balance, "HUB")
+				hubBalance := getMinterCoinBalance(response.Balance, minterCoinId)
 				if hubBalance.IsZero() {
-					if time.Now().Sub(startTime).Seconds() > 180 {
+					if time.Now().Sub(startTime).Seconds() > testTimeout.Seconds() {
 						panic("Timeout waiting for the balance to update")
 					}
 
@@ -384,10 +409,9 @@ func testMinterMultisigChanges(ctx *Context) {
 	ctx.TestsWg.Add(1)
 	go func() {
 		startTime := time.Now()
-		timeout := time.Minute * 1
 
 		for {
-			if time.Now().Sub(startTime).Seconds() > timeout.Seconds() {
+			if time.Now().Sub(startTime).Seconds() > testTimeout.Seconds() {
 				panic("Timeout waiting for the minter multisig to change")
 			}
 
@@ -421,10 +445,9 @@ func testEthereumMultisigChanges(ctx *Context) {
 
 	go func() {
 		startTime := time.Now()
-		timeout := time.Minute * 5
 
 		for {
-			if time.Now().Sub(startTime).Seconds() > timeout.Seconds() {
+			if time.Now().Sub(startTime).Seconds() > testTimeout.Seconds() {
 				panic("Timeout waiting for the ethereum multisig to change")
 			}
 
@@ -459,10 +482,9 @@ func testBSCMultisigChanges(ctx *Context) {
 
 	go func() {
 		startTime := time.Now()
-		timeout := time.Minute * 5
 
 		for {
-			if time.Now().Sub(startTime).Seconds() > timeout.Seconds() {
+			if time.Now().Sub(startTime).Seconds() > testTimeout.Seconds() {
 				panic("Timeout waiting for the bsc multisig to change")
 			}
 
@@ -488,7 +510,7 @@ func testFeeForTransactionRelayer(ctx *Context) {
 	randomPk, _ := crypto.GenerateKey()
 	recipient := crypto.PubkeyToAddress(randomPk.PublicKey).Hex()
 	fee := sdk.NewInt(8888)
-	sendMinterCoinToEthereum(ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterMultisig, ctx.MinterClient, recipient, sdk.NewInt(1e18), fee)
+	sendMinterCoinToEthereum(ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterMultisig, ctx.MinterClient, minterCoinId, recipient, sdk.NewInt(1e18), fee)
 	minterStatus, err := ctx.MinterClient.Status()
 	if err != nil {
 		panic(err)
@@ -498,10 +520,9 @@ func testFeeForTransactionRelayer(ctx *Context) {
 
 	go func() {
 		startTime := time.Now()
-		timeout := time.Minute * 5
 
 		for {
-			if time.Now().Sub(startTime).Seconds() > timeout.Seconds() {
+			if time.Now().Sub(startTime).Seconds() > testTimeout.Seconds() {
 				panic("Timeout waiting for the fee to arrive to relayer")
 			}
 
@@ -523,7 +544,7 @@ func testFeeForTransactionRelayer(ctx *Context) {
 					}
 
 					for _, item := range data.List {
-						if item.Coin.Id == 1 && strings.ToLower(ctx.EthAddress.String())[2:] == item.To[2:] && item.Value == fee.String() {
+						if item.Coin.Id == minterCoinId && strings.ToLower(ctx.EthAddress.String())[2:] == item.To[2:] && item.Value == fee.String() {
 							println("SUCCESS: test fee for transaction relayer")
 							ctx.TestsWg.Done()
 							return
@@ -538,7 +559,7 @@ func testFeeForTransactionRelayer(ctx *Context) {
 }
 
 func testDiscountForHolder(ctx *Context, recipient string) {
-	sendMinterCoinToEthereum(ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterMultisig, ctx.MinterClient, recipient, sdk.NewInt(1e18), sdk.NewInt(100))
+	sendMinterCoinToEthereum(ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterMultisig, ctx.MinterClient, minterCoinId, recipient, sdk.NewInt(1e18), sdk.NewInt(100))
 
 	fee := int64(100)
 	expectedValue := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(1)))
@@ -546,7 +567,6 @@ func testDiscountForHolder(ctx *Context, recipient string) {
 	expectedValue = expectedValue.SubRaw(fee)
 
 	startTime := time.Now()
-	timeout := time.Minute * 2
 
 	hubContract, _ := erc20.NewErc20(common.HexToAddress(ctx.Erc20addr), ctx.EthClient)
 
@@ -558,7 +578,7 @@ func testDiscountForHolder(ctx *Context, recipient string) {
 
 		hubBalance := sdk.NewIntFromBigInt(hubBalanceInt)
 		if hubBalance.IsZero() {
-			if time.Now().Sub(startTime).Seconds() > timeout.Seconds() {
+			if time.Now().Sub(startTime).Seconds() > testTimeout.Seconds() {
 				panic("Timeout waiting for the balance to update")
 			}
 
@@ -592,7 +612,6 @@ func testUpdateHolders(ctx *Context, recipient string) {
 
 	client := oracletypes.NewQueryClient(ctx.CosmosConn)
 	startTime := time.Now()
-	timeout := time.Minute
 
 	for {
 		response, err := client.Holders(context.TODO(), &oracletypes.QueryHoldersRequest{})
@@ -600,7 +619,7 @@ func testUpdateHolders(ctx *Context, recipient string) {
 			panic(err)
 		}
 
-		if time.Now().Sub(startTime).Seconds() > timeout.Seconds() {
+		if time.Now().Sub(startTime).Seconds() > testTimeout.Seconds() {
 			panic("Timeout waiting for holders to update")
 		}
 
@@ -623,11 +642,11 @@ func testUpdateHolders(ctx *Context, recipient string) {
 	}
 }
 
-func testMinterToEthereumTransfer(ctx *Context) {
+func testEthMinterToEthereumTransfer(ctx *Context) {
 	ctx.TestsWg.Add(1)
 	randomPk, _ := crypto.GenerateKey()
 	recipient := crypto.PubkeyToAddress(randomPk.PublicKey).Hex()
-	sendMinterCoinToEthereum(ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterMultisig, ctx.MinterClient, recipient, sdk.NewInt(1e18), sdk.NewInt(100))
+	sendMinterCoinToEthereum(ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterMultisig, ctx.MinterClient, 2, recipient, sdk.NewInt(1e18), sdk.NewInt(100))
 
 	go func() {
 		fee := int64(100)
@@ -636,7 +655,47 @@ func testMinterToEthereumTransfer(ctx *Context) {
 		expectedValue = expectedValue.SubRaw(fee)
 
 		startTime := time.Now()
-		timeout := time.Minute * 5
+
+		for {
+			ethBalanceInt, err := ctx.EthClient.BalanceAt(context.TODO(), common.HexToAddress(recipient), nil)
+			if err != nil {
+				panic(err)
+			}
+
+			ethBalance := sdk.NewIntFromBigInt(ethBalanceInt)
+			if ethBalance.IsZero() {
+				if time.Now().Sub(startTime).Seconds() > testTimeout.Seconds() {
+					panic("Timeout waiting for the balance to update")
+				}
+
+				time.Sleep(time.Second)
+				continue
+			}
+
+			if !ethBalance.Equal(expectedValue) {
+				panic(fmt.Sprintf("Balance is not equal to expected value. Expected %s, got %s", expectedValue.String(), ethBalance.String()))
+			}
+
+			println("SUCCESS: test Minter -> Ethereum (ETH) transfer")
+			ctx.TestsWg.Done()
+			break
+		}
+	}()
+}
+
+func testMinterToEthereumTransfer(ctx *Context) {
+	ctx.TestsWg.Add(1)
+	randomPk, _ := crypto.GenerateKey()
+	recipient := crypto.PubkeyToAddress(randomPk.PublicKey).Hex()
+	sendMinterCoinToEthereum(ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterMultisig, ctx.MinterClient, minterCoinId, recipient, sdk.NewInt(1e18), sdk.NewInt(100))
+
+	go func() {
+		fee := int64(100)
+		expectedValue := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(1)))
+		expectedValue = expectedValue.Sub(expectedValue.ToDec().Mul(bridgeCommission).TruncateInt())
+		expectedValue = expectedValue.SubRaw(fee)
+
+		startTime := time.Now()
 
 		hubContract, _ := erc20.NewErc20(common.HexToAddress(ctx.Erc20addr), ctx.EthClient)
 
@@ -648,7 +707,7 @@ func testMinterToEthereumTransfer(ctx *Context) {
 
 			hubBalance := sdk.NewIntFromBigInt(hubBalanceInt)
 			if hubBalance.IsZero() {
-				if time.Now().Sub(startTime).Seconds() > timeout.Seconds() {
+				if time.Now().Sub(startTime).Seconds() > testTimeout.Seconds() {
 					panic("Timeout waiting for the balance to update")
 				}
 
@@ -681,7 +740,6 @@ func testMinterToBscTransfer(ctx *Context) {
 		expectedValue = expectedValue.QuoRaw(1e12)
 
 		startTime := time.Now()
-		timeout := time.Minute * 5
 
 		hubContract, _ := erc20.NewErc20(common.HexToAddress(ctx.Bep20addr), ctx.BscClient)
 
@@ -693,7 +751,7 @@ func testMinterToBscTransfer(ctx *Context) {
 
 			hubBalance := sdk.NewIntFromBigInt(hubBalanceInt)
 			if hubBalance.IsZero() {
-				if time.Now().Sub(startTime).Seconds() > timeout.Seconds() {
+				if time.Now().Sub(startTime).Seconds() > testTimeout.Seconds() {
 					panic("Timeout waiting for the balance to update")
 				}
 
@@ -717,7 +775,7 @@ func testTxTimeout(ctx *Context) {
 	randomPk, _ := crypto.GenerateKey()
 	recipient := crypto.PubkeyToAddress(randomPk.PublicKey).Hex()
 	value := big.NewInt(1e18)
-	sendMinterCoinToEthereum(ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterMultisig, ctx.MinterClient, recipient, sdk.NewInt(1e18), sdk.NewInt(100))
+	sendMinterCoinToEthereum(ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterMultisig, ctx.MinterClient, minterCoinId, recipient, sdk.NewInt(1e18), sdk.NewInt(100))
 
 	minterStatus, err := ctx.MinterClient.Status()
 	if err != nil {
@@ -773,10 +831,9 @@ func testTxTimeout(ctx *Context) {
 
 	go func() {
 		startTime := time.Now()
-		timeout := time.Minute * 5
 
 		for {
-			if time.Now().Sub(startTime).Seconds() > timeout.Seconds() {
+			if time.Now().Sub(startTime).Seconds() > testTimeout.Seconds() {
 				panic("Timeout waiting for the refund")
 			}
 
@@ -798,8 +855,108 @@ func testTxTimeout(ctx *Context) {
 					}
 
 					for _, item := range data.List {
-						if item.Coin.Id == 1 && strings.ToLower(ctx.EthAddress.String())[2:] == item.To[2:] && item.Value == value.String() { // todo???
+						if item.Coin.Id == minterCoinId && strings.ToLower(ctx.EthAddress.String())[2:] == item.To[2:] && item.Value == value.String() { // todo???
 							println("SUCCESS: test refunds")
+							ctx.TestsWg.Done()
+							return
+						}
+					}
+				}
+			}
+
+			minterHeight++
+		}
+	}()
+}
+
+func testTxTimeoutDifferentDecimals(ctx *Context) {
+	ctx.TestsWg.Add(1)
+	randomPk, _ := crypto.GenerateKey()
+	recipient := crypto.PubkeyToAddress(randomPk.PublicKey).Hex()
+	value := sdk.NewInt(1e18)
+	expectedValue := sdk.NewInt(999999000000000000) // due to conversion errors
+	sendMinterCoinToBsc(ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterMultisig, ctx.MinterClient, recipient, value, sdk.NewInt(100))
+
+	minterStatus, err := ctx.MinterClient.Status()
+	if err != nil {
+		panic(err)
+	}
+
+	mhubClient := mhubtypes.NewQueryClient(ctx.CosmosConn)
+	for {
+		response, err := mhubClient.UnbatchedSendToExternals(context.TODO(), &mhubtypes.UnbatchedSendToExternalsRequest{
+			ChainId: "bsc",
+		})
+		if err != nil {
+			panic(err)
+		}
+
+		if len(response.SendToExternals) > 0 {
+			println("waiting for batch to be created")
+			time.Sleep(time.Second)
+			continue
+		}
+
+		break
+	}
+
+	addr, priv := cosmos.GetAccount(ctx.CosmosMnemonic)
+	response, err := mhubClient.LastSubmittedExternalEvent(context.TODO(), &mhubtypes.LastSubmittedExternalEventRequest{
+		Address: addr.String(),
+		ChainId: "bsc",
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	event, err := mhubtypes.PackEvent(&mhubtypes.SendToHubEvent{
+		EventNonce:     response.EventNonce + 1,
+		ExternalCoinId: ctx.Erc20addr,
+		Amount:         sdk.NewInt(1),
+		Sender:         recipient,
+		CosmosReceiver: addr.String(),
+		ExternalHeight: math.MaxUint64,
+		TxHash:         "Mt...",
+	})
+	if err != nil {
+		panic(err)
+	}
+	cosmos.SendCosmosTx([]sdk.Msg{&mhubtypes.MsgSubmitExternalEvent{
+		Event:   event,
+		Signer:  addr.String(),
+		ChainId: "bsc",
+	}}, addr, priv, ctx.CosmosConn, log.NewTMLogger(os.Stdout), true)
+
+	minterHeight := minterStatus.LatestBlockHeight
+
+	go func() {
+		startTime := time.Now()
+
+		for {
+			if time.Now().Sub(startTime).Seconds() > testTimeout.Seconds() {
+				panic("Timeout waiting for the refund")
+			}
+
+			response, err := ctx.MinterClient.Block(minterHeight)
+			if err != nil {
+				time.Sleep(time.Millisecond * 200)
+				continue
+			}
+
+			for _, transactionResponse := range response.Transactions {
+				if transactionResponse.From != ctx.MinterMultisig {
+					continue
+				}
+
+				if transaction.Type(transactionResponse.Type) == transaction.TypeMultisend {
+					var data api_pb.MultiSendData
+					if err := transactionResponse.Data.UnmarshalTo(&data); err != nil {
+						panic(err)
+					}
+
+					for _, item := range data.List {
+						if item.Coin.Id == minterCoinId && strings.ToLower(ctx.EthAddress.String())[2:] == item.To[2:] && item.Value == expectedValue.String() {
+							println("SUCCESS: test refunds with different decimals")
 							ctx.TestsWg.Done()
 							return
 						}
@@ -837,7 +994,6 @@ func testHubToBSCTransfer(ctx *Context) {
 		expectedValue = expectedValue.QuoRaw(1e12)
 
 		startTime := time.Now()
-		timeout := time.Minute * 5
 
 		hubContract, _ := erc20.NewErc20(common.HexToAddress(ctx.Bep20addr), ctx.BscClient)
 
@@ -849,7 +1005,7 @@ func testHubToBSCTransfer(ctx *Context) {
 
 			hubBalance := sdk.NewIntFromBigInt(hubBalanceInt)
 			if hubBalance.IsZero() {
-				if time.Now().Sub(startTime).Seconds() > timeout.Seconds() {
+				if time.Now().Sub(startTime).Seconds() > testTimeout.Seconds() {
 					panic("Timeout waiting for the balance to update")
 				}
 
@@ -893,7 +1049,6 @@ func testHubToEthereumTransfer(ctx *Context) {
 		expectedValue = expectedValue.SubRaw(fee)
 
 		startTime := time.Now()
-		timeout := time.Minute * 5
 
 		hubContract, _ := erc20.NewErc20(common.HexToAddress(ctx.Erc20addr), ctx.EthClient)
 
@@ -905,7 +1060,7 @@ func testHubToEthereumTransfer(ctx *Context) {
 
 			hubBalance := sdk.NewIntFromBigInt(hubBalanceInt)
 			if hubBalance.IsZero() {
-				if time.Now().Sub(startTime).Seconds() > timeout.Seconds() {
+				if time.Now().Sub(startTime).Seconds() > testTimeout.Seconds() {
 					panic("Timeout waiting for the balance to update")
 				}
 
@@ -951,9 +1106,9 @@ func testHubToMinterTransfer(ctx *Context) {
 				panic(err)
 			}
 
-			hubBalance := getMinterCoinBalance(response.Balance, "HUB")
+			hubBalance := getMinterCoinBalance(response.Balance, minterCoinId)
 			if hubBalance.IsZero() {
-				if time.Now().Sub(startTime).Seconds() > 180 {
+				if time.Now().Sub(startTime).Seconds() > testTimeout.Seconds() {
 					panic("Timeout waiting for the balance to update")
 				}
 
@@ -991,7 +1146,7 @@ func testMinterToHubTransfer(ctx *Context) {
 			}
 
 			if response.Balance.IsZero() {
-				if time.Now().Sub(startTime).Seconds() > 120 {
+				if time.Now().Sub(startTime).Seconds() > testTimeout.Seconds() {
 					panic("Timeout waiting for the balance to update")
 				}
 
@@ -1031,7 +1186,7 @@ func testBSCToHubTransfer(ctx *Context) {
 			}
 
 			if response.Balance.IsZero() {
-				if time.Now().Sub(startTime).Seconds() > 120 {
+				if time.Now().Sub(startTime).Seconds() > testTimeout.Seconds() {
 					panic("Timeout waiting for the balance to update")
 				}
 
@@ -1071,7 +1226,7 @@ func testEthereumToHubTransfer(ctx *Context) {
 			}
 
 			if response.Balance.IsZero() {
-				if time.Now().Sub(startTime).Seconds() > 120 {
+				if time.Now().Sub(startTime).Seconds() > testTimeout.Seconds() {
 					panic("Timeout waiting for the balance to update")
 				}
 
@@ -1094,7 +1249,7 @@ func testBSCToEthereumTransfer(ctx *Context) {
 	ctx.TestsWg.Add(1)
 	randomPk, _ := crypto.GenerateKey()
 	recipient := crypto.PubkeyToAddress(randomPk.PublicKey).Hex()
-	sendERC20ToAnotherChain(ctx.EthPrivateKey, ctx.BscClient, ctx.BscContract, ctx.Bep20addr, recipient, bscChainId, "ethereum", big.NewInt(1e6))
+	sendERC20ToAnotherChain(ctx.EthPrivateKey, ctx.BscClient, ctx.BscContract, ctx.Bep20addr, recipient, bscChainId, "ethereum", big.NewInt(1e6), big.NewInt(100))
 
 	go func() {
 		expectedValue := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(1)))
@@ -1102,7 +1257,6 @@ func testBSCToEthereumTransfer(ctx *Context) {
 		expectedValue = expectedValue.SubRaw(100 * 1e12)
 
 		startTime := time.Now()
-		timeout := time.Minute * 5
 
 		hubContract, _ := erc20.NewErc20(common.HexToAddress(ctx.Erc20addr), ctx.EthClient)
 
@@ -1114,7 +1268,7 @@ func testBSCToEthereumTransfer(ctx *Context) {
 
 			hubBalance := sdk.NewIntFromBigInt(hubBalanceInt)
 			if hubBalance.IsZero() {
-				if time.Now().Sub(startTime).Seconds() > timeout.Seconds() {
+				if time.Now().Sub(startTime).Seconds() > testTimeout.Seconds() {
 					panic("Timeout waiting for the balance to update")
 				}
 
@@ -1133,11 +1287,11 @@ func testBSCToEthereumTransfer(ctx *Context) {
 	}()
 }
 
-func testEthereumToMinterTransfer(ctx *Context) {
+func testEthEthereumToMinterTransfer(ctx *Context) {
 	ctx.TestsWg.Add(1)
 	randomPk, _ := crypto.GenerateKey()
 	recipient := crypto.PubkeyToAddress(randomPk.PublicKey).Hex()
-	sendERC20ToAnotherChain(ctx.EthPrivateKey, ctx.EthClient, ctx.EthContract, ctx.Erc20addr, recipient, ethChainId, "minter", big.NewInt(1e18))
+	sendEthToAnotherChain(ctx.EthPrivateKey, ctx.EthClient, ctx.EthContract, recipient, ethChainId, "minter", big.NewInt(1e18))
 
 	go func() {
 		expectedValue := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(1)))
@@ -1151,9 +1305,48 @@ func testEthereumToMinterTransfer(ctx *Context) {
 				panic(err)
 			}
 
-			hubBalance := getMinterCoinBalance(response.Balance, "HUB")
+			hubBalance := getMinterCoinBalance(response.Balance, 2)
 			if hubBalance.IsZero() {
-				if time.Now().Sub(startTime).Seconds() > 180 {
+				if time.Now().Sub(startTime).Seconds() > testTimeout.Seconds() {
+					panic("Timeout waiting for the balance to update")
+				}
+
+				time.Sleep(time.Second)
+				continue
+			}
+
+			if !hubBalance.Equal(expectedValue) {
+				panic(fmt.Sprintf("Balance is not equal to expected value. Expected %s, got %s", expectedValue.String(), hubBalance.String()))
+			}
+
+			println("SUCCESS: test Eth -> Minter (ETH) transfer")
+			ctx.TestsWg.Done()
+			break
+		}
+	}()
+}
+
+func testEthereumToMinterTransfer(ctx *Context) {
+	ctx.TestsWg.Add(1)
+	randomPk, _ := crypto.GenerateKey()
+	recipient := crypto.PubkeyToAddress(randomPk.PublicKey).Hex()
+	sendERC20ToAnotherChain(ctx.EthPrivateKey, ctx.EthClient, ctx.EthContract, ctx.Erc20addr, recipient, ethChainId, "minter", big.NewInt(1e18), big.NewInt(100))
+
+	go func() {
+		expectedValue := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(1)))
+		expectedValue = expectedValue.Sub(expectedValue.ToDec().Mul(bridgeCommission).TruncateInt())
+		expectedValue = expectedValue.SubRaw(100)
+		startTime := time.Now()
+
+		for {
+			response, err := ctx.MinterClient.Address("Mx" + recipient[2:])
+			if err != nil {
+				panic(err)
+			}
+
+			hubBalance := getMinterCoinBalance(response.Balance, minterCoinId)
+			if hubBalance.IsZero() {
+				if time.Now().Sub(startTime).Seconds() > testTimeout.Seconds() {
 					panic("Timeout waiting for the balance to update")
 				}
 
@@ -1172,16 +1365,15 @@ func testEthereumToMinterTransfer(ctx *Context) {
 	}()
 }
 
-func testValidatorsCommissions(ctx *Context) {
+func testValidatorsCommissionsWithDifferentDecimals(ctx *Context) {
 	ctx.TestsWg.Add(1)
 	randomPk, _ := crypto.GenerateKey()
 	recipient := crypto.PubkeyToAddress(randomPk.PublicKey).Hex()
-	toSend := transaction.BipToPip(big.NewInt(999))
-	sendERC20ToAnotherChain(ctx.EthPrivateKey, ctx.EthClient, ctx.EthContract, ctx.Erc20addr, recipient, ethChainId, "minter", toSend)
+	toSend := sdk.NewInt(1e18)
+	sendERC20ToAnotherChain(ctx.EthPrivateKey, ctx.BscClient, ctx.BscContract, ctx.Bep20addr, recipient, bscChainId, "minter", toSend.QuoRaw(1e12).BigInt(), big.NewInt(100))
 
 	go func() {
-		expectedValue := sdk.NewIntFromBigInt(toSend)
-		expectedValue = expectedValue.ToDec().Mul(bridgeCommission).TruncateInt()
+		expectedValue := toSend.ToDec().Mul(bridgeCommission).TruncateInt()
 		startTime := time.Now()
 
 		minterStatus, err := ctx.MinterClient.Status()
@@ -1190,10 +1382,9 @@ func testValidatorsCommissions(ctx *Context) {
 		}
 
 		minterHeight := minterStatus.LatestBlockHeight
-		timeout := time.Minute * 5
 
 		for {
-			if time.Now().Sub(startTime).Seconds() > timeout.Seconds() {
+			if time.Now().Sub(startTime).Seconds() > testTimeout.Seconds() {
 				panic("Timeout waiting for the commission to arrive to validator")
 			}
 
@@ -1215,7 +1406,63 @@ func testValidatorsCommissions(ctx *Context) {
 					}
 
 					for _, item := range data.List {
-						if item.Coin.Id == 1 && strings.ToLower(ctx.EthAddress.String())[2:] == item.To[2:] && item.Value == expectedValue.String() {
+						if item.Coin.Id == minterCoinId && strings.ToLower(ctx.EthAddress.String())[2:] == item.To[2:] && item.Value == expectedValue.String() {
+							println("SUCCESS: test commission for validator with different decimals")
+							ctx.TestsWg.Done()
+							return
+						}
+					}
+				}
+			}
+
+			minterHeight++
+		}
+	}()
+}
+
+func testValidatorsCommissions(ctx *Context) {
+	ctx.TestsWg.Add(1)
+	randomPk, _ := crypto.GenerateKey()
+	recipient := crypto.PubkeyToAddress(randomPk.PublicKey).Hex()
+	toSend := transaction.BipToPip(big.NewInt(999))
+	sendERC20ToAnotherChain(ctx.EthPrivateKey, ctx.EthClient, ctx.EthContract, ctx.Erc20addr, recipient, ethChainId, "minter", toSend, big.NewInt(100))
+
+	go func() {
+		expectedValue := sdk.NewIntFromBigInt(toSend)
+		expectedValue = expectedValue.ToDec().Mul(bridgeCommission).TruncateInt()
+		startTime := time.Now()
+
+		minterStatus, err := ctx.MinterClient.Status()
+		if err != nil {
+			panic(err)
+		}
+
+		minterHeight := minterStatus.LatestBlockHeight
+
+		for {
+			if time.Now().Sub(startTime).Seconds() > testTimeout.Seconds() {
+				panic("Timeout waiting for the commission to arrive to validator")
+			}
+
+			response, err := ctx.MinterClient.Block(minterHeight)
+			if err != nil {
+				time.Sleep(time.Millisecond * 200)
+				continue
+			}
+
+			for _, transactionResponse := range response.Transactions {
+				if transactionResponse.From != ctx.MinterMultisig {
+					continue
+				}
+
+				if transaction.Type(transactionResponse.Type) == transaction.TypeMultisend {
+					var data api_pb.MultiSendData
+					if err := transactionResponse.Data.UnmarshalTo(&data); err != nil {
+						panic(err)
+					}
+
+					for _, item := range data.List {
+						if item.Coin.Id == minterCoinId && strings.ToLower(ctx.EthAddress.String())[2:] == item.To[2:] && item.Value == expectedValue.String() {
 							println("SUCCESS: test commission for validator")
 							ctx.TestsWg.Done()
 							return
@@ -1238,7 +1485,7 @@ func testFeeRefund(ctx *Context) {
 	fee := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(15000)))
 	fundMinterAddress("Mx"+recipient[2:], ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterClient)
 
-	sendMinterCoinToEthereum(randomPkString, common.HexToAddress(recipient), ctx.MinterMultisig, ctx.MinterClient, recipient, value, fee)
+	sendMinterCoinToEthereum(randomPkString, common.HexToAddress(recipient), ctx.MinterMultisig, ctx.MinterClient, minterCoinId, recipient, value, fee)
 
 	go func() {
 		expectedValue := fee // todo: calculate this value somehow
@@ -1250,10 +1497,9 @@ func testFeeRefund(ctx *Context) {
 		}
 
 		minterHeight := minterStatus.LatestBlockHeight
-		timeout := time.Minute * 5
 
 		for {
-			if time.Now().Sub(startTime).Seconds() > timeout.Seconds() {
+			if time.Now().Sub(startTime).Seconds() > testTimeout.Seconds() {
 				panic("Timeout waiting for the fee refund to arrive")
 			}
 
@@ -1275,7 +1521,7 @@ func testFeeRefund(ctx *Context) {
 					}
 
 					for _, item := range data.List {
-						if item.Coin.Id != 1 || strings.ToLower(recipient)[2:] != item.To[2:] {
+						if item.Coin.Id != minterCoinId || strings.ToLower(recipient)[2:] != item.To[2:] {
 							continue
 						}
 
@@ -1294,11 +1540,75 @@ func testFeeRefund(ctx *Context) {
 	}()
 }
 
+func testFeeRefundWithDifferentDecimals(ctx *Context) {
+	ctx.TestsWg.Add(1)
+	randomPk, _ := crypto.GenerateKey()
+	randomPkString := fmt.Sprintf("%x", crypto.FromECDSA(randomPk))
+	recipient := crypto.PubkeyToAddress(randomPk.PublicKey).Hex()
+	value := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(16000)))
+	fee := sdk.NewIntFromBigInt(transaction.BipToPip(big.NewInt(15000)))
+	fundMinterAddress("Mx"+recipient[2:], ctx.EthPrivateKeyString, ctx.EthAddress, ctx.MinterClient)
+
+	sendMinterCoinToBsc(randomPkString, common.HexToAddress(recipient), ctx.MinterMultisig, ctx.MinterClient, recipient, value, fee)
+
+	go func() {
+		expectedValue := fee // todo: calculate this value somehow
+		startTime := time.Now()
+
+		minterStatus, err := ctx.MinterClient.Status()
+		if err != nil {
+			panic(err)
+		}
+
+		minterHeight := minterStatus.LatestBlockHeight
+
+		for {
+			if time.Now().Sub(startTime).Seconds() > testTimeout.Seconds() {
+				panic("Timeout waiting for the fee refund to arrive")
+			}
+
+			response, err := ctx.MinterClient.Block(minterHeight)
+			if err != nil {
+				time.Sleep(time.Millisecond * 200)
+				continue
+			}
+
+			for _, transactionResponse := range response.Transactions {
+				if transactionResponse.From != ctx.MinterMultisig {
+					continue
+				}
+
+				if transaction.Type(transactionResponse.Type) == transaction.TypeMultisend {
+					var data api_pb.MultiSendData
+					if err := transactionResponse.Data.UnmarshalTo(&data); err != nil {
+						panic(err)
+					}
+
+					for _, item := range data.List {
+						if item.Coin.Id != minterCoinId || strings.ToLower(recipient)[2:] != item.To[2:] {
+							continue
+						}
+
+						itemValue, _ := sdk.NewIntFromString(item.Value)
+						if itemValue.LTE(expectedValue) && itemValue.IsPositive() {
+							println("SUCCESS: test fee refund with different decimals")
+							ctx.TestsWg.Done()
+							return
+						}
+					}
+				}
+			}
+
+			minterHeight++
+		}
+	}()
+}
+
 func testEthereumToBscTransfer(ctx *Context) {
 	ctx.TestsWg.Add(1)
 	randomPk, _ := crypto.GenerateKey()
 	recipient := crypto.PubkeyToAddress(randomPk.PublicKey).Hex()
-	sendERC20ToAnotherChain(ctx.EthPrivateKey, ctx.EthClient, ctx.EthContract, ctx.Erc20addr, recipient, ethChainId, "bsc", big.NewInt(1e18))
+	sendERC20ToAnotherChain(ctx.EthPrivateKey, ctx.EthClient, ctx.EthContract, ctx.Erc20addr, recipient, ethChainId, "bsc", big.NewInt(1e18), big.NewInt(100))
 
 	go func() {
 		expectedValue := sdk.NewInt(1e18)
@@ -1307,7 +1617,6 @@ func testEthereumToBscTransfer(ctx *Context) {
 		expectedValue = expectedValue.QuoRaw(1e12)
 
 		startTime := time.Now()
-		timeout := time.Minute * 5
 
 		hubContract, _ := erc20.NewErc20(common.HexToAddress(ctx.Bep20addr), ctx.BscClient)
 
@@ -1319,7 +1628,7 @@ func testEthereumToBscTransfer(ctx *Context) {
 
 			hubBalance := sdk.NewIntFromBigInt(hubBalanceInt)
 			if hubBalance.IsZero() {
-				if time.Now().Sub(startTime).Seconds() > timeout.Seconds() {
+				if time.Now().Sub(startTime).Seconds() > testTimeout.Seconds() {
 					panic("Timeout waiting for the balance to update")
 				}
 

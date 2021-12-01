@@ -357,14 +357,6 @@ func NewMhub2App(
 		app.BaseApp,
 	)
 
-	app.stakingKeeper = *stakingKeeper.SetHooks(
-		stakingtypes.NewMultiStakingHooks(
-			app.distrKeeper.Hooks(),
-			app.slashingKeeper.Hooks(),
-			app.mhub2Keeper.Hooks(),
-		),
-	)
-
 	app.ibcKeeper = ibckeeper.NewKeeper(
 		appCodec,
 		keys[ibchost.StoreKey],
@@ -400,18 +392,26 @@ func NewMhub2App(
 		stakingKeeper,
 	)
 
-	app.mhub2Keeper = keeper.NewKeeper(
+	mhub2Keeper := keeper.NewKeeper(
 		appCodec,
 		keys[mhub2types.StoreKey],
 		app.GetSubspace(mhub2types.ModuleName),
 		app.accountKeeper,
-		stakingKeeper,
 		app.bankKeeper,
 		app.slashingKeeper,
 		app.oracleKeeper,
-		sdk.DefaultPowerReduction,
+		sdk.NewIntFromUint64(1e18),
 	)
 
+	app.stakingKeeper = *stakingKeeper.SetHooks(
+		stakingtypes.NewMultiStakingHooks(
+			app.distrKeeper.Hooks(),
+			app.slashingKeeper.Hooks(),
+			app.mhub2Keeper.Hooks(),
+		),
+	)
+
+	app.mhub2Keeper = mhub2Keeper.SetStakingKeeper(app.stakingKeeper)
 	app.oracleKeeper = app.oracleKeeper.SetMhub2Keeper(app.mhub2Keeper)
 
 	govRouter := govtypes.NewRouter()

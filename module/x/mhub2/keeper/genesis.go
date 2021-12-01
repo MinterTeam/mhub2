@@ -64,10 +64,10 @@ func InitGenesis(ctx sdk.Context, k Keeper, data types.GenesisState) {
 			eth := common.HexToAddress(keys.ExternalAddress)
 
 			// set the orchestrator address
-			k.SetOrchestratorValidatorAddress(ctx, val, orch)
+			k.SetOrchestratorValidatorAddress(ctx, chainId, val, orch)
 			// set the ethereum address
-			k.setValidatorExternalAddress(ctx, val, common.HexToAddress(keys.ExternalAddress))
-			k.setExternalOrchestratorAddress(ctx, eth, orch)
+			k.setValidatorExternalAddress(ctx, chainId, val, common.HexToAddress(keys.ExternalAddress))
+			k.setExternalOrchestratorAddress(ctx, chainId, eth, orch)
 		}
 
 		// reset outgoing txs in state
@@ -110,7 +110,7 @@ func ExportGenesis(ctx sdk.Context, k Keeper) types.GenesisState {
 			externalTxConfirmations  []*cdctypes.Any
 			attmap                   = k.GetExternalEventVoteRecordMapping(ctx, chainId)
 			externalEventVoteRecords []*types.ExternalEventVoteRecord
-			delegates                = k.getDelegateKeys(ctx)
+			delegates                = k.getDelegateKeys(ctx, chainId)
 			lastobserved             = k.GetLastObservedEventNonce(ctx, chainId)
 			unbatchedTransfers       = k.getUnbatchedSendToExternals(ctx, chainId)
 		)
@@ -127,7 +127,7 @@ func ExportGenesis(ctx sdk.Context, k Keeper) types.GenesisState {
 			outgoingTxs = append(outgoingTxs, ota)
 			sstx, _ := otx.(*types.SignerSetTx)
 			k.iterateExternalSignatures(ctx, chainId, sstx.GetStoreIndex(chainId), func(val sdk.ValAddress, sig []byte) bool {
-				siga, _ := types.PackConfirmation(&types.SignerSetTxConfirmation{sstx.Nonce, k.GetValidatorExternalAddress(ctx, val).Hex(), sig})
+				siga, _ := types.PackConfirmation(&types.SignerSetTxConfirmation{sstx.Nonce, k.GetValidatorExternalAddress(ctx, chainId, val).Hex(), sig})
 				externalTxConfirmations = append(externalTxConfirmations, siga)
 				return false
 			})
@@ -140,7 +140,7 @@ func ExportGenesis(ctx sdk.Context, k Keeper) types.GenesisState {
 			outgoingTxs = append(outgoingTxs, ota)
 			btx, _ := otx.(*types.BatchTx)
 			k.iterateExternalSignatures(ctx, chainId, btx.GetStoreIndex(chainId), func(val sdk.ValAddress, sig []byte) bool {
-				siga, _ := types.PackConfirmation(&types.BatchTxConfirmation{btx.ExternalTokenId, btx.BatchNonce, k.GetValidatorExternalAddress(ctx, val).Hex(), sig})
+				siga, _ := types.PackConfirmation(&types.BatchTxConfirmation{btx.ExternalTokenId, btx.BatchNonce, k.GetValidatorExternalAddress(ctx, chainId, val).Hex(), sig})
 				externalTxConfirmations = append(externalTxConfirmations, siga)
 				return false
 			})
@@ -153,7 +153,7 @@ func ExportGenesis(ctx sdk.Context, k Keeper) types.GenesisState {
 			outgoingTxs = append(outgoingTxs, ota)
 			btx, _ := otx.(*types.ContractCallTx)
 			k.iterateExternalSignatures(ctx, chainId, btx.GetStoreIndex(chainId), func(val sdk.ValAddress, sig []byte) bool {
-				siga, _ := types.PackConfirmation(&types.ContractCallTxConfirmation{btx.InvalidationScope, btx.InvalidationNonce, k.GetValidatorExternalAddress(ctx, val).Hex(), sig})
+				siga, _ := types.PackConfirmation(&types.ContractCallTxConfirmation{btx.InvalidationScope, btx.InvalidationNonce, k.GetValidatorExternalAddress(ctx, chainId, val).Hex(), sig})
 				externalTxConfirmations = append(externalTxConfirmations, siga)
 				return false
 			})

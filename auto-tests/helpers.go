@@ -9,6 +9,7 @@ import (
 	"github.com/MinterTeam/mhub2/auto-tests/erc20"
 	"github.com/MinterTeam/mhub2/auto-tests/help"
 	"github.com/MinterTeam/mhub2/auto-tests/hub2"
+	"github.com/MinterTeam/mhub2/auto-tests/weth"
 	minterTypes "github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-sdk/v2/api/grpc_client"
 	"github.com/MinterTeam/minter-go-sdk/v2/transaction"
@@ -35,9 +36,9 @@ import (
 	"time"
 )
 
-func getMinterCoinBalance(balances []*api_pb.AddressBalance, coin string) sdk.Int {
+func getMinterCoinBalance(balances []*api_pb.AddressBalance, id uint64) sdk.Int {
 	for _, balance := range balances {
-		if balance.Coin.Symbol == coin {
+		if balance.Coin.Id == id {
 			b, _ := sdk.NewIntFromString(balance.Value)
 			return b
 		}
@@ -47,9 +48,12 @@ func getMinterCoinBalance(balances []*api_pb.AddressBalance, coin string) sdk.In
 }
 
 func sendMinterCoinToHub(privateKeyString string, sender common.Address, multisig string, client *grpc_client.Client, to string) {
+	minterSenderLock.Lock()
+	defer minterSenderLock.Unlock()
+
 	addr := "Mx" + sender.Hex()[2:]
 	tx, _ := transaction.NewBuilder(transaction.TestNetChainID).NewTransaction(
-		transaction.NewSendData().MustSetTo(multisig).SetCoin(1).SetValue(transaction.BipToPip(big.NewInt(1))),
+		transaction.NewSendData().MustSetTo(multisig).SetCoin(minterCoinId).SetValue(transaction.BipToPip(big.NewInt(1))),
 	)
 
 	nonce, err := client.Nonce(addr)
@@ -68,17 +72,19 @@ func sendMinterCoinToHub(privateKeyString string, sender common.Address, multisi
 	if response.Code != 0 {
 		panic(response.Log)
 	}
+
+	waitMinterTx(client, response.Hash)
 }
 
 var minterSenderLock = sync.Mutex{}
 
-func sendMinterCoinToEthereum(privateKeyString string, sender common.Address, multisig string, client *grpc_client.Client, to string, value, fee sdk.Int) {
+func sendMinterCoinToEthereum(privateKeyString string, sender common.Address, multisig string, client *grpc_client.Client, coinId uint64, to string, value, fee sdk.Int) {
 	minterSenderLock.Lock()
 	defer minterSenderLock.Unlock()
 
 	addr := "Mx" + sender.Hex()[2:]
 	tx, _ := transaction.NewBuilder(transaction.TestNetChainID).NewTransaction(
-		transaction.NewSendData().MustSetTo(multisig).SetCoin(1).SetValue(value.BigInt()),
+		transaction.NewSendData().MustSetTo(multisig).SetCoin(coinId).SetValue(value.BigInt()),
 	)
 
 	nonce, err := client.Nonce(addr)
@@ -107,7 +113,7 @@ func sendMinterCoinToBsc(privateKeyString string, sender common.Address, multisi
 
 	addr := "Mx" + sender.Hex()[2:]
 	tx, _ := transaction.NewBuilder(transaction.TestNetChainID).NewTransaction(
-		transaction.NewSendData().MustSetTo(multisig).SetCoin(1).SetValue(value.BigInt()),
+		transaction.NewSendData().MustSetTo(multisig).SetCoin(minterCoinId).SetValue(value.BigInt()),
 	)
 
 	nonce, err := client.Nonce(addr)
@@ -146,7 +152,8 @@ func fundMinterAddress(to string, privateKeyString string, sender common.Address
 	tx, _ := transaction.NewBuilder(transaction.TestNetChainID).NewTransaction(
 		transaction.NewMultisendData().
 			AddItem(transaction.NewSendData().MustSetTo(to).SetCoin(0).SetValue(transaction.BipToPip(big.NewInt(100000)))).
-			AddItem(transaction.NewSendData().MustSetTo(to).SetCoin(1).SetValue(transaction.BipToPip(big.NewInt(100000)))),
+			AddItem(transaction.NewSendData().MustSetTo(to).SetCoin(1).SetValue(transaction.BipToPip(big.NewInt(100000)))).
+			AddItem(transaction.NewSendData().MustSetTo(to).SetCoin(2).SetValue(transaction.BipToPip(big.NewInt(100000)))),
 	)
 
 	nonce, err := client.Nonce(addr)
@@ -195,21 +202,12 @@ func createMinterMultisig(prKey string, ethAddress common.Address, client *grpc_
 		panic(response.Log)
 	}
 
-	for {
-		if _, err := client.Transaction(response.Hash); err != nil {
-			time.Sleep(time.Millisecond * 200)
-			continue
-		}
-
-		break
-	}
-
 	waitMinterTx(client, response.Hash)
 
 	return transaction.MultisigAddress(addr, nonce)
 }
 
-func runEvmChain(chainId int, wd string, ethAddress common.Address, privateKey *ecdsa.PrivateKey, privateKeyString string, port string) (*ethclient.Client, error, string, string) {
+func runEvmChain(chainId int, wd string, ethAddress common.Address, privateKey *ecdsa.PrivateKey, privateKeyString string, port string) (*ethclient.Client, error, string, string, string) {
 	runOrPanic("geth --networkid %d --datadir %s/data/eth-%d init data/eth-genesis-%d.json", chainId, wd, chainId, chainId)
 	if err := os.WriteFile(fmt.Sprintf("data/private-key-%d.txt", chainId), []byte(privateKeyString), os.ModePerm); err != nil {
 		panic(err)
@@ -230,19 +228,22 @@ func runEvmChain(chainId int, wd string, ethAddress common.Address, privateKey *
 		break
 	}
 
+	wethAddr := deployWeth(privateKey, client, int64(chainId))
+
 	// deploy contract
-	contract := deployContract(privateKey, client, int64(chainId))
+	contract := deployContract(privateKey, client, wethAddr, int64(chainId))
 
 	// deploy erc20
 	erc20addr := deployERC20(privateKey, client, int64(chainId))
 
 	// fund contract with erc20
 	fundContractWithErc20(privateKey, client, contract, erc20addr, int64(chainId))
+	fundContractWithErc20(privateKey, client, contract, wethAddr, int64(chainId))
 
-	return client, err, contract, erc20addr
+	return client, err, contract, erc20addr, wethAddr
 }
 
-func deployContract(privateKey *ecdsa.PrivateKey, client *ethclient.Client, chainId int64) string {
+func deployContract(privateKey *ecdsa.PrivateKey, client *ethclient.Client, wethAddress string, chainId int64) string {
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
 	nonce, err := client.PendingNonceAt(context.TODO(), addr)
 	if err != nil {
@@ -275,7 +276,7 @@ func deployContract(privateKey *ecdsa.PrivateKey, client *ethclient.Client, chai
 	)
 
 	copy(gravityId[:], "defaultgravityid")
-	address, tx, _, err := hub2.DeployHub2(auth, client, gravityId, powerThreshold, validators, powers)
+	address, tx, _, err := hub2.DeployHub2(auth, client, gravityId, powerThreshold, validators, powers, common.HexToAddress(wethAddress), addr)
 	if err != nil {
 		panic(err)
 	}
@@ -316,7 +317,102 @@ func deployERC20(privateKey *ecdsa.PrivateKey, client *ethclient.Client, chainId
 	return address.Hex()
 }
 
-func sendERC20ToAnotherChain(privateKey *ecdsa.PrivateKey, client *ethclient.Client, hub2Addr string, erc20addr string, to string, chainId int64, destChain string, value *big.Int) {
+func deployWeth(privateKey *ecdsa.PrivateKey, client *ethclient.Client, chainId int64) string {
+	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
+	nonce, err := client.PendingNonceAt(context.TODO(), addr)
+	if err != nil {
+		panic(err)
+	}
+
+	gasPrice, err := client.SuggestGasPrice(context.TODO())
+	if err != nil {
+		panic(err)
+	}
+
+	auth, err := bind.NewKeyedTransactorWithChainID(privateKey, big.NewInt(chainId))
+	if err != nil {
+		panic(err)
+	}
+	auth.Nonce = big.NewInt(int64(nonce))
+	auth.Value = big.NewInt(0)
+	auth.GasLimit = uint64(3000000)
+	auth.GasPrice = gasPrice
+
+	address, tx, _, err := weth.DeployWeth(auth, client)
+	if err != nil {
+		panic(err)
+	}
+
+	waitEthTx(tx.Hash(), client)
+
+	{
+		signedTx := ethTypes.MustSignNewTx(privateKey, ethTypes.NewEIP155Signer(big.NewInt(chainId)), &ethTypes.LegacyTx{
+			Nonce:    nonce + 1,
+			GasPrice: gasPrice,
+			Gas:      uint64(3000000),
+			To:       &address,
+			Value:    transaction.BipToPip(big.NewInt(1000)),
+		})
+		if err != nil {
+			panic(err)
+		}
+
+		if err = client.SendTransaction(context.Background(), signedTx); err != nil {
+			panic(err)
+		}
+
+		waitEthTx(signedTx.Hash(), client)
+	}
+
+	return address.Hex()
+}
+
+func sendEthToAnotherChain(privateKey *ecdsa.PrivateKey, client *ethclient.Client, hub2Addr string, to string, chainId int64, destChain string, value *big.Int) {
+	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
+	nonce, err := client.PendingNonceAt(context.TODO(), addr)
+	if err != nil {
+		panic(err)
+	}
+
+	gasPrice, err := client.SuggestGasPrice(context.TODO())
+	if err != nil {
+		panic(err)
+	}
+
+	auth, err := bind.NewKeyedTransactorWithChainID(privateKey, big.NewInt(chainId))
+	if err != nil {
+		panic(err)
+	}
+	auth.Nonce = big.NewInt(int64(nonce))
+	auth.Value = big.NewInt(0).Set(value)
+	auth.GasLimit = uint64(3000000)
+	auth.GasPrice = gasPrice
+
+	hub2Instance, err := hub2.NewHub2(common.HexToAddress(hub2Addr), client)
+	if err != nil {
+		panic(err)
+	}
+
+	recipient, err := hex.DecodeString(to[2:])
+	if err != nil {
+		panic(err)
+	}
+
+	rec := [32]byte{}
+	copy(rec[12:], recipient)
+
+	destinationChain := [32]byte{}
+	copy(destinationChain[:], destChain)
+
+	response, err := hub2Instance.TransferETHToChain(auth, destinationChain, rec, big.NewInt(100))
+	if err != nil {
+		panic(err)
+	}
+
+	waitEthTx(response.Hash(), client)
+}
+
+func sendERC20ToAnotherChain(privateKey *ecdsa.PrivateKey, client *ethclient.Client, hub2Addr string, erc20addr string, to string, chainId int64, destChain string, value, fee *big.Int) {
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
 	nonce, err := client.PendingNonceAt(context.TODO(), addr)
 	if err != nil {
@@ -353,7 +449,7 @@ func sendERC20ToAnotherChain(privateKey *ecdsa.PrivateKey, client *ethclient.Cli
 	destinationChain := [32]byte{}
 	copy(destinationChain[:], destChain)
 
-	response, err := hub2Instance.TransferToChain(auth, common.HexToAddress(erc20addr), destinationChain, rec, value, big.NewInt(100))
+	response, err := hub2Instance.TransferToChain(auth, common.HexToAddress(erc20addr), destinationChain, rec, value, fee)
 	if err != nil {
 		panic(err)
 	}
@@ -567,7 +663,7 @@ func populateEthGenesis(address common.Address, chainId int) {
 		Difficulty: big.NewInt(1),
 		Alloc: core.GenesisAlloc{
 			address: core.GenesisAccount{
-				Balance: big.NewInt(1e18),
+				Balance: big.NewInt(0).Mul(big.NewInt(100000), big.NewInt(1e18)),
 				Nonce:   0,
 			},
 		},
@@ -647,6 +743,10 @@ func populateMinterGenesis(pubkey minterTypes.Pubkey, address common.Address) {
 						Coin:  1,
 						Value: "1000000000000000000000000",
 					},
+					{
+						Coin:  2,
+						Value: "1000000000000000000000000",
+					},
 				},
 				Nonce: 0,
 			},
@@ -656,6 +756,16 @@ func populateMinterGenesis(pubkey minterTypes.Pubkey, address common.Address) {
 				ID:        1,
 				Name:      "HUB",
 				Symbol:    minterTypes.StrToCoinSymbol("HUB"),
+				Volume:    "1000000000000000000000000",
+				Crr:       100,
+				Reserve:   "1000000000000000000000000",
+				MaxSupply: "1000000000000000000000000",
+				Version:   0,
+			},
+			{
+				ID:        2,
+				Name:      "ETH",
+				Symbol:    minterTypes.StrToCoinSymbol("ETH"),
 				Volume:    "1000000000000000000000000",
 				Crr:       100,
 				Reserve:   "1000000000000000000000000",
@@ -747,7 +857,7 @@ func deployContractsAndMultisig(prKeyString string) {
 	ethPrivateKeyString := fmt.Sprintf("%x", crypto.FromECDSA(pk))
 	ethAddress := crypto.PubkeyToAddress(pk.PublicKey)
 
-	minterClient, _ := grpc_client.New("node-api.taconet.minter.network:8842")
+	minterClient, _ := grpc_client.New("node-api.testnet.minter.network:28842")
 	minterMultisig := createMinterMultisig(ethPrivateKeyString, ethAddress, minterClient)
 
 	println("minter", minterMultisig)
@@ -758,7 +868,7 @@ func deployContractsAndMultisig(prKeyString string) {
 			panic(err)
 		}
 
-		contract := deployContract(pk, client, 3)
+		contract := deployContract(pk, client, "0x0a180A76e4466bF68A7F86fB029BEd3cCcFaAac5", 3)
 
 		println("eth", contract)
 	}
@@ -769,7 +879,7 @@ func deployContractsAndMultisig(prKeyString string) {
 			panic(err)
 		}
 
-		contract := deployContract(pk, client, 97)
+		contract := deployContract(pk, client, "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", 97)
 
 		println("bsc", contract)
 	}

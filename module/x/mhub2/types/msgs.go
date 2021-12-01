@@ -23,12 +23,13 @@ var (
 )
 
 // NewMsgDelegateKeys returns a reference to a new MsgDelegateKeys.
-func NewMsgDelegateKeys(val sdk.ValAddress, orchAddr sdk.AccAddress, ethAddr string, ethSig []byte) *MsgDelegateKeys {
+func NewMsgDelegateKeys(val sdk.ValAddress, chainId ChainID, orchAddr sdk.AccAddress, ethAddr string, ethSig []byte) *MsgDelegateKeys {
 	return &MsgDelegateKeys{
 		ValidatorAddress:    val.String(),
 		OrchestratorAddress: orchAddr.String(),
 		ExternalAddress:     ethAddr,
 		EthSignature:        ethSig,
+		ChainId:             chainId.String(),
 	}
 }
 

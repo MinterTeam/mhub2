@@ -1,6 +1,7 @@
 use clarity::address::Address as EthAddress;
 use clarity::PrivateKey as EthPrivateKey;
 use clarity::Uint256;
+use std::cmp::Ordering;
 
 use cosmos_gravity::query::get_latest_transaction_batches;
 use cosmos_gravity::query::get_transaction_batch_signatures;
@@ -19,6 +20,26 @@ use web30::client::Web3;
 struct SubmittableBatch {
     batch: TransactionBatch,
     sigs: Vec<BatchConfirmResponse>,
+}
+
+impl PartialOrd<Self> for SubmittableBatch {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl PartialEq<Self> for SubmittableBatch {
+    fn eq(&self, other: &Self) -> bool {
+        self.batch.nonce == other.batch.nonce
+    }
+}
+
+impl Eq for SubmittableBatch {}
+
+impl Ord for SubmittableBatch {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.batch.nonce.cmp(&other.batch.nonce)
+    }
 }
 
 /// This function relays batches from Cosmos to Ethereum. First we request
@@ -120,11 +141,14 @@ async fn get_batches_and_signatures(
             );
         }
     }
-    // reverse the list so that it is oldest first, we want to submit
+
+    // sort the list so that it is oldest first, we want to submit
     // older batches so that we don't invalidate newer batches
-    // for (_key, value) in possible_batches.iter_mut() {
-    //     value.reverse();
-    // }
+    for (_key, value) in possible_batches.iter_mut() {
+        value.sort();
+        value.reverse();
+    }
+
     return possible_batches;
 }
 

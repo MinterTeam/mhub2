@@ -66,7 +66,7 @@ func TestValidateMsgDelegateKeys(t *testing.T) {
 	}
 	for msg, spec := range specs {
 		t.Run(msg, func(t *testing.T) {
-			msg := types.NewMsgDelegateKeys(spec.srcValAddr, spec.srcCosmosAddr, spec.srcETHAddr, []byte{0x1})
+			msg := types.NewMsgDelegateKeys(spec.srcValAddr, "ethereum", spec.srcCosmosAddr, spec.srcETHAddr, []byte{0x1})
 			err := msg.ValidateBasic()
 			if spec.expErr {
 				assert.Error(t, err)

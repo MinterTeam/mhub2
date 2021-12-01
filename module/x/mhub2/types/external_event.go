@@ -192,7 +192,7 @@ func validateExternalId(id string, chainId ChainID) error {
 		}
 	case "minter":
 		coinId, err := strconv.Atoi(id)
-		if err != nil || coinId < 1 {
+		if err != nil || coinId < 0 {
 			return sdkerrors.Wrap(ErrInvalid, "minter coin id")
 		}
 	case "hub":

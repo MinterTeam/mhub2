@@ -149,8 +149,8 @@ func CmdRequestBatchTx() *cobra.Command {
 
 func CmdSetDelegateKeys() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "set-delegate-keys [validator-address] [orchestrator-address] [ethereum-address] [ethereum-signature]",
-		Args:  cobra.ExactArgs(4),
+		Use:   "set-delegate-keys [chain-id] [validator-address] [orchestrator-address] [ethereum-address] [ethereum-signature]",
+		Args:  cobra.ExactArgs(5),
 		Short: "Set mhub2 delegate keys",
 		Long: `Set a validator's Ethereum and orchestrator addresses. The validator must
 sign over a binary Proto-encoded DelegateKeysSignMsg message. The message contains
@@ -161,24 +161,29 @@ the validator's address and operator account current nonce.`,
 				return err
 			}
 
-			valAddr, err := sdk.ValAddressFromBech32(args[0])
+			chainId, err := parseChainId(args[0])
+			if err != nil {
+				panic(err)
+			}
+
+			valAddr, err := sdk.ValAddressFromBech32(args[1])
 			if err != nil {
 				return err
 			}
 
-			orcAddr, err := sdk.AccAddressFromBech32(args[1])
+			orcAddr, err := sdk.AccAddressFromBech32(args[2])
 			if err != nil {
 				return err
 			}
 
-			ethAddr := args[2]
+			ethAddr := args[3]
 
-			ethSig, err := hexutil.Decode(args[3])
+			ethSig, err := hexutil.Decode(args[4])
 			if err != nil {
 				return err
 			}
 
-			msg := types.NewMsgDelegateKeys(valAddr, orcAddr, ethAddr, ethSig)
+			msg := types.NewMsgDelegateKeys(valAddr, types.ChainID(chainId), orcAddr, ethAddr, ethSig)
 			if err = msg.ValidateBasic(); err != nil {
 				return err
 			}

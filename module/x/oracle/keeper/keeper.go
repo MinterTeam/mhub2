@@ -143,18 +143,6 @@ func (k Keeper) SetParams(ctx sdk.Context, ps types.Params) {
 	k.paramSpace.SetParamSet(ctx, &ps)
 }
 
-func (k Keeper) GetMinSingleWithdrawGas(ctx sdk.Context) uint64 {
-	p := k.GetParams(ctx)
-
-	return p.MinSingleWithdrawGas
-}
-
-func (k Keeper) GetMinBatchGas(ctx sdk.Context) uint64 {
-	p := k.GetParams(ctx)
-
-	return p.MinBatchGas
-}
-
 func (k Keeper) GetHolderValue(ctx sdk.Context, address string) sdk.Int {
 	for _, item := range k.GetHolders(ctx).GetList() {
 		if strings.ToLower(item.GetAddress()) == strings.ToLower(address) {

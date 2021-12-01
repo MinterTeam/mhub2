@@ -107,7 +107,7 @@ func TestMsgSubmitEthereumEventSendToCosmosSingleValidator(t *testing.T) {
 	gk := input.Mhub2Keeper
 	bk := input.BankKeeper
 	gk.StakingKeeper = keeper.NewStakingKeeperMock(myValAddr)
-	gk.SetOrchestratorValidatorAddress(ctx, myValAddr, myOrchestratorAddr)
+	gk.SetOrchestratorValidatorAddress(ctx, chainId, myValAddr, myOrchestratorAddr)
 	h := mhub2.NewHandler(gk)
 
 	myErc20 := types.ExternalToken{
@@ -220,9 +220,9 @@ func TestMsgSubmitEthreumEventSendToCosmosMultiValidator(t *testing.T) {
 	)
 
 	input.Mhub2Keeper.StakingKeeper = keeper.NewStakingKeeperMock(valAddr1, valAddr2, valAddr3)
-	input.Mhub2Keeper.SetOrchestratorValidatorAddress(ctx, valAddr1, orchestratorAddr1)
-	input.Mhub2Keeper.SetOrchestratorValidatorAddress(ctx, valAddr2, orchestratorAddr2)
-	input.Mhub2Keeper.SetOrchestratorValidatorAddress(ctx, valAddr3, orchestratorAddr3)
+	input.Mhub2Keeper.SetOrchestratorValidatorAddress(ctx, chainId, valAddr1, orchestratorAddr1)
+	input.Mhub2Keeper.SetOrchestratorValidatorAddress(ctx, chainId, valAddr2, orchestratorAddr2)
+	input.Mhub2Keeper.SetOrchestratorValidatorAddress(ctx, chainId, valAddr3, orchestratorAddr3)
 	h := mhub2.NewHandler(input.Mhub2Keeper)
 
 	myErc20 := types.ExternalToken{
@@ -350,14 +350,14 @@ func TestMsgSetDelegateAddresses(t *testing.T) {
 	h := mhub2.NewHandler(input.Mhub2Keeper)
 	ctx = ctx.WithBlockTime(blockTime)
 
-	msg := types.NewMsgDelegateKeys(valAddress, cosmosAddress, ethAddress.String(), sig)
+	msg := types.NewMsgDelegateKeys(valAddress, chainId, cosmosAddress, ethAddress.String(), sig)
 	ctx = ctx.WithBlockTime(blockTime).WithBlockHeight(blockHeight)
 	_, err = h(ctx, msg)
 	require.NoError(t, err)
 
-	require.Equal(t, ethAddress.String(), k.GetValidatorExternalAddress(ctx, valAddress).Hex())
-	require.Equal(t, valAddress, k.GetOrchestratorValidatorAddress(ctx, cosmosAddress))
-	require.Equal(t, cosmosAddress, k.GetExternalOrchestratorAddress(ctx, common.HexToAddress(ethAddress.String())))
+	require.Equal(t, ethAddress.String(), k.GetValidatorExternalAddress(ctx, chainId, valAddress).Hex())
+	require.Equal(t, valAddress, k.GetOrchestratorValidatorAddress(ctx, chainId, cosmosAddress))
+	require.Equal(t, cosmosAddress, k.GetExternalOrchestratorAddress(ctx, chainId, common.HexToAddress(ethAddress.String())))
 
 	_, err = k.DelegateKeysByOrchestrator(wctx, &types.DelegateKeysByOrchestratorRequest{OrchestratorAddress: cosmosAddress.String()})
 	require.NoError(t, err)
@@ -379,14 +379,14 @@ func TestMsgSetDelegateAddresses(t *testing.T) {
 	sig, err = types.NewEthereumSignature(hash, ethPrivKey2)
 	require.NoError(t, err)
 
-	msg = types.NewMsgDelegateKeys(valAddress, cosmosAddress2, ethAddress2.String(), sig)
+	msg = types.NewMsgDelegateKeys(valAddress, chainId, cosmosAddress2, ethAddress2.String(), sig)
 	ctx = ctx.WithBlockTime(blockTime2).WithBlockHeight(blockHeight2)
 	_, err = h(ctx, msg)
 	require.NoError(t, err)
 
-	require.Equal(t, ethAddress2.String(), k.GetValidatorExternalAddress(ctx, valAddress).Hex())
-	require.Equal(t, valAddress, k.GetOrchestratorValidatorAddress(ctx, cosmosAddress2))
-	require.Equal(t, cosmosAddress2, k.GetExternalOrchestratorAddress(ctx, common.HexToAddress(ethAddress2.String())))
+	require.Equal(t, ethAddress2.String(), k.GetValidatorExternalAddress(ctx, chainId, valAddress).Hex())
+	require.Equal(t, valAddress, k.GetOrchestratorValidatorAddress(ctx, chainId, cosmosAddress2))
+	require.Equal(t, cosmosAddress2, k.GetExternalOrchestratorAddress(ctx, chainId, common.HexToAddress(ethAddress2.String())))
 
 	_, err = k.DelegateKeysByOrchestrator(wctx, &types.DelegateKeysByOrchestratorRequest{OrchestratorAddress: cosmosAddress2.String()})
 	require.NoError(t, err)

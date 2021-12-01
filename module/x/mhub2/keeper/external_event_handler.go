@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"errors"
 	"fmt"
 	"math/big"
 	"strconv"
@@ -31,6 +32,10 @@ func (a ExternalEventProcessor) DetectMaliciousSupply(ctx sdk.Context, denom str
 func (a ExternalEventProcessor) Handle(ctx sdk.Context, chainId types.ChainID, eve types.ExternalEvent) (err error) {
 	switch event := eve.(type) {
 	case *types.TransferToChainEvent:
+		if err := a.keeper.CheckChainID(ctx, types.ChainID(event.ReceiverChainId)); err != nil {
+			return err
+		}
+
 		if event.ReceiverChainId == "hub" {
 			receiver, err := sdk.AccAddressFromHex(event.ExternalReceiver[2:])
 			if err != nil {
@@ -78,7 +83,11 @@ func (a ExternalEventProcessor) Handle(ctx sdk.Context, chainId types.ChainID, e
 			Mul(convertedAmount.ToDec()).TruncateInt()
 		fee := sdk.NewCoin(receiverChainTokenInfo.Denom, convertedFee)
 		commission := sdk.NewCoin(receiverChainTokenInfo.Denom, commissionValue)
-		amount := sdk.NewCoin(receiverChainTokenInfo.Denom, convertedAmount).Sub(commission).Sub(fee)
+		amount := sdk.NewCoin(receiverChainTokenInfo.Denom, convertedAmount).Sub(commission)
+		if amount.IsLT(fee) {
+			return errors.New("amount is less than fee")
+		}
+		amount = amount.Sub(fee)
 
 		txID, err := a.keeper.createSendToExternal(ctx, types.ChainID(event.ReceiverChainId), types.TempAddress, event.ExternalReceiver, amount, fee, commission, event.TxHash, chainId, event.Sender)
 		if err != nil {

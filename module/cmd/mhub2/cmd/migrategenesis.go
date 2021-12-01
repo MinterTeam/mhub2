@@ -4,6 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"time"
+
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+
+	oracletypes "github.com/MinterTeam/mhub2/module/x/oracle/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
@@ -44,20 +49,77 @@ func AddMigrateGenesisCmd(defaultNodeHome string) *cobra.Command {
 			if err := json.Unmarshal(appState["minter"], legacyMinterState); err != nil {
 				panic(err)
 			}
-			startMinterNonce, _ := strconv.Atoi(legacyMinterState.StartMinterNonce)
 
 			legacyOracleState := &legacyOracle{}
 			if err := json.Unmarshal(appState["oracle"], legacyOracleState); err != nil {
 				panic(err)
 			}
 
+			legacyPeggyState := &legacyPeggy{}
+			if err := json.Unmarshal(appState["peggy"], legacyPeggyState); err != nil {
+				panic(err)
+			}
+
+			var minterDelegatedKeys []*types.MsgDelegateKeys
+			var ethDelegatedKeys []*types.MsgDelegateKeys
+			var bscDelegatedKeys []*types.MsgDelegateKeys
+
+			for _, item := range legacyMinterState.MinterAddresses {
+				valAddress, err := sdk.ValAddressFromBech32(item.Validator)
+				if err != nil {
+					panic(err)
+				}
+
+				minterDelegatedKeys = append(minterDelegatedKeys, &types.MsgDelegateKeys{
+					ValidatorAddress:    valAddress.String(),
+					OrchestratorAddress: sdk.AccAddress(valAddress).String(),
+					ExternalAddress:     "0x" + item.Address[2:],
+					EthSignature:        []byte{1},
+					ChainId:             "minter",
+				})
+			}
+
+			for _, item := range legacyPeggyState.OrchestratorAddresses {
+				valAddress, err := sdk.ValAddressFromBech32(item.Validator)
+				if err != nil {
+					panic(err)
+				}
+
+				ethDelegatedKeys = append(ethDelegatedKeys, &types.MsgDelegateKeys{
+					ValidatorAddress:    valAddress.String(),
+					OrchestratorAddress: sdk.AccAddress(valAddress).String(),
+					ExternalAddress:     item.EthAddress,
+					EthSignature:        []byte{1},
+					ChainId:             "ethereum",
+				})
+
+				bscDelegatedKeys = append(bscDelegatedKeys, &types.MsgDelegateKeys{
+					ValidatorAddress:    valAddress.String(),
+					OrchestratorAddress: sdk.AccAddress(valAddress).String(),
+					ExternalAddress:     item.EthAddress,
+					EthSignature:        []byte{1},
+					ChainId:             "bsc",
+				})
+			}
+
+			startMinterNonce, _ := strconv.Atoi(legacyMinterState.StartMinterNonce)
+
 			defaultGenesis := types.DefaultGenesisState()
 			genState := &types.GenesisState{
 				Params: defaultGenesis.Params,
 				ExternalStates: []*types.ExternalState{
 					{
-						ChainId:  "minter",
-						Sequence: uint64(startMinterNonce),
+						ChainId:      "minter",
+						Sequence:     uint64(startMinterNonce) - 1,
+						DelegateKeys: minterDelegatedKeys,
+					},
+					{
+						ChainId:      "ethereum",
+						DelegateKeys: ethDelegatedKeys,
+					},
+					{
+						ChainId:      "bsc",
+						DelegateKeys: bscDelegatedKeys,
 					},
 				},
 				TokenInfos: &types.TokenInfos{
@@ -65,12 +127,25 @@ func AddMigrateGenesisCmd(defaultNodeHome string) *cobra.Command {
 				},
 			}
 
+			genState.Params.GravityId = "minter-hub-2"
+
 			id := uint64(0)
 			for _, coin := range legacyOracleState.Params.Coins {
+				denom := coin.Denom
+
+				switch denom {
+				case "weth":
+					denom = "eth"
+				case "wbtc":
+					denom = "btc"
+				case "bipx":
+					denom = "bip"
+				}
+
 				id++
 				genState.TokenInfos.TokenInfos = append(genState.TokenInfos.TokenInfos, &types.TokenInfo{
 					Id:               id,
-					Denom:            coin.Denom,
+					Denom:            denom,
 					ChainId:          "minter",
 					ExternalTokenId:  coin.MinterId,
 					ExternalDecimals: 18,
@@ -81,12 +156,36 @@ func AddMigrateGenesisCmd(defaultNodeHome string) *cobra.Command {
 				ethDecimals, _ := strconv.Atoi(coin.EthDecimals)
 				genState.TokenInfos.TokenInfos = append(genState.TokenInfos.TokenInfos, &types.TokenInfo{
 					Id:               id,
-					Denom:            coin.Denom,
+					Denom:            denom,
 					ChainId:          "ethereum",
 					ExternalTokenId:  coin.EthAddr,
 					ExternalDecimals: uint64(ethDecimals),
 					Commission:       sdk.MustNewDecFromStr(coin.CustomCommission),
 				})
+
+				if denom == "bip" {
+					id++
+					genState.TokenInfos.TokenInfos = append(genState.TokenInfos.TokenInfos, &types.TokenInfo{
+						Id:               id,
+						Denom:            denom,
+						ChainId:          "bsc",
+						ExternalTokenId:  "0xf2Ba89A6f9670459ed5AeEfbd8Db52Be912228b8",
+						ExternalDecimals: 18,
+						Commission:       sdk.MustNewDecFromStr(coin.CustomCommission),
+					})
+				}
+
+				if denom == "hub" {
+					id++
+					genState.TokenInfos.TokenInfos = append(genState.TokenInfos.TokenInfos, &types.TokenInfo{
+						Id:               id,
+						Denom:            denom,
+						ChainId:          "bsc",
+						ExternalTokenId:  "0x8aC0A467f878f3561D309cF9B0994b0530b0a9d2",
+						ExternalDecimals: 18,
+						Commission:       sdk.MustNewDecFromStr(coin.CustomCommission),
+					})
+				}
 			}
 
 			genStateJson, err := cdc.MarshalJSON(genState)
@@ -95,6 +194,23 @@ func AddMigrateGenesisCmd(defaultNodeHome string) *cobra.Command {
 			}
 
 			appState[types.ModuleName] = genStateJson
+			delete(appState, "minter")
+			delete(appState, "peggy")
+
+			oracleGenStateJson, err := cdc.MarshalJSON(oracletypes.DefaultGenesisState())
+			if err != nil {
+				return fmt.Errorf("failed to marshal genesis state: %w", err)
+			}
+			appState[oracletypes.ModuleName] = oracleGenStateJson
+
+			govState := govtypes.DefaultGenesisState()
+			govState.DepositParams.MinDeposit = sdk.NewCoins(sdk.NewInt64Coin("hub", 1e18))
+			govState.VotingParams.VotingPeriod = time.Hour * 3
+			govStateJson, err := cdc.MarshalJSON(govState)
+			if err != nil {
+				return fmt.Errorf("failed to marshal genesis state: %w", err)
+			}
+			appState[govtypes.ModuleName] = govStateJson
 
 			appStateJSON, err := json.Marshal(appState)
 			if err != nil {
@@ -102,6 +218,9 @@ func AddMigrateGenesisCmd(defaultNodeHome string) *cobra.Command {
 			}
 
 			genDoc.AppState = appStateJSON
+			genDoc.ChainID = "mhub-mainnet-2"
+			genDoc.GenesisTime = time.Date(2021, 12, 2, 13, 0, 0, 0, time.UTC)
+
 			return genutil.ExportGenesisFile(genDoc, genFile)
 		},
 	}
@@ -114,6 +233,18 @@ func AddMigrateGenesisCmd(defaultNodeHome string) *cobra.Command {
 
 type legacyMinter struct {
 	StartMinterNonce string `json:"start_minter_nonce"`
+	MinterAddresses  []struct {
+		Address   string `json:"address"`
+		Validator string `json:"validator"`
+	} `json:"minter_addresses"`
+}
+
+type legacyPeggy struct {
+	OrchestratorAddresses []struct {
+		EthAddress   string `json:"eth_address"`
+		Orchestrator string `json:"orchestrator"`
+		Validator    string `json:"validator"`
+	} `json:"orchestrator_addresses"`
 }
 
 type legacyOracle struct {

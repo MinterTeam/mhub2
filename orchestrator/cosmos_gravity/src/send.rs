@@ -26,6 +26,7 @@ pub async fn update_gravity_delegate_addresses(
     cosmos_key: CosmosPrivateKey,
     ethereum_key: EthPrivateKey,
     fee: Coin,
+    chain_id: String,
 ) -> Result<TxResponse, CosmosGrpcError> {
     let our_valoper_address = cosmos_key
         .to_address(&contact.get_prefix())
@@ -56,6 +57,7 @@ pub async fn update_gravity_delegate_addresses(
         orchestrator_address: delegate_cosmos_address.to_string(),
         external_address: delegate_eth_address.to_string(),
         eth_signature,
+        chain_id,
     };
     let msg = Msg::new("/mhub2.v1.MsgDelegateKeys", msg);
     __send_messages(contact, cosmos_key, fee, vec![msg]).await

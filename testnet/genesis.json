@@ -1,6 +1,6 @@
 {
-  "genesis_time": "2021-11-25T09:03:36.731957753Z",
-  "chain_id": "mhub-test-18",
+  "genesis_time": "2021-11-29T11:06:28.42747565Z",
+  "chain_id": "mhub-test-19",
   "initial_height": "1",
   "consensus_params": {
     "block": {
@@ -33,7 +33,7 @@
       "accounts": [
         {
           "@type": "/cosmos.auth.v1beta1.BaseAccount",
-          "address": "hub1fwzuu306a3tfuf2t3uqm8kqc5vjwmuwem88ugf",
+          "address": "hub1yus8nl8qlnjgn4vpyz7nn44smzcu2hftcfddl7",
           "pub_key": null,
           "account_number": "0",
           "sequence": "0"
@@ -47,7 +47,7 @@
       },
       "balances": [
         {
-          "address": "hub1fwzuu306a3tfuf2t3uqm8kqc5vjwmuwem88ugf",
+          "address": "hub1yus8nl8qlnjgn4vpyz7nn44smzcu2hftcfddl7",
           "coins": [
             {
               "denom": "hub",
@@ -111,11 +111,11 @@
                   "max_change_rate": "0.010000000000000000"
                 },
                 "min_self_delegation": "1",
-                "delegator_address": "hub1fwzuu306a3tfuf2t3uqm8kqc5vjwmuwem88ugf",
-                "validator_address": "cosmosvaloper1fwzuu306a3tfuf2t3uqm8kqc5vjwmuwern7gga",
+                "delegator_address": "hub1yus8nl8qlnjgn4vpyz7nn44smzcu2hftcfddl7",
+                "validator_address": "cosmosvaloper1yus8nl8qlnjgn4vpyz7nn44smzcu2hftqa5el2",
                 "pubkey": {
                   "@type": "/cosmos.crypto.ed25519.PubKey",
-                  "key": "ppHMm9w8myu0PMBQ41UL5ttBtLptFECeys2IX+3Zar8="
+                  "key": "8NnaBHPpgFXm0/t42w+jMqivaCASCl5ewlkkdbY+Tpg="
                 },
                 "value": {
                   "denom": "hub",
@@ -124,13 +124,30 @@
               },
               {
                 "@type": "/mhub2.v1.MsgDelegateKeys",
-                "validator_address": "cosmosvaloper1fwzuu306a3tfuf2t3uqm8kqc5vjwmuwern7gga",
-                "orchestrator_address": "hub1fwzuu306a3tfuf2t3uqm8kqc5vjwmuwem88ugf",
+                "validator_address": "cosmosvaloper1yus8nl8qlnjgn4vpyz7nn44smzcu2hftqa5el2",
+                "orchestrator_address": "hub1yus8nl8qlnjgn4vpyz7nn44smzcu2hftcfddl7",
                 "external_address": "0x3bc0fed55E108bb21E1D7e6DCaEC68771E63DE20",
-                "eth_signature": "52lhBuzyFo5KHRtpuyUXMSh9PmIe6kyUUjWhLcBAlPFSi8EdJy/kt5BBX+3wX7ngCHywa453MiI8rsIPMyogYQE="
+                "eth_signature": "jDNvXxoKYbtwz8XA086fxqF9UuKHXL5Xdx4ypy1Z/9I8gT8R6GxdbeVJW26NNpfP6jdj8IyFyhrZyvnfmuOhEAA=",
+                "chain_id": "ethereum"
+              },
+              {
+                "@type": "/mhub2.v1.MsgDelegateKeys",
+                "validator_address": "cosmosvaloper1yus8nl8qlnjgn4vpyz7nn44smzcu2hftqa5el2",
+                "orchestrator_address": "hub1yus8nl8qlnjgn4vpyz7nn44smzcu2hftcfddl7",
+                "external_address": "0x3bc0fed55E108bb21E1D7e6DCaEC68771E63DE20",
+                "eth_signature": "jDNvXxoKYbtwz8XA086fxqF9UuKHXL5Xdx4ypy1Z/9I8gT8R6GxdbeVJW26NNpfP6jdj8IyFyhrZyvnfmuOhEAA=",
+                "chain_id": "minter"
+              },
+              {
+                "@type": "/mhub2.v1.MsgDelegateKeys",
+                "validator_address": "cosmosvaloper1yus8nl8qlnjgn4vpyz7nn44smzcu2hftqa5el2",
+                "orchestrator_address": "hub1yus8nl8qlnjgn4vpyz7nn44smzcu2hftcfddl7",
+                "external_address": "0x3bc0fed55E108bb21E1D7e6DCaEC68771E63DE20",
+                "eth_signature": "jDNvXxoKYbtwz8XA086fxqF9UuKHXL5Xdx4ypy1Z/9I8gT8R6GxdbeVJW26NNpfP6jdj8IyFyhrZyvnfmuOhEAA=",
+                "chain_id": "bsc"
               }
             ],
-            "memo": "c30d63852e13a8a1269b59b03ca147cafd25ed2c@46.101.215.17:26656",
+            "memo": "9fb8440290a6180174e86e82bbba205af9d98779@46.101.215.17:26656",
             "timeout_height": "0",
             "extension_options": [],
             "non_critical_extension_options": []
@@ -140,7 +157,7 @@
               {
                 "public_key": {
                   "@type": "/cosmos.crypto.secp256k1.PubKey",
-                  "key": "A7B2Fra4ZLdNlelAMeMo1FWR4PvzUZDxWpt6ibHuKER6"
+                  "key": "AjZNAS3WHy7Q/XJx73tvjnu7OQWxKsp03A2ay5yK/ApK"
                 },
                 "mode_info": {
                   "single": {
@@ -158,7 +175,7 @@
             }
           },
           "signatures": [
-            "e37cyMXkTO7SSyP0kCyVlHG9RBtO2hb6GNAHQyUXZAAHFIUdGE2MUercgElsviWQGBABcHFwSEqUYcqC09qQgw=="
+            "66UdJnFAvi4veEJ6iPjSZndcV90I1qniUin79eN5TNQGDcGZKbkYbymEXy91bFX7nnz8Ice8bTb+sk+clQmb+A=="
           ]
         }
       ]
@@ -268,7 +285,23 @@
             "id": "3",
             "denom": "hub",
             "chain_id": "minter",
-            "external_token_id": "1839",
+            "external_token_id": "2012",
+            "external_decimals": "18",
+            "commission": "0.010000000000000000"
+          },
+          {
+            "id": "4",
+            "denom": "eth",
+            "chain_id": "minter",
+            "external_token_id": "2013",
+            "external_decimals": "18",
+            "commission": "0.010000000000000000"
+          },
+          {
+            "id": "5",
+            "denom": "eth",
+            "chain_id": "ethereum",
+            "external_token_id": "0x0a180A76e4466bF68A7F86fB029BEd3cCcFaAac5",
             "external_decimals": "18",
             "commission": "0.010000000000000000"
           }
@@ -293,10 +326,7 @@
       "params": {
         "signed_claims_window": "10000",
         "slash_fraction_claim": "0.001000000000000000",
-        "slash_fraction_conflicting_claim": "0.001000000000000000",
-        "min_single_withdraw_gas": "50000",
-        "min_batch_gas": "100000",
-        "commission": "0.010000000000000000"
+        "slash_fraction_conflicting_claim": "0.001000000000000000"
       },
       "attestations": []
     },

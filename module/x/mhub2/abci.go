@@ -42,7 +42,7 @@ func EndBlocker(ctx sdk.Context, k keeper.Keeper) {
 }
 
 func refundExpiredTxs(ctx sdk.Context, chainId types.ChainID, k keeper.Keeper) {
-	if ctx.BlockHeight()%3 == 0 { // todo: make the period configurable ?
+	if ctx.BlockHeight()%1 == 0 { // todo: make the period configurable ?
 		k.IterateUnbatchedSendToExternals(ctx, chainId, func(ste *types.SendToExternal) bool {
 			if time.Unix(int64(ste.CreatedAt), 0).Add(k.GetOutgoingTxTimeout(ctx)).Before(ctx.BlockTime()) {
 				k.OnOutgoingTransactionTimeouts(ctx, chainId, ste.Id, ste.Sender)
@@ -53,7 +53,7 @@ func refundExpiredTxs(ctx sdk.Context, chainId types.ChainID, k keeper.Keeper) {
 }
 
 func createBatchTxs(ctx sdk.Context, chainId types.ChainID, k keeper.Keeper) {
-	if ctx.BlockHeight()%10 == 0 { // todo: make the period configurable ?
+	if ctx.BlockHeight()%2 == 0 { // todo: make the period configurable ?
 		coinIds := map[string]bool{}
 		k.IterateUnbatchedSendToExternals(ctx, chainId, func(ste *types.SendToExternal) bool {
 			coinIds[ste.Token.ExternalTokenId] = true
@@ -89,7 +89,7 @@ func createSignerSetTxs(ctx sdk.Context, chainId types.ChainID, k keeper.Keeper)
 
 	lastUnbondingHeight := k.GetLastUnbondingBlockHeight(ctx)
 	blockHeight := uint64(ctx.BlockHeight())
-	powerDiff := k.CurrentSignerSet(ctx).PowerDiff(latestSignerSetTx.Signers)
+	powerDiff := k.CurrentSignerSet(ctx, chainId).PowerDiff(latestSignerSetTx.Signers)
 
 	shouldCreate := (lastUnbondingHeight == blockHeight) || (powerDiff > 0.05) // todo?
 	k.Logger(ctx).Info(

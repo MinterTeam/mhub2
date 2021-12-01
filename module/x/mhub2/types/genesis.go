@@ -53,6 +53,8 @@ var (
 	// ParamsStoreKeyAverageEthereumBlockTime stores the signed blocks window
 	ParamsStoreKeyAverageEthereumBlockTime = []byte("AverageEthereumBlockTime")
 
+	ParamsStoreKeyAverageBscBlockTime = []byte("AverageBscBlockTime")
+
 	// ParamsStoreSlashFractionSignerSetTx stores the slash fraction valset
 	ParamsStoreSlashFractionSignerSetTx = []byte("SlashFractionSignerSetTx")
 
@@ -146,7 +148,23 @@ func DefaultGenesisState() *GenesisState {
 				Id:               3,
 				Denom:            "hub",
 				ChainId:          "minter",
-				ExternalTokenId:  "1839",
+				ExternalTokenId:  "2012",
+				ExternalDecimals: 18,
+				Commission:       sdk.NewDec(1).QuoInt64(100),
+			},
+			{
+				Id:               4,
+				Denom:            "eth",
+				ChainId:          "minter",
+				ExternalTokenId:  "2013",
+				ExternalDecimals: 18,
+				Commission:       sdk.NewDec(1).QuoInt64(100),
+			},
+			{
+				Id:               5,
+				Denom:            "eth",
+				ChainId:          "ethereum",
+				ExternalTokenId:  "0x0a180A76e4466bF68A7F86fB029BEd3cCcFaAac5",
 				ExternalDecimals: 18,
 				Commission:       sdk.NewDec(1).QuoInt64(100),
 			},
@@ -255,6 +273,7 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(ParamsStoreKeyAverageBlockTime, &p.AverageBlockTime, validateAverageBlockTime),
 		paramtypes.NewParamSetPair(ParamsStoreKeyTargetEthTxTimeout, &p.TargetEthTxTimeout, validateTargetEthTxTimeout),
 		paramtypes.NewParamSetPair(ParamsStoreKeyAverageEthereumBlockTime, &p.AverageEthereumBlockTime, validateAverageEthereumBlockTime),
+		paramtypes.NewParamSetPair(ParamsStoreKeyAverageBscBlockTime, &p.AverageBscBlockTime, validateAverageEthereumBlockTime),
 		paramtypes.NewParamSetPair(ParamsStoreSlashFractionSignerSetTx, &p.SlashFractionSignerSetTx, validateSlashFractionSignerSetTx),
 		paramtypes.NewParamSetPair(ParamsStoreSlashFractionBatch, &p.SlashFractionBatch, validateSlashFractionBatch),
 		paramtypes.NewParamSetPair(ParamsStoreSlashFractionEthereumSignature, &p.SlashFractionEthereumSignature, validateSlashFractionEthereumSignature),

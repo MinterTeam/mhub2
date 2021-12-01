@@ -23,11 +23,11 @@ const BatchTxSize = 100
 // - emit an event
 func (k Keeper) BuildBatchTx(ctx sdk.Context, chainId types.ChainID, externalTokenId string, maxElements int) *types.BatchTx {
 	// if there is a more profitable batch for this token type do not create a new batch
-	//if lastBatch := k.getLastOutgoingBatchByTokenType(ctx, chainId, externalTokenId); lastBatch != nil {
-	//	if lastBatch.GetFees().GTE(k.getBatchFeesByTokenType(ctx, chainId, externalTokenId, maxElements)) {
-	//		return nil
-	//	}
-	//}
+	if lastBatch := k.getLastOutgoingBatchByTokenType(ctx, chainId, externalTokenId); lastBatch != nil {
+		if lastBatch.GetFees().GTE(k.getBatchFeesByTokenType(ctx, chainId, externalTokenId, maxElements)) {
+			//return nil
+		}
+	}
 
 	var selectedStes []*types.SendToExternal
 	k.iterateUnbatchedSendToExternalsByCoin(ctx, chainId, externalTokenId, func(ste *types.SendToExternal) bool {
@@ -99,8 +99,8 @@ func (k Keeper) batchTxExecuted(ctx sdk.Context, chainId types.ChainID, external
 		k.IterateOutgoingTxsByType(ctx, chainId, types.BatchTxPrefixByte, func(key []byte, otx types.OutgoingTx) bool {
 			// If the iterated batches nonce is lower than the one that was just executed, cancel it
 			btx, _ := otx.(*types.BatchTx)
-			if (btx.BatchNonce < batchTx.BatchNonce) && (batchTx.ExternalTokenId == externalTokenId) {
-				k.CancelBatchTx(ctx, chainId, externalTokenId, btx.BatchNonce)
+			if (btx.BatchNonce < batchTx.BatchNonce) && (btx.ExternalTokenId == batchTx.ExternalTokenId) {
+				k.CancelBatchTx(ctx, chainId, btx.ExternalTokenId, btx.BatchNonce)
 			}
 			return false
 		})
@@ -120,9 +120,12 @@ func (k Keeper) batchTxExecuted(ctx sdk.Context, chainId types.ChainID, external
 		k.SetTxStatus(ctx, tx.TxHash, types.TX_STATUS_BATCH_EXECUTED, txHash)
 	}
 
+	totalValCommission.Amount = k.ConvertFromExternalValue(ctx, chainId, tokenInfo.ExternalTokenId, totalValCommission.Amount)
+	totalFee.Amount = k.ConvertFromExternalValue(ctx, chainId, tokenInfo.ExternalTokenId, totalFee.Amount)
+
 	// pay val's commissions
 	if totalValCommission.IsPositive() {
-		valset := k.CurrentSignerSet(ctx)
+		valset := k.CurrentSignerSet(ctx, chainId)
 		var totalPower uint64
 		for _, val := range valset {
 			totalPower += val.Power
@@ -192,17 +195,19 @@ func (k Keeper) batchTxExecuted(ctx sdk.Context, chainId types.ChainID, external
 				averageFeePaid := fee.Amount.QuoRaw(int64(len(batchTx.Transactions)))
 				totalGoodFeePaid := sdk.NewInt(0)
 				for _, tx := range batchTx.Transactions {
-					if tx.Fee.Amount.GTE(averageFeePaid) {
-						totalGoodFeePaid = totalGoodFeePaid.Add(tx.Fee.Amount)
+					convertedTxFee := k.ConvertFromExternalValue(ctx, chainId, tokenInfo.ExternalTokenId, tx.Fee.Amount)
+					if convertedTxFee.GTE(averageFeePaid) {
+						totalGoodFeePaid = totalGoodFeePaid.Add(convertedTxFee)
 					}
 				}
 
 				for _, tx := range batchTx.Transactions {
-					if tx.Fee.Amount.LT(averageFeePaid) {
+					convertedTxFee := k.ConvertFromExternalValue(ctx, chainId, tokenInfo.ExternalTokenId, tx.Fee.Amount)
+					if convertedTxFee.LT(averageFeePaid) {
 						continue
 					}
 
-					toRefund := feeLeft.Amount.Mul(tx.Fee.Amount).Quo(totalGoodFeePaid)
+					toRefund := feeLeft.Amount.Mul(convertedTxFee).Quo(totalGoodFeePaid)
 					if tx.RefundChainId != "minter" { // we only can refund fee to minter
 						continue
 					}
@@ -252,6 +257,10 @@ func (k Keeper) GetBatchFeesByTokenType(ctx sdk.Context, chainId types.ChainID, 
 
 // CancelBatchTx releases all TX in the batch and deletes the batch
 func (k Keeper) CancelBatchTx(ctx sdk.Context, chainId types.ChainID, externalTokenId string, nonce uint64) {
+	if chainId == "minter" {
+		panic("CANNOT CANCEL MINTER BATCH")
+	}
+
 	otx := k.GetOutgoingTx(ctx, chainId, types.MakeBatchTxKey(chainId, externalTokenId, nonce))
 	batch, _ := otx.(*types.BatchTx)
 

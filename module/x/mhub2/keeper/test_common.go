@@ -203,12 +203,13 @@ var (
 		TargetEthTxTimeout:                        60001,
 		AverageBlockTime:                          5000,
 		AverageEthereumBlockTime:                  15000,
+		AverageBscBlockTime:                       5000,
 		SlashFractionSignerSetTx:                  sdk.NewDecWithPrec(1, 2),
 		SlashFractionBatch:                        sdk.NewDecWithPrec(1, 2),
 		SlashFractionEthereumSignature:            sdk.NewDecWithPrec(1, 2),
 		SlashFractionConflictingEthereumSignature: sdk.NewDecWithPrec(1, 2),
 		UnbondSlashingSignerSetTxsWindow:          15,
-		Chains:                                    []string{"ethereum"},
+		Chains:                                    []string{"ethereum", "hub"},
 		OutgoingTxTimeout:                         60001,
 	}
 )
@@ -280,9 +281,9 @@ func SetupFiveValChain(t *testing.T) (TestInput, sdk.Context) {
 
 	// Register eth addresses for each validator
 	for i, addr := range ValAddrs {
-		input.Mhub2Keeper.setValidatorExternalAddress(input.Context, addr, EthAddrs[i])
-		input.Mhub2Keeper.SetOrchestratorValidatorAddress(input.Context, addr, AccAddrs[i])
-		input.Mhub2Keeper.setExternalOrchestratorAddress(input.Context, EthAddrs[i], AccAddrs[i])
+		input.Mhub2Keeper.setValidatorExternalAddress(input.Context, "ethereum", addr, EthAddrs[i])
+		input.Mhub2Keeper.SetOrchestratorValidatorAddress(input.Context, "ethereum", addr, AccAddrs[i])
+		input.Mhub2Keeper.setExternalOrchestratorAddress(input.Context, "ethereum", EthAddrs[i], AccAddrs[i])
 	}
 
 	// Return the test input
@@ -446,7 +447,6 @@ func CreateTestEnv(t *testing.T) TestInput {
 		mhub2key,
 		getSubspace(paramsKeeper, types.DefaultParamspace),
 		accountKeeper,
-		stakingKeeper,
 		bankKeeper,
 		slashingKeeper,
 		MockOracleKeeper{},
@@ -460,6 +460,8 @@ func CreateTestEnv(t *testing.T) TestInput {
 			k.Hooks(),
 		),
 	)
+
+	k = k.SetStakingKeeper(stakingKeeper)
 
 	k.setParams(ctx, TestingMhub2Params)
 	k.SetTokenInfos(ctx, types.DefaultGenesisState().TokenInfos)

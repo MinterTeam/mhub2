@@ -296,6 +296,8 @@ pub struct MsgDelegateKeys {
     pub external_address: ::prost::alloc::string::String,
     #[prost(bytes = "vec", tag = "4")]
     pub eth_signature: ::prost::alloc::vec::Vec<u8>,
+    #[prost(string, tag = "5")]
+    pub chain_id: ::prost::alloc::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgDelegateKeysResponse {}
@@ -314,7 +316,7 @@ pub struct DelegateKeysSignMsg {
 ////////////
 
 /// SendToHubEvent is submitted when the SendToHubEvent is emitted by they
-/// gravity contract.
+/// mhub2 contract.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SendToHubEvent {
     #[prost(uint64, tag = "1")]
@@ -333,7 +335,7 @@ pub struct SendToHubEvent {
     pub tx_hash: ::prost::alloc::string::String,
 }
 /// TransferToChainEvent is submitted when the TransferToChainEvent is emitted by they
-/// gravity contract.
+/// mhub2 contract.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TransferToChainEvent {
     #[prost(uint64, tag = "1")]
@@ -413,7 +415,7 @@ pub struct SignerSetTxExecutedEvent {
 pub mod msg_client {
     #![allow(unused_variables, dead_code, missing_docs)]
     use tonic::codegen::*;
-    #[doc = " Msg defines the state transitions possible within gravity"]
+    #[doc = " Msg defines the state transitions possible within Mhub2"]
     pub struct MsgClient<T> {
         inner: tonic::client::Grpc<T>,
     }
@@ -543,33 +545,33 @@ pub mod msg_client {
         }
     }
 }
-/// Params represent the Gravity genesis and store parameters
+/// Params represent the Mhub2 genesis and store parameters
 /// gravity_id:
 /// a random 32 byte value to prevent signature reuse, for example if the
 /// cosmos validators decided to use the same Ethereum keys for another chain
-/// also running Gravity we would not want it to be possible to play a deposit
-/// from chain A back on chain B's Gravity. This value IS USED ON ETHEREUM so
+/// also running Mhub2 we would not want it to be possible to play a deposit
+/// from chain A back on chain B's Mhub2. This value IS USED ON ETHEREUM so
 /// it must be set in your genesis.json before launch and not changed after
-/// deploying Gravity
+/// deploying Mhub2
 ///
 /// contract_hash:
-/// the code hash of a known good version of the Gravity contract
+/// the code hash of a known good version of the Mhub2 contract
 /// solidity code. This can be used to verify the correct version
 /// of the contract has been deployed. This is a reference value for
-/// goernance action only it is never read by any Gravity code
+/// goernance action only it is never read by any Mhub2 code
 ///
 /// bridge_ethereum_address:
 /// is address of the bridge contract on the Ethereum side, this is a
 /// reference value for governance only and is not actually used by any
-/// Gravity code
+/// Mhub2 code
 ///
 /// bridge_chain_id:
 /// the unique identifier of the Ethereum chain, this is a reference value
-/// only and is not actually used by any Gravity code
+/// only and is not actually used by any Mhub2 code
 ///
-/// These reference values may be used by future Gravity client implemetnations
-/// to allow for saftey features or convenience features like the Gravity address
-/// in your relayer. A relayer would require a configured Gravity address if
+/// These reference values may be used by future Mhub2 client implemetnations
+/// to allow for saftey features or convenience features like the Mhub2 address
+/// in your relayer. A relayer would require a configured Mhub2 address if
 /// governance had not set the address on the chain it was relaying for.
 ///
 /// signed_signer_set_txs_window
@@ -601,7 +603,7 @@ pub mod msg_client {
 /// slash_fraction_ethereum_signature
 /// slash_fraction_conflicting_ethereum_signature
 ///
-/// The slashing fractions for the various gravity related slashing conditions.
+/// The slashing fractions for the various Mhub2 related slashing conditions.
 /// The first three refer to not submitting a particular message, the third for
 /// submitting a different ethereum_signature for the same Ethereum event
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -626,19 +628,23 @@ pub struct Params {
     pub average_block_time: u64,
     #[prost(uint64, tag = "12")]
     pub average_ethereum_block_time: u64,
+    #[prost(uint64, tag = "13")]
+    pub average_bsc_block_time: u64,
     /// TODO: slash fraction for contract call txs too
-    #[prost(bytes = "vec", tag = "13")]
-    pub slash_fraction_signer_set_tx: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", tag = "14")]
-    pub slash_fraction_batch: ::prost::alloc::vec::Vec<u8>,
+    pub slash_fraction_signer_set_tx: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", tag = "15")]
-    pub slash_fraction_ethereum_signature: ::prost::alloc::vec::Vec<u8>,
+    pub slash_fraction_batch: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", tag = "16")]
+    pub slash_fraction_ethereum_signature: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes = "vec", tag = "17")]
     pub slash_fraction_conflicting_ethereum_signature: ::prost::alloc::vec::Vec<u8>,
-    #[prost(uint64, tag = "17")]
+    #[prost(uint64, tag = "18")]
     pub unbond_slashing_signer_set_txs_window: u64,
-    #[prost(string, repeated, tag = "18")]
+    #[prost(string, repeated, tag = "19")]
     pub chains: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
+    #[prost(uint64, tag = "20")]
+    pub outgoing_tx_timeout: u64,
 }
 /// GenesisState struct
 /// TODO: this need to be audited and potentially simplified using the new
@@ -681,14 +687,22 @@ pub struct TokenInfosResponse {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TransactionStatusRequest {
     #[prost(string, tag = "1")]
-    pub chain_id: ::prost::alloc::string::String,
-    #[prost(string, tag = "2")]
     pub tx_hash: ::prost::alloc::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TransactionStatusResponse {
     #[prost(message, optional, tag = "1")]
     pub status: ::core::option::Option<TxStatus>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct DiscountForHolderRequest {
+    #[prost(string, tag = "1")]
+    pub address: ::prost::alloc::string::String,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct DiscountForHolderResponse {
+    #[prost(bytes = "vec", tag = "1")]
+    pub discount: ::prost::alloc::vec::Vec<u8>,
 }
 ///  rpc Params
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -1292,7 +1306,7 @@ pub mod query_client {
             let path = http::uri::PathAndQuery::from_static("/mhub2.v1.Query/BatchTxFees");
             self.inner.unary(request.into_request(), path, codec).await
         }
-        #[doc = " Query for info about denoms tracked by gravity"]
+        #[doc = " Query for info about denoms tracked by mhub2"]
         pub async fn external_id_to_denom(
             &mut self,
             request: impl tonic::IntoRequest<super::ExternalIdToDenomRequest>,
@@ -1307,7 +1321,7 @@ pub mod query_client {
             let path = http::uri::PathAndQuery::from_static("/mhub2.v1.Query/ExternalIdToDenom");
             self.inner.unary(request.into_request(), path, codec).await
         }
-        #[doc = " Query for info about denoms tracked by gravity"]
+        #[doc = " Query for info about denoms tracked by mhub2"]
         pub async fn denom_to_external_id(
             &mut self,
             request: impl tonic::IntoRequest<super::DenomToExternalIdRequest>,
@@ -1445,6 +1459,20 @@ pub mod query_client {
             })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static("/mhub2.v1.Query/TransactionStatus");
+            self.inner.unary(request.into_request(), path, codec).await
+        }
+        pub async fn discount_for_holder(
+            &mut self,
+            request: impl tonic::IntoRequest<super::DiscountForHolderRequest>,
+        ) -> Result<tonic::Response<super::DiscountForHolderResponse>, tonic::Status> {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static("/mhub2.v1.Query/DiscountForHolder");
             self.inner.unary(request.into_request(), path, codec).await
         }
     }
