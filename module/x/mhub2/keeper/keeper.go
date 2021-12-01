@@ -112,7 +112,7 @@ func (k Keeper) GetLatestSignerSetTx(ctx sdk.Context, chainId types.ChainID) *ty
 }
 
 //////////////////////////////
-// LastUnbondingBlockHeight // // todo
+// LastUnbondingBlockHeight //
 //////////////////////////////
 
 // setLastUnbondingBlockHeight sets the last unbonding block height
@@ -170,7 +170,7 @@ func (k Keeper) iterateExternalSignatures(ctx sdk.Context, chainId types.ChainID
 }
 
 /////////////////////////
-//  ORC -> VAL ADDRESS // todo
+//  ORC -> VAL ADDRESS //
 /////////////////////////
 
 // SetOrchestratorValidatorAddress sets the Orchestrator key for a given validator.
@@ -191,7 +191,7 @@ func (k Keeper) GetOrchestratorValidatorAddress(ctx sdk.Context, chainId types.C
 }
 
 ////////////////////////
-// VAL -> ETH ADDRESS // todo
+// VAL -> ETH ADDRESS //
 ////////////////////////
 
 // setValidatorExternalAddress sets the ethereum address for a given validator
@@ -230,7 +230,7 @@ func (k Keeper) getValidatorsByExternalAddress(ctx sdk.Context, chainId types.Ch
 }
 
 ////////////////////////
-// ETH -> ORC ADDRESS // todo
+// ETH -> ORC ADDRESS //
 ////////////////////////
 
 // setExternalOrchestratorAddress sets the eth orch addr mapping
@@ -270,7 +270,7 @@ func (k Keeper) getExternalAddressesByOrchestrator(ctx sdk.Context, chainId type
 
 // CreateSignerSetTx gets the current signer set from the staking keeper, increments the nonce,
 // creates the signer set tx object, emits an event and sets the signer set in state
-func (k Keeper) CreateSignerSetTx(ctx sdk.Context, chainId types.ChainID) *types.SignerSetTx { // todo: should we have distinct sets for each external chain?
+func (k Keeper) CreateSignerSetTx(ctx sdk.Context, chainId types.ChainID) *types.SignerSetTx {
 	nonce := k.incrementLatestSignerSetTxNonce(ctx, chainId)
 	currSignerSet := k.CurrentSignerSet(ctx, chainId)
 	newSignerSetTx := types.NewSignerSetTx(nonce, uint64(ctx.BlockHeight()), currSignerSet)
@@ -442,7 +442,6 @@ func (k Keeper) GetUnbondingvalidators(unbondingVals []byte) stakingtypes.ValAdd
 // OUTGOING TX //
 /////////////////
 
-// GetOutgoingTx todo: outgoingTx prefix byte
 func (k Keeper) GetOutgoingTx(ctx sdk.Context, chainId types.ChainID, storeIndex []byte) (out types.OutgoingTx) {
 	if err := k.cdc.UnmarshalInterface(ctx.KVStore(k.storeKey).Get(types.MakeOutgoingTxKey(chainId, storeIndex)), &out); err != nil {
 		panic(err)
