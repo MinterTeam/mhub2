@@ -153,7 +153,7 @@ func (e *MsgHoldersClaim) ValidateBasic() error {
 	}
 
 	addresses := map[string]bool{}
-	for _, item := range e.Holders.List {
+	for _, item := range e.GetHolders().GetList() {
 		address := strings.ToLower(item.Address)
 		if addresses[address] {
 			return fmt.Errorf("duplicated address %s", address)
