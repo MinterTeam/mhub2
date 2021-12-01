@@ -461,7 +461,7 @@ func CreateTestEnv(t *testing.T) TestInput {
 		),
 	)
 
-	k.SetStakingKeeper(stakingKeeper)
+	k = k.SetStakingKeeper(stakingKeeper)
 
 	k.setParams(ctx, TestingMhub2Params)
 	k.SetTokenInfos(ctx, types.DefaultGenesisState().TokenInfos)

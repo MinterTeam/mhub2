@@ -37,13 +37,13 @@ func TestMsgServer_SubmitEthereumSignature(t *testing.T) {
 
 	{ // setup for getSignerValidator
 		gk.StakingKeeper = NewStakingKeeperMock(valAddr1, valAddr2, valAddr3)
-		gk.SetOrchestratorValidatorAddress(ctx, valAddr1, orcAddr1)
-		gk.SetOrchestratorValidatorAddress(ctx, valAddr2, orcAddr2)
-		gk.SetOrchestratorValidatorAddress(ctx, valAddr3, orcAddr3)
+		gk.SetOrchestratorValidatorAddress(ctx, chainId, valAddr1, orcAddr1)
+		gk.SetOrchestratorValidatorAddress(ctx, chainId, valAddr2, orcAddr2)
+		gk.SetOrchestratorValidatorAddress(ctx, chainId, valAddr3, orcAddr3)
 	}
 
 	// setup for GetValidatorExternalAddress
-	gk.setValidatorExternalAddress(ctx, valAddr1, ethAddr1)
+	gk.setValidatorExternalAddress(ctx, chainId, valAddr1, ethAddr1)
 
 	// setup for GetOutgoingTx
 	signerSetTx := gk.CreateSignerSetTx(ctx, chainId)
@@ -112,7 +112,7 @@ func TestMsgServer_SendToExternal(t *testing.T) {
 
 	{ // setup for getSignerValidator
 		gk.StakingKeeper = NewStakingKeeperMock(valAddr1, valAddr2, valAddr3)
-		gk.SetOrchestratorValidatorAddress(ctx, valAddr1, orcAddr1)
+		gk.SetOrchestratorValidatorAddress(ctx, chainId, valAddr1, orcAddr1)
 	}
 
 	{ // add balance to bank
@@ -121,7 +121,7 @@ func TestMsgServer_SendToExternal(t *testing.T) {
 	}
 
 	// setup for GetValidatorExternalAddress
-	gk.setValidatorExternalAddress(ctx, valAddr1, ethAddr1)
+	gk.setValidatorExternalAddress(ctx, chainId, valAddr1, ethAddr1)
 
 	msgServer := NewMsgServerImpl(gk)
 
@@ -174,7 +174,7 @@ func TestMsgServer_CancelSendToExternal(t *testing.T) {
 
 	{ // setup for getSignerValidator
 		gk.StakingKeeper = NewStakingKeeperMock(valAddr1, valAddr2, valAddr3)
-		gk.SetOrchestratorValidatorAddress(ctx, valAddr1, orcAddr1)
+		gk.SetOrchestratorValidatorAddress(ctx, chainId, valAddr1, orcAddr1)
 	}
 
 	{ // add balance to bank
@@ -183,7 +183,7 @@ func TestMsgServer_CancelSendToExternal(t *testing.T) {
 	}
 
 	// setup for GetValidatorExternalAddress
-	gk.setValidatorExternalAddress(ctx, valAddr1, ethAddr1)
+	gk.setValidatorExternalAddress(ctx, chainId, valAddr1, ethAddr1)
 
 	msgServer := NewMsgServerImpl(gk)
 
@@ -228,7 +228,7 @@ func TestMsgServer_RequestBatchTx(t *testing.T) {
 
 	{ // setup for getSignerValidator
 		gk.StakingKeeper = NewStakingKeeperMock(valAddr1, valAddr2, valAddr3)
-		gk.SetOrchestratorValidatorAddress(ctx, valAddr1, orcAddr1)
+		gk.SetOrchestratorValidatorAddress(ctx, chainId, valAddr1, orcAddr1)
 	}
 
 	msgServer := NewMsgServerImpl(gk)
@@ -265,13 +265,13 @@ func TestMsgServer_SubmitEthereumEvent(t *testing.T) {
 
 	{ // setup for getSignerValidator
 		gk.StakingKeeper = NewStakingKeeperMock(valAddr1, valAddr2, valAddr3)
-		gk.SetOrchestratorValidatorAddress(ctx, valAddr1, orcAddr1)
-		gk.SetOrchestratorValidatorAddress(ctx, valAddr2, orcAddr2)
-		gk.SetOrchestratorValidatorAddress(ctx, valAddr3, orcAddr3)
+		gk.SetOrchestratorValidatorAddress(ctx, chainId, valAddr1, orcAddr1)
+		gk.SetOrchestratorValidatorAddress(ctx, chainId, valAddr2, orcAddr2)
+		gk.SetOrchestratorValidatorAddress(ctx, chainId, valAddr3, orcAddr3)
 	}
 
 	// setup for GetValidatorExternalAddress
-	gk.setValidatorExternalAddress(ctx, valAddr1, ethAddr1)
+	gk.setValidatorExternalAddress(ctx, chainId, valAddr1, ethAddr1)
 
 	SendToHubEvent := &types.SendToHubEvent{
 		EventNonce:     1,
