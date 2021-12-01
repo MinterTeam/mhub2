@@ -110,7 +110,7 @@ func AddMigrateGenesisCmd(defaultNodeHome string) *cobra.Command {
 				ExternalStates: []*types.ExternalState{
 					{
 						ChainId:      "minter",
-						Sequence:     uint64(startMinterNonce),
+						Sequence:     uint64(startMinterNonce) - 1,
 						DelegateKeys: minterDelegatedKeys,
 					},
 					{

@@ -956,9 +956,9 @@
         }
       ],
       "params": {
-        "base_proposer_reward": "0.000000000000000000",
-        "bonus_proposer_reward": "0.000000000000000000",
-        "community_tax": "0.000000000000000000",
+        "base_proposer_reward": "0.010000000000000000",
+        "bonus_proposer_reward": "0.040000000000000000",
+        "community_tax": "0.020000000000000000",
         "withdraw_addr_enabled": true
       },
       "previous_proposer": "cosmosvalcons1vqahkx8w8f2lnmklykne8j363wcwgvelqz32pg",
@@ -1897,7 +1897,7 @@
           "last_observed_event_nonce": "0",
           "outgoing_txs": [],
           "confirmations": [],
-          "sequence": "4066"
+          "sequence": "4065"
         },
         {
           "chain_id": "ethereum",
