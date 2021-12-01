@@ -131,10 +131,21 @@ func AddMigrateGenesisCmd(defaultNodeHome string) *cobra.Command {
 
 			id := uint64(0)
 			for _, coin := range legacyOracleState.Params.Coins {
+				denom := coin.Denom
+
+				switch denom {
+				case "weth":
+					denom = "eth"
+				case "wbtc":
+					denom = "btc"
+				case "bipx":
+					denom = "bip"
+				}
+
 				id++
 				genState.TokenInfos.TokenInfos = append(genState.TokenInfos.TokenInfos, &types.TokenInfo{
 					Id:               id,
-					Denom:            coin.Denom,
+					Denom:            denom,
 					ChainId:          "minter",
 					ExternalTokenId:  coin.MinterId,
 					ExternalDecimals: 18,
@@ -145,18 +156,18 @@ func AddMigrateGenesisCmd(defaultNodeHome string) *cobra.Command {
 				ethDecimals, _ := strconv.Atoi(coin.EthDecimals)
 				genState.TokenInfos.TokenInfos = append(genState.TokenInfos.TokenInfos, &types.TokenInfo{
 					Id:               id,
-					Denom:            coin.Denom,
+					Denom:            denom,
 					ChainId:          "ethereum",
 					ExternalTokenId:  coin.EthAddr,
 					ExternalDecimals: uint64(ethDecimals),
 					Commission:       sdk.MustNewDecFromStr(coin.CustomCommission),
 				})
 
-				if coin.Denom == "bipx" {
+				if denom == "bip" {
 					id++
 					genState.TokenInfos.TokenInfos = append(genState.TokenInfos.TokenInfos, &types.TokenInfo{
 						Id:               id,
-						Denom:            coin.Denom,
+						Denom:            denom,
 						ChainId:          "bsc",
 						ExternalTokenId:  "0xf2Ba89A6f9670459ed5AeEfbd8Db52Be912228b8",
 						ExternalDecimals: 18,
@@ -164,11 +175,11 @@ func AddMigrateGenesisCmd(defaultNodeHome string) *cobra.Command {
 					})
 				}
 
-				if coin.Denom == "hub" {
+				if denom == "hub" {
 					id++
 					genState.TokenInfos.TokenInfos = append(genState.TokenInfos.TokenInfos, &types.TokenInfo{
 						Id:               id,
-						Denom:            coin.Denom,
+						Denom:            denom,
 						ChainId:          "bsc",
 						ExternalTokenId:  "0x8aC0A467f878f3561D309cF9B0994b0530b0a9d2",
 						ExternalDecimals: 18,
