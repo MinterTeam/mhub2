@@ -15,6 +15,7 @@ use clarity::utils::bytes_to_hex_str;
 use clarity::{Address, PrivateKey, Transaction};
 use num::ToPrimitive;
 use num256::Uint256;
+use std::io::Empty;
 use std::{cmp::min, time::Duration};
 use std::{sync::Arc, time::Instant};
 use tokio::time::sleep as delay_for;
@@ -439,17 +440,15 @@ impl Web3 {
         own_address: Address,
         height: Option<Uint256>,
     ) -> Result<Vec<u8>, Web3Error> {
-        let nonce = self.eth_get_transaction_count(own_address).await?;
-
         let payload = encode_call(sig, tokens)?;
 
         let transaction = TransactionRequest {
             from: Some(own_address),
             to: contract_address,
-            nonce: Some(UnpaddedHex(nonce)),
-            gas: Some(12450000_u64.into()),
-            gas_price: Some(UnpaddedHex(1000_u64.into())),
-            value: Some(UnpaddedHex(0u64.into())),
+            nonce: None,
+            gas: None,
+            gas_price: None,
+            value: None,
             data: Some(Data(payload)),
         };
 
