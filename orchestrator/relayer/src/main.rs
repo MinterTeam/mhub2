@@ -28,11 +28,13 @@ struct Args {
     flag_address_prefix: String,
     flag_ethereum_rpc: String,
     flag_contract_address: String,
+    flag_chain_id: String,
+    flag_eth_fee_calculator_url: Option<String>,
 }
 
 lazy_static! {
     pub static ref USAGE: String = format!(
-    "Usage: {} --ethereum-key=<key> --cosmos-grpc=<url> --address-prefix=<prefix> --ethereum-rpc=<url> --contract-address=<addr>
+    "Usage: {} [--eth-fee-calculator-url=<furl>] --chain-id=<id> --ethereum-key=<key> --cosmos-grpc=<url> --address-prefix=<prefix> --ethereum-rpc=<url> --contract-address=<addr>
         Options:
             -h --help                    Show this screen.
             --ethereum-key=<ekey>        An Ethereum private key containing non-trivial funds
@@ -72,6 +74,9 @@ async fn main() {
         .parse()
         .expect("Invalid contract address!");
 
+    let chain_id = args.flag_chain_id;
+    let eth_fee_calculator_url = args.flag_eth_fee_calculator_url;
+
     let connections = create_rpc_connections(
         args.flag_address_prefix,
         Some(args.flag_cosmos_grpc),
@@ -100,6 +105,8 @@ async fn main() {
         connections.web3.unwrap(),
         connections.grpc.unwrap(),
         gravity_contract_address,
+        chain_id,
+        eth_fee_calculator_url,
     )
     .await
 }
