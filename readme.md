@@ -128,7 +128,7 @@ mhub2 tx mhub2 set-delegate-keys <VALADDR> <YOUR_ACCOUNT> <ETH_ADDR> <SIG> --fro
 
 - **Start Hub ↔ Ethereum oracle.** 
 ```
-Ethereum Contract for mainnet: 0x1C03D454272382AAFF97b46Fe0f6cD66a65857C1
+Ethereum Contract for mainnet: 0x897c27Fa372AA730D4C75B1243E7EA38879194E2
 BSC Contract for mainnet: 0xF5b0ed82a0b3e11567081694cC66c3df133f7C8F
 
 Ethereum Contract for testnet: 0xb150480c8f280C9A3f0CF1b7412dDaeF9eedb101
