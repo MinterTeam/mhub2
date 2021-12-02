@@ -48,7 +48,7 @@ function MinterHub(hostname) {
 
     /**
      * @param {string} address
-     * @return {Promise<TxStatus.AsObject>}
+     * @return {Promise<string>}
      */
     this.getDiscountForHolder = function(address) {
         return new Promise((resolve, reject) => {
