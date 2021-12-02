@@ -129,11 +129,12 @@ mhub2 tx mhub2 set-delegate-keys <VALADDR> <YOUR_ACCOUNT> <ETH_ADDR> <SIG> --fro
 - **Start Hub ↔ Ethereum oracle.** 
 ```
 Ethereum Contract for mainnet: 0x1C03D454272382AAFF97b46Fe0f6cD66a65857C1
-BSC Contract for mainnet: 0xdAc3632a0AFB486e8870018a86171109Dd110d2c
+BSC Contract for mainnet: 0xF5b0ed82a0b3e11567081694cC66c3df133f7C8F
 
 Ethereum Contract for testnet: 0xb150480c8f280C9A3f0CF1b7412dDaeF9eedb101
 BSC Contract for testnet: 0xcD53640C87Acd89BD7935765167D1E6330201C89
 ```
+
 ```bash
 orchestrator \
   --cosmos-phrase=<COSMOS MNEMONIC> \
