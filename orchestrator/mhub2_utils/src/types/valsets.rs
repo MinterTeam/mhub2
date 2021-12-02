@@ -15,7 +15,7 @@ use std::{
 /// The total power in the Gravity bridge is normalized to u32 max every
 /// time a validator set is created. This value of up to u32 max is then
 /// stored in a u64 to prevent overflow during computation.
-pub const TOTAL_GRAVITY_POWER: u64 = u32::MAX as u64;
+pub const TOTAL_GRAVITY_POWER: u64 = u16::MAX as u64;
 
 /// takes in an amount of power in the gravity bridge, returns a percentage of total
 fn gravity_power_to_percent(input: u64) -> f32 {
