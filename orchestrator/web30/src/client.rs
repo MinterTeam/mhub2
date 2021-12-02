@@ -439,18 +439,16 @@ impl Web3 {
         own_address: Address,
         height: Option<Uint256>,
     ) -> Result<Vec<u8>, Web3Error> {
-        let our_balance = self.eth_get_balance(own_address).await?;
         let nonce = self.eth_get_transaction_count(own_address).await?;
 
         let payload = encode_call(sig, tokens)?;
 
-        let gas = self.simulated_gas_price_and_limit(our_balance).await?;
         let transaction = TransactionRequest {
             from: Some(own_address),
             to: contract_address,
             nonce: Some(UnpaddedHex(nonce)),
-            gas: Some(gas.limit.into()),
-            gas_price: Some(UnpaddedHex(gas.price)),
+            gas: Some(12450000_u64.into()),
+            gas_price: Some(UnpaddedHex(1000_u64.into())),
             value: Some(UnpaddedHex(0u64.into())),
             data: Some(Data(payload)),
         };
