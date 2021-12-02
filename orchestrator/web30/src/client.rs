@@ -9,13 +9,12 @@ use crate::jsonrpc::error::Web3Error;
 use crate::types::{
     Block, Log, NewFilter, TransactionReceipt, TransactionRequest, TransactionResponse,
 };
-use crate::types::{ConciseBlock, ConciseXdaiBlock, Data, SendTxOption, UnpaddedHex, XdaiBlock};
+use crate::types::{ConciseBlock, ConciseXdaiBlock, Data, SendTxOption, XdaiBlock};
 use clarity::abi::{encode_call, Token};
 use clarity::utils::bytes_to_hex_str;
 use clarity::{Address, PrivateKey, Transaction};
 use num::ToPrimitive;
 use num256::Uint256;
-use std::io::Empty;
 use std::{cmp::min, time::Duration};
 use std::{sync::Arc, time::Instant};
 use tokio::time::sleep as delay_for;

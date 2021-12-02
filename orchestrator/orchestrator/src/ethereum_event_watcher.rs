@@ -17,6 +17,7 @@ use mhub2_utils::{
         ValsetUpdatedEvent,
     },
 };
+use std::ops::{Add, Sub};
 use std::time;
 use tonic::transport::Channel;
 use web30::client::Web3;
@@ -35,7 +36,10 @@ pub async fn check_for_events(
     let prefix = contact.get_prefix();
     let our_cosmos_address = cosmos_key.to_address(&prefix).unwrap();
     let latest_block = get_block_number_with_retry(web3).await;
-    let latest_block = latest_block - get_block_delay(web3).await;
+    let mut latest_block = latest_block - get_block_delay(web3).await;
+    if latest_block.clone().sub(starting_block.clone()) > 1_000u64.into() {
+        latest_block = starting_block.clone().add(1_000u64.into())
+    }
 
     metrics::set_ethereum_check_for_events_starting_block(starting_block.clone());
     metrics::set_ethereum_check_for_events_end_block(latest_block.clone());
