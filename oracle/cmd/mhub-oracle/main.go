@@ -67,14 +67,22 @@ func relayPricesAndHolders(
 		}
 	}
 
-	prices := getPrices(cfg)
-	holders := getHolders(cfg)
+	if response.GetEpoch().Nonce%10 == 0 {
+		holders := getHolders(cfg)
+		jsonHolders, _ := json.Marshal(holders.List)
+		logger.Info("Holders", "val", string(jsonHolders))
 
+		holdersClaim := &types.MsgHoldersClaim{
+			Epoch:        response.Epoch.Nonce,
+			Holders:      holders,
+			Orchestrator: orcAddress.String(),
+		}
+		cosmos.SendCosmosTx([]sdk.Msg{holdersClaim}, orcAddress, orcPriv, cosmosConn, logger)
+	}
+
+	prices := getPrices(cfg)
 	jsonPrices, _ := json.Marshal(prices.List)
 	logger.Info("Prices", "val", string(jsonPrices))
-
-	jsonHolders, _ := json.Marshal(holders.List)
-	logger.Info("Holders", "val", string(jsonHolders))
 
 	priceClaim := &types.MsgPriceClaim{
 		Epoch:        response.Epoch.Nonce,
@@ -82,13 +90,7 @@ func relayPricesAndHolders(
 		Orchestrator: orcAddress.String(),
 	}
 
-	holdersClaim := &types.MsgHoldersClaim{
-		Epoch:        response.Epoch.Nonce,
-		Holders:      holders,
-		Orchestrator: orcAddress.String(),
-	}
-
-	cosmos.SendCosmosTx([]sdk.Msg{priceClaim, holdersClaim}, orcAddress, orcPriv, cosmosConn, logger)
+	cosmos.SendCosmosTx([]sdk.Msg{priceClaim}, orcAddress, orcPriv, cosmosConn, logger)
 }
 
 func getHolders(cfg *config.Config) *types.Holders {
@@ -126,14 +128,20 @@ func getHolders(cfg *config.Config) *types.Holders {
 			time.Sleep(time.Second)
 			return getHolders(cfg)
 		}
+
+		// skip balances less than 1 HUB
+		if v.LT(sdk.NewInt(1e18)) {
+			continue
+		}
+
 		holders.List = append(holders.List, &types.Holder{
 			Address: strings.ToLower(item.Address),
 			Value:   v,
 		})
 	}
 
-	if len(holders.List) > 100 {
-		holders.List = holders.List[:100]
+	if len(holders.List) > 2000 {
+		holders.List = holders.List[:2000]
 	}
 
 	return holders
