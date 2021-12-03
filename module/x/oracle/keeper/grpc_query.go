@@ -36,12 +36,23 @@ func (k Keeper) CurrentEpoch(context context.Context, _ *types.QueryCurrentEpoch
 	for _, valaddr := range votes {
 		validator, _ := sdk.ValAddressFromBech32(valaddr)
 		oracle := sdk.AccAddress(validator).String()
-		priceClaim := k.GetPriceClaim(ctx, oracle, currentEpoch.Nonce).(*types.GenericClaim).GetPriceClaim()
-		holdersChaim := k.GetHoldersClaim(ctx, oracle, currentEpoch.Nonce).(*types.GenericClaim).GetHoldersClaim()
+
+		priceClaim := k.GetPriceClaim(ctx, oracle, currentEpoch.Nonce)
+		var priceClaimResponse *types.MsgPriceClaim
+		if priceClaim != nil {
+			priceClaimResponse = priceClaim.(*types.GenericClaim).GetPriceClaim()
+		}
+
+		holdersClaim := k.GetHoldersClaim(ctx, oracle, currentEpoch.Nonce)
+		var holdersClaimResponse *types.MsgHoldersClaim
+		if holdersClaim != nil {
+			holdersClaimResponse = holdersClaim.(*types.GenericClaim).GetHoldersClaim()
+		}
+
 		currentEpoch.Votes = append(currentEpoch.Votes, &types.Vote{
 			Oracle:       oracle,
-			PriceClaim:   priceClaim,
-			HoldersClaim: holdersChaim,
+			PriceClaim:   priceClaimResponse,
+			HoldersClaim: holdersClaimResponse,
 		})
 	}
 
