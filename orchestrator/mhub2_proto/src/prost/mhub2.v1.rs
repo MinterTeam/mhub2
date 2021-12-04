@@ -726,6 +726,11 @@ pub struct LatestSignerSetTxRequest {
     pub chain_id: ::prost::alloc::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
+pub struct LastObservedSignerSetTxRequest {
+    #[prost(string, tag = "1")]
+    pub chain_id: ::prost::alloc::string::String,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SignerSetTxResponse {
     #[prost(message, optional, tag = "1")]
     pub signer_set: ::core::option::Option<SignerSetTx>,
@@ -1107,6 +1112,21 @@ pub mod query_client {
             })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static("/mhub2.v1.Query/LatestSignerSetTx");
+            self.inner.unary(request.into_request(), path, codec).await
+        }
+        pub async fn last_observed_signer_set_tx(
+            &mut self,
+            request: impl tonic::IntoRequest<super::LastObservedSignerSetTxRequest>,
+        ) -> Result<tonic::Response<super::SignerSetTxResponse>, tonic::Status> {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path =
+                http::uri::PathAndQuery::from_static("/mhub2.v1.Query/LastObservedSignerSetTx");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn batch_tx(

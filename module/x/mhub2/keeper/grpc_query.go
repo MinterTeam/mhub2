@@ -19,6 +19,12 @@ import (
 
 var _ types.QueryServer = Keeper{}
 
+func (k Keeper) LastObservedSignerSetTx(c context.Context, request *types.LastObservedSignerSetTxRequest) (*types.SignerSetTxResponse, error) {
+	return &types.SignerSetTxResponse{
+		SignerSet: k.GetLastObservedSignerSetTx(sdk.UnwrapSDKContext(c), types.ChainID(request.ChainId)),
+	}, nil
+}
+
 func (k Keeper) DiscountForHolder(c context.Context, request *types.DiscountForHolderRequest) (*types.DiscountForHolderResponse, error) {
 	return &types.DiscountForHolderResponse{
 		Discount: sdk.NewDec(1).Sub(k.GetCommissionForHolder(sdk.UnwrapSDKContext(c), []string{request.Address}, sdk.NewDec(1))),

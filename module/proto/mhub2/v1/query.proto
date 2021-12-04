@@ -26,6 +26,9 @@ service Query {
   rpc LatestSignerSetTx(LatestSignerSetTxRequest) returns (SignerSetTxResponse) {
      option (google.api.http).get = "/mhub2/v1/signer_set/latest/{chain_id}";
   }
+  rpc LastObservedSignerSetTx(LastObservedSignerSetTxRequest) returns (SignerSetTxResponse) {
+     option (google.api.http).get = "/mhub2/v1/signer_set/last_observed/{chain_id}";
+  }
   rpc BatchTx(BatchTxRequest) returns (BatchTxResponse) {
      option (google.api.http).get = "/mhub2/v1/batch_txs/{chain_id}/{external_token_id}/{batch_nonce}";
   }
@@ -150,6 +153,7 @@ message ParamsResponse { Params params = 1 [ (gogoproto.nullable) = false ]; }
 //  rpc SignerSetTx
 message SignerSetTxRequest { uint64 signer_set_nonce = 1; string chain_id = 2; }
 message LatestSignerSetTxRequest { string chain_id = 1; }
+message LastObservedSignerSetTxRequest { string chain_id = 1; }
 message SignerSetTxResponse { SignerSetTx signer_set = 1; }
 
 //  rpc BatchTx

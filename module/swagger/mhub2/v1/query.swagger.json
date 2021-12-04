@@ -877,6 +877,36 @@
         ]
       }
     },
+    "/mhub2/v1/signer_set/last_observed/{chain_id}": {
+      "get": {
+        "operationId": "Query_LastObservedSignerSetTx",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1SignerSetTxResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "chain_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
     "/mhub2/v1/signer_set/latest/{chain_id}": {
       "get": {
         "operationId": "Query_LatestSignerSetTx",

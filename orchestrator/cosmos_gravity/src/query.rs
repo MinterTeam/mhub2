@@ -64,6 +64,23 @@ pub async fn get_latest_valset(
     Ok(valset)
 }
 
+pub async fn get_last_observed_valset(
+    client: &mut Mhub2QueryClient<Channel>,
+    chain_id: String,
+) -> Result<Option<Valset>, GravityError> {
+    let response = client
+        .last_observed_signer_set_tx(LastObservedSignerSetTxRequest {
+            chain_id: chain_id.clone(),
+        })
+        .await?;
+    let valset = response.into_inner().signer_set;
+    let valset = match valset {
+        Some(v) => Some(v.into()),
+        None => None,
+    };
+    Ok(valset)
+}
+
 /// get all valset confirmations for a given nonce
 pub async fn get_all_valset_confirms(
     client: &mut Mhub2QueryClient<Channel>,
