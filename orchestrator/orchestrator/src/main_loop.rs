@@ -87,6 +87,7 @@ pub async fn orchestrator_main_loop(
         gravity_contract_address,
         chain_id.clone(),
         eth_fee_calculator_url,
+        true,
     );
 
     let e = metrics_main_loop(metrics_listen);

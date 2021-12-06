@@ -22,6 +22,7 @@ pub async fn relayer_main_loop(
     gravity_contract_address: EthAddress,
     chain_id: String,
     eth_fee_calculator_url: Option<String>,
+    do_relay_valsets: bool,
 ) {
     let balance = web3
         .eth_get_balance(ethereum_key.to_public_key().unwrap())
@@ -52,17 +53,19 @@ pub async fn relayer_main_loop(
         let gravity_id = gravity_id.unwrap();
         let gravity_id = String::from_utf8(gravity_id.clone()).expect("Invalid GravityID");
 
-        relay_valsets(
-            current_eth_valset.clone(),
-            ethereum_key,
-            &web3,
-            &mut grpc_client,
-            gravity_contract_address,
-            gravity_id.clone(),
-            LOOP_SPEED,
-            chain_id.clone(),
-        )
-        .await;
+        if do_relay_valsets {
+            relay_valsets(
+                current_eth_valset.clone(),
+                ethereum_key,
+                &web3,
+                &mut grpc_client,
+                gravity_contract_address,
+                gravity_id.clone(),
+                LOOP_SPEED,
+                chain_id.clone(),
+            )
+            .await;
+        }
 
         relay_batches(
             current_eth_valset.clone(),

@@ -30,11 +30,12 @@ struct Args {
     flag_contract_address: String,
     flag_chain_id: String,
     flag_eth_fee_calculator_url: Option<String>,
+    flag_relay_valsets: bool,
 }
 
 lazy_static! {
     pub static ref USAGE: String = format!(
-    "Usage: {} [--eth-fee-calculator-url=<furl>] --chain-id=<id> --ethereum-key=<key> --cosmos-grpc=<url> --address-prefix=<prefix> --ethereum-rpc=<url> --contract-address=<addr>
+    "Usage: {} --chain-id=<id> --ethereum-key=<key> --cosmos-grpc=<url> --address-prefix=<prefix> --ethereum-rpc=<url> --contract-address=<addr> [--eth-fee-calculator-url=<furl>] [--relay-valsets]
         Options:
             -h --help                    Show this screen.
             --ethereum-key=<ekey>        An Ethereum private key containing non-trivial funds
@@ -107,6 +108,7 @@ async fn main() {
         gravity_contract_address,
         chain_id,
         eth_fee_calculator_url,
+        args.flag_relay_valsets,
     )
     .await
 }
