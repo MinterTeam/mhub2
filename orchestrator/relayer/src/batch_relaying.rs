@@ -146,7 +146,6 @@ async fn get_batches_and_signatures(
     // older batches so that we don't invalidate newer batches
     for (_key, value) in possible_batches.iter_mut() {
         value.sort();
-        value.reverse();
     }
 
     return possible_batches;
