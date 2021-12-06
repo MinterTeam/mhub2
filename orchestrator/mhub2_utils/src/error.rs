@@ -27,6 +27,7 @@ pub enum GravityError {
     GravityGrpcError(Status),
     InsufficientVotingPowerToPass(String),
     ParseBigIntError(ParseBigIntError),
+    InvalidEstimationError,
 }
 
 impl fmt::Display for GravityError {
@@ -56,6 +57,9 @@ impl fmt::Display for GravityError {
                 write!(f, "{}", val)
             }
             GravityError::ParseBigIntError(val) => write!(f, "Failed to parse big integer {}", val),
+            GravityError::InvalidEstimationError => {
+                write!(f, "Failed to retrieve batch price estimation")
+            }
         }
     }
 }
