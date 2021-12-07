@@ -19,6 +19,8 @@ import (
 	"google.golang.org/grpc/backoff"
 )
 
+const holdersUpdatePeriod = 144
+
 func main() {
 	logger := log.NewTMLogger(os.Stdout)
 	cfg := config.Get()
@@ -67,7 +69,7 @@ func relayPricesAndHolders(
 		}
 	}
 
-	if response.GetEpoch().Nonce%10 == 0 {
+	if response.GetEpoch().Nonce%holdersUpdatePeriod == 0 {
 		holders := getHolders(cfg)
 		jsonHolders, _ := json.Marshal(holders.List)
 		logger.Info("Holders", "val", string(jsonHolders))
