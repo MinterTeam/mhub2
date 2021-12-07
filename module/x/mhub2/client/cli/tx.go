@@ -258,3 +258,59 @@ Where proposal.json contains:
 		},
 	}
 }
+
+func NewSubmitTokenInfosChangeProposalTxCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "token-infos-change [proposal-file]",
+		Args:  cobra.ExactArgs(1),
+		Short: "Submit a token infos change proposal",
+		Long: strings.TrimSpace(
+			fmt.Sprintf(`Submit a token infos change proposal along with an initial deposit.
+The proposal details must be supplied via a JSON file. For values that contains
+objects, only non-empty fields will be updated.
+
+Example:
+$ %s tx gov submit-proposal token-infos-change <path/to/proposal.json> --from=<key_or_address>
+
+Where proposal.json contains:
+
+{
+  "new_token_infos": ...,
+  "deposit": "1000hub"
+}
+`,
+				version.AppName,
+			),
+		),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+			proposal, err := utils.ParseTokenInfosChangeProposalJSON(clientCtx.LegacyAmino, args[0])
+			if err != nil {
+				return err
+			}
+
+			from := clientCtx.GetFromAddress()
+			content := types.NewTokenInfosChangeProposal(
+				proposal.NewTokenInfos,
+			)
+
+			deposit, err := sdk.ParseCoinsNormalized(proposal.Deposit)
+			if err != nil {
+				return err
+			}
+
+			msg, err := govtypes.NewMsgSubmitProposal(content, deposit, from)
+			if err != nil {
+				return err
+			}
+			if err := msg.ValidateBasic(); err != nil {
+				return err
+			}
+
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
+		},
+	}
+}

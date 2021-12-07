@@ -6,5 +6,6 @@ import (
 	govclient "github.com/cosmos/cosmos-sdk/x/gov/client"
 )
 
-// ProposalHandler is the param change proposal handler.
-var ProposalHandler = govclient.NewProposalHandler(cli.NewSubmitColdStorageTransferProposalTxCmd, rest.ProposalRESTHandler)
+// ProposalColdStorageHandler is the param change proposal handler.
+var ProposalColdStorageHandler = govclient.NewProposalHandler(cli.NewSubmitColdStorageTransferProposalTxCmd, rest.ProposalRESTHandler)
+var ProposalTokensChangeHandler = govclient.NewProposalHandler(cli.NewSubmitColdStorageTransferProposalTxCmd, rest.ProposalRESTHandler)

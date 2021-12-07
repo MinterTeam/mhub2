@@ -47,11 +47,14 @@ func NewHandler(k keeper.Keeper) sdk.Handler {
 	}
 }
 
-func NewColdStorageTransferProposalHandler(k keeper.Keeper) govtypes.Handler {
+func NewProposalsHandler(k keeper.Keeper) govtypes.Handler {
 	return func(ctx sdk.Context, content govtypes.Content) error {
 		switch c := content.(type) {
 		case *types.ColdStorageTransferProposal:
 			return k.ColdStorageTransfer(ctx, c)
+		case *types.TokenInfosChangeProposal:
+			k.SetTokenInfos(ctx, c.NewInfos)
+			return nil
 
 		default:
 			return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "unrecognized proposal content type: %T", c)

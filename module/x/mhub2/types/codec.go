@@ -50,6 +50,7 @@ func RegisterInterfaces(registry types.InterfaceRegistry) {
 	registry.RegisterImplementations(
 		(*govtypes.Content)(nil),
 		&ColdStorageTransferProposal{},
+		&TokenInfosChangeProposal{},
 	)
 
 	registry.RegisterInterface(
