@@ -272,3 +272,53 @@ async fn submit_batches(
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::batch_relaying::SubmittableBatch;
+    use mhub2_utils::types::TransactionBatch;
+
+    #[test]
+    fn sorting() {
+        let mut list: Vec<SubmittableBatch> = Vec::new();
+
+        list.push(SubmittableBatch {
+            batch: TransactionBatch {
+                nonce: 1,
+                batch_timeout: 0,
+                transactions: vec![],
+                total_fee: Default::default(),
+                token_contract: Default::default(),
+            },
+            sigs: vec![],
+        });
+
+        list.push(SubmittableBatch {
+            batch: TransactionBatch {
+                nonce: 3,
+                batch_timeout: 0,
+                transactions: vec![],
+                total_fee: Default::default(),
+                token_contract: Default::default(),
+            },
+            sigs: vec![],
+        });
+
+        list.push(SubmittableBatch {
+            batch: TransactionBatch {
+                nonce: 2,
+                batch_timeout: 0,
+                transactions: vec![],
+                total_fee: Default::default(),
+                token_contract: Default::default(),
+            },
+            sigs: vec![],
+        });
+
+        list.sort();
+
+        assert_eq!(list.get(0).unwrap().batch.nonce, 1u64);
+        assert_eq!(list.get(1).unwrap().batch.nonce, 2u64);
+        assert_eq!(list.get(2).unwrap().batch.nonce, 3u64);
+    }
+}
