@@ -701,25 +701,25 @@ func (k Keeper) GetCommissionForHolder(ctx sdk.Context, addresses []string, comm
 	// 16 HUB -50%
 	// 32 HUB -60%
 
-	discont1 := convertDecimals(0, 18, sdk.NewInt(1))
-	discont2 := convertDecimals(0, 18, sdk.NewInt(2))
-	discont4 := convertDecimals(0, 18, sdk.NewInt(4))
-	discont8 := convertDecimals(0, 18, sdk.NewInt(8))
-	discont16 := convertDecimals(0, 18, sdk.NewInt(16))
-	discont32 := convertDecimals(0, 18, sdk.NewInt(32))
+	discount1 := convertDecimals(0, 18, sdk.NewInt(1))
+	discount2 := convertDecimals(0, 18, sdk.NewInt(2))
+	discount4 := convertDecimals(0, 18, sdk.NewInt(4))
+	discount8 := convertDecimals(0, 18, sdk.NewInt(8))
+	discount16 := convertDecimals(0, 18, sdk.NewInt(16))
+	discount32 := convertDecimals(0, 18, sdk.NewInt(32))
 
 	switch {
-	case maxValue.GTE(discont32):
+	case maxValue.GTE(discount32):
 		return commission.Sub(commission.MulInt64(60).QuoInt64(100))
-	case maxValue.GTE(discont16):
+	case maxValue.GTE(discount16):
 		return commission.Sub(commission.MulInt64(50).QuoInt64(100))
-	case maxValue.GTE(discont8):
+	case maxValue.GTE(discount8):
 		return commission.Sub(commission.MulInt64(40).QuoInt64(100))
-	case maxValue.GTE(discont4):
+	case maxValue.GTE(discount4):
 		return commission.Sub(commission.MulInt64(30).QuoInt64(100))
-	case maxValue.GTE(discont2):
+	case maxValue.GTE(discount2):
 		return commission.Sub(commission.MulInt64(20).QuoInt64(100))
-	case maxValue.GTE(discont1):
+	case maxValue.GTE(discount1):
 		return commission.Sub(commission.MulInt64(10).QuoInt64(100))
 	}
 

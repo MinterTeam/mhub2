@@ -1,7 +1,9 @@
 package types
 
 import (
+	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -197,4 +199,16 @@ func (msg MsgHoldersClaim) Route() string { return RouterKey }
 
 func (msg *MsgHoldersClaim) ClaimHash() []byte {
 	return tmhash.Sum([]byte("holder_claim"))
+}
+
+func (msg *MsgHoldersClaim) StabilizedClaimHash() []byte {
+	var holders []string
+	for _, holder := range msg.Holders.List {
+		holders = append(holders, fmt.Sprintf("%s:%s", holder.Address, holder.Value.String()))
+	}
+	sort.Strings(holders)
+
+	b, _ := json.Marshal(holders)
+
+	return tmhash.Sum(b)
 }
