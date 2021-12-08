@@ -80,7 +80,7 @@ curl https://raw.githubusercontent.com/MinterTeam/mhub2/master/testnet/genesis.j
 
 # Start and sync Minter Hub node
 mhub2 start \
-  --p2p.persistent_peers="9fb8440290a6180174e86e82bbba205af9d98779@46.101.215.17:26656"
+  --p2p.persistent_peers="99d3c94add8faccdfe37aaa0e0a5889e1a06426a@46.101.215.17:26656"
 ```
 
 4. Generate Hub account
@@ -131,8 +131,8 @@ mhub2 tx mhub2 set-delegate-keys <VALADDR> <YOUR_ACCOUNT> <ETH_ADDR> <SIG> --fro
 Ethereum Contract for mainnet: 0x897c27Fa372AA730D4C75B1243E7EA38879194E2
 BSC Contract for mainnet: 0xF5b0ed82a0b3e11567081694cC66c3df133f7C8F
 
-Ethereum Contract for testnet: 0xb150480c8f280C9A3f0CF1b7412dDaeF9eedb101
-BSC Contract for testnet: 0xcD53640C87Acd89BD7935765167D1E6330201C89
+Ethereum Contract for testnet: 0x06AC113939C66c3D0e68a09F64849A6EcC6099f1
+BSC Contract for testnet: 0x0c8ed00B0A80c4d436E9FCb67986bC3b1ee470d5
 ```
 
 ```bash
@@ -161,8 +161,8 @@ orchestrator \
 
 - **Start Hub ↔ Minter oracle.** 
 ```
-Minter Multisig for testnet: Mxa7013f2c9a66db96a2712f0942784d4f9ba50378
-Start Minter Block for testnet: 6647833
+Minter Multisig for testnet: Mx8938134f2d7e1218a1756e76b0da2868b0ad20a1
+Start Minter Block for testnet: 6830657
 
 Minter Multisig for mainnet: Mx68f4839d7f32831b9234f9575f3b95e1afe21a56
 Start Minter Block for mainnet: 7696500
