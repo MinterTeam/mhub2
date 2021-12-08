@@ -401,7 +401,7 @@ func NewMhub2App(
 		app.bankKeeper,
 		app.slashingKeeper,
 		app.oracleKeeper,
-		sdk.NewIntFromUint64(1e18),
+		sdk.DefaultPowerReduction,
 	)
 
 	app.stakingKeeper = *stakingKeeper.SetHooks(
