@@ -7,5 +7,5 @@ import (
 )
 
 // ProposalColdStorageHandler is the param change proposal handler.
-var ProposalColdStorageHandler = govclient.NewProposalHandler(cli.NewSubmitColdStorageTransferProposalTxCmd, rest.ProposalRESTHandler)
-var ProposalTokensChangeHandler = govclient.NewProposalHandler(cli.NewSubmitColdStorageTransferProposalTxCmd, rest.ProposalRESTHandler)
+var ProposalColdStorageHandler = govclient.NewProposalHandler(cli.NewSubmitColdStorageTransferProposalTxCmd, rest.ColdStorageTransferProposalRESTHandler)
+var ProposalTokensChangeHandler = govclient.NewProposalHandler(cli.NewSubmitTokenInfosChangeProposalTxCmd, rest.TokenInfosChangeProposalRESTHandler)

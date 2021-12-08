@@ -20,6 +20,7 @@ var _ govtypes.Content = &TokenInfosChangeProposal{}
 
 func init() {
 	govtypes.RegisterProposalType(ProposalTypeColdStorageTransfer)
+	govtypes.RegisterProposalType(ProposalTypeTokenInfosChange)
 	govtypes.RegisterProposalTypeCodec(&ColdStorageTransferProposal{}, "mhub2/ColdStorageTransferProposal")
 	govtypes.RegisterProposalTypeCodec(&TokenInfosChangeProposal{}, "mhub2/TokenInfosChangeProposal")
 }

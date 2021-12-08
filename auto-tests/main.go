@@ -24,6 +24,7 @@ import (
 	secp256k12 "github.com/ethereum/go-ethereum/crypto/secp256k1"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/status-im/keycard-go/hexutils"
+	"github.com/stretchr/testify/assert"
 	"github.com/tendermint/tendermint/libs/log"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/backoff"
@@ -241,6 +242,7 @@ func main() {
 	testMinterToEthereumTransfer(ctx)
 	testMinterToBscTransfer(ctx)
 	testColdStorageTransfer(ctx)
+	testVoteForTokenInfosUpdate(ctx)
 	testEthEthereumToMinterTransfer(ctx)
 	testEthMinterToEthereumTransfer(ctx)
 
@@ -283,7 +285,67 @@ func main() {
 
 	println("All tests are done")
 }
+func testVoteForTokenInfosUpdate(ctx *Context) {
+	ctx.TestsWg.Add(1)
+	addr, priv := cosmos.GetAccount(ctx.CosmosMnemonic)
 
+	initialDeposit := sdk.NewCoins(sdk.NewCoin(denom, sdk.NewInt(10000000)))
+
+	client := mhubtypes.NewQueryClient(ctx.CosmosConn)
+
+	response, err := client.TokenInfos(context.TODO(), &mhubtypes.TokenInfosRequest{})
+	if err != nil {
+		panic(err)
+	}
+
+	newInfos := &response.List
+
+	newInfos.TokenInfos = append(newInfos.TokenInfos, &mhubtypes.TokenInfo{
+		Id:               999,
+		Denom:            "TEST",
+		ChainId:          "minter",
+		ExternalTokenId:  "123",
+		ExternalDecimals: 18,
+		Commission:       bridgeCommission,
+	})
+
+	proposal := &govtypes.MsgSubmitProposal{}
+	proposal.SetInitialDeposit(initialDeposit)
+	proposal.SetProposer(addr)
+	if err := proposal.SetContent(&mhubtypes.TokenInfosChangeProposal{
+		NewInfos: newInfos,
+	}); err != nil {
+		panic(err)
+	}
+
+	cosmos.SendCosmosTx([]sdk.Msg{
+		proposal,
+		govtypes.NewMsgVote(addr, 4, govtypes.OptionYes),
+	}, addr, priv, ctx.CosmosConn, log.NewTMLogger(os.Stdout), true)
+
+	go func() {
+		startTime := time.Now()
+		for {
+			if time.Now().Sub(startTime).Seconds() > testTimeout.Seconds() {
+				panic("Timeout waiting for the token infos to update")
+			}
+
+			response, err := client.TokenInfos(context.TODO(), &mhubtypes.TokenInfosRequest{})
+			if err != nil {
+				panic(err)
+			}
+
+			if !assert.ObjectsAreEqual(&response.List, newInfos) {
+				time.Sleep(time.Second)
+				continue
+			}
+
+			println("SUCCESS: vote for new token list")
+			ctx.TestsWg.Done()
+			break
+		}
+	}()
+}
 func testColdStorageTransfer(ctx *Context) {
 	ctx.TestsWg.Add(1)
 	addr, priv := cosmos.GetAccount(ctx.CosmosMnemonic)

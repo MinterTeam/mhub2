@@ -67,18 +67,17 @@ func (a AttestationHandler) Handle(ctx sdk.Context, att types.Attestation, claim
 
 		a.keeper.storePrices(ctx, &prices)
 	case *types.MsgHoldersClaim:
-		holdersTally := map[string]int64{}
+		holdersTally := map[string]uint64{}
 		holdersVotes := map[string]*types.Holders{}
 
 		powers := a.keeper.GetNormalizedValPowers(ctx)
 		for _, valaddr := range att.GetVotes() {
 			validator, _ := sdk.ValAddressFromBech32(valaddr)
-			power := sdk.NewDec(int64(powers[valaddr])).QuoInt64(math.MaxUint16).TruncateInt64()
 
 			holdersClaim := a.keeper.GetHoldersClaim(ctx, sdk.AccAddress(validator).String(), claim.Epoch).(*types.GenericClaim).GetHoldersClaim()
 			hash := fmt.Sprintf("%x", holdersClaim.StabilizedClaimHash())
 			holdersVotes[hash] = holdersClaim.Holders
-			holdersTally[hash] = holdersTally[hash] + power
+			holdersTally[hash] = holdersTally[hash] + powers[valaddr]
 		}
 
 		// todo: should we iterate this in sorted way?

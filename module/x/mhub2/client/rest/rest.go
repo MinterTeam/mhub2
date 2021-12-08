@@ -12,16 +12,51 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 )
 
-// ProposalRESTHandler returns a ProposalRESTHandler that exposes the param
+// ColdStorageTransferProposalRESTHandler returns a ProposalRESTHandler that exposes the param
 // change REST handler with a given sub-route.
-func ProposalRESTHandler(clientCtx client.Context) govrest.ProposalRESTHandler {
+func ColdStorageTransferProposalRESTHandler(clientCtx client.Context) govrest.ProposalRESTHandler {
 	return govrest.ProposalRESTHandler{
 		SubRoute: "cold_storage_transfer",
-		Handler:  postProposalHandlerFn(clientCtx),
+		Handler:  postProposalColdStorageTransferHandlerFn(clientCtx),
 	}
 }
 
-func postProposalHandlerFn(clientCtx client.Context) http.HandlerFunc {
+func postProposalColdStorageTransferHandlerFn(clientCtx client.Context) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var req utils.ColdStorageTransferProposalReq
+		if !rest.ReadRESTReq(w, r, clientCtx.LegacyAmino, &req) {
+			return
+		}
+
+		req.BaseReq = req.BaseReq.Sanitize()
+		if !req.BaseReq.ValidateBasic(w) {
+			return
+		}
+
+		content := types.NewColdStorageTransferProposal(types.ChainID(req.ChainId), req.Amount)
+
+		msg, err := govtypes.NewMsgSubmitProposal(content, req.Deposit, req.Proposer)
+		if rest.CheckBadRequestError(w, err) {
+			return
+		}
+		if rest.CheckBadRequestError(w, msg.ValidateBasic()) {
+			return
+		}
+
+		tx.WriteGeneratedTxResponse(clientCtx, w, req.BaseReq, msg)
+	}
+}
+
+// TokenInfosChangeProposalRESTHandler returns a ProposalRESTHandler that exposes the param
+// change REST handler with a given sub-route.
+func TokenInfosChangeProposalRESTHandler(clientCtx client.Context) govrest.ProposalRESTHandler {
+	return govrest.ProposalRESTHandler{
+		SubRoute: "token_infos_change",
+		Handler:  postProposalTokenInfosChangeHandlerFn(clientCtx),
+	}
+}
+
+func postProposalTokenInfosChangeHandlerFn(clientCtx client.Context) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req utils.ColdStorageTransferProposalReq
 		if !rest.ReadRESTReq(w, r, clientCtx.LegacyAmino, &req) {
