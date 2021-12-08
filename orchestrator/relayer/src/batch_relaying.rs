@@ -12,6 +12,7 @@ use mhub2_utils::message_signatures::encode_tx_batch_confirm_hashed;
 use mhub2_utils::types::Valset;
 use mhub2_utils::types::{BatchConfirmResponse, TransactionBatch};
 use std::collections::HashMap;
+use std::ops::Add;
 use std::time::Duration;
 use tonic::transport::Channel;
 use web30::client::Web3;
@@ -203,6 +204,13 @@ async fn submit_batches(
             return;
         }
         let latest_ethereum_batch = latest_ethereum_batch.unwrap();
+        let nonce = web3.eth_get_transaction_count(our_ethereum_address).await;
+        if nonce.is_err() {
+            error!("Failed to get latest Ethereum nonce",);
+            return;
+        }
+
+        let mut nonce = nonce.unwrap();
 
         for batch in possible_batches {
             let oldest_signed_batch = batch.batch;
@@ -263,8 +271,10 @@ async fn submit_batches(
                     gravity_contract_address,
                     gravity_id.clone(),
                     ethereum_key,
+                    nonce.clone(),
                 )
                 .await;
+                nonce = nonce.add(1u64.into());
                 if res.is_err() {
                     info!("Batch submission failed with {:?}", res);
                 }
