@@ -78,10 +78,7 @@ func (a AttestationHandler) Handle(ctx sdk.Context, att types.Attestation, claim
 			holdersClaim := a.keeper.GetHoldersClaim(ctx, sdk.AccAddress(validator).String(), claim.Epoch).(*types.GenericClaim).GetHoldersClaim()
 			hash := fmt.Sprintf("%x", holdersClaim.StabilizedClaimHash())
 			holdersVotes[hash] = holdersClaim.Holders
-
-			for _, item := range holdersClaim.GetHolders().List {
-				holdersTally[item.Address] = holdersTally[item.Address] + power
-			}
+			holdersTally[hash] = holdersTally[hash] + power
 		}
 
 		// todo: should we iterate this in sorted way?

@@ -193,7 +193,7 @@ func main() {
 	}
 
 	time.Sleep(time.Second * 10)
-	go runOrPanic("mhub-oracle --config=oracle-config.toml --cosmos-mnemonic=%s", cosmosMnemonic)
+	go runOrPanic("mhub-oracle --testnet --config=oracle-config.toml --cosmos-mnemonic=%s", cosmosMnemonic)
 	go runOrPanic("mhub-minter-connector --config=connector-config.toml --cosmos-mnemonic=%s --minter-private-key=%s --minter-multisig-addr=%s", cosmosMnemonic, ethPrivateKeyString, minterMultisig)
 	go runOrPanic("orchestrator --chain-id=ethereum --eth-fee-calculator-url=http://localhost:8840 --cosmos-phrase=%s --ethereum-key=%s --cosmos-grpc=%s --ethereum-rpc=%s --contract-address=%s --fees=%s --address-prefix=hub --metrics-listen=127.0.0.1:3000", cosmosMnemonic, ethPrivateKeyString, "http://localhost:9090", "http://localhost:8545", ethContract, denom)
 	go runOrPanic("orchestrator --chain-id=bsc --eth-fee-calculator-url=http://localhost:8840 --cosmos-phrase=%s --ethereum-key=%s --cosmos-grpc=%s --ethereum-rpc=%s --contract-address=%s --fees=%s --address-prefix=hub --metrics-listen=127.0.0.1:3001", cosmosMnemonic, ethPrivateKeyString, "http://localhost:9090", "http://localhost:8546", bscContract, denom)

@@ -19,12 +19,16 @@ import (
 	"google.golang.org/grpc/backoff"
 )
 
-const holdersUpdatePeriod = 144
+var holdersUpdatePeriod uint64 = 144
 
 func main() {
 	logger := log.NewTMLogger(os.Stdout)
-	cfg := config.Get()
+	cfg, isTestnet := config.Get()
 	cosmos.Setup(cfg)
+
+	if isTestnet {
+		holdersUpdatePeriod = 1
+	}
 
 	orcAddress, orcPriv := cosmos.GetAccount(cfg.Cosmos.Mnemonic)
 	logger.Info("Orc address", "address", orcAddress.String())
