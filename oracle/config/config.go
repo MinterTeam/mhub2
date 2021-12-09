@@ -18,11 +18,13 @@ type Config struct {
 	PricesUrl  string `mapstructure:"prices_url"`
 }
 
-func Get() *Config {
+func Get() (*Config, bool) {
 	cfg := &Config{}
 
 	configPath := flag.String("config", "config.toml", "path to the configuration file")
 	cosmosMnemonic := flag.String("cosmos-mnemonic", "", "")
+	testnet := flag.Bool("testnet", false, "")
+
 	flag.Parse()
 
 	v := viper.New()
@@ -40,5 +42,5 @@ func Get() *Config {
 		cfg.Cosmos.Mnemonic = *cosmosMnemonic
 	}
 
-	return cfg
+	return cfg, *testnet
 }

@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"fmt"
 	"math"
 	"sort"
 
@@ -66,40 +67,26 @@ func (a AttestationHandler) Handle(ctx sdk.Context, att types.Attestation, claim
 
 		a.keeper.storePrices(ctx, &prices)
 	case *types.MsgHoldersClaim:
-		votes := att.GetVotes()
-		holdersVotes := map[string]sdk.Int{}
+		holdersTally := map[string]uint64{}
+		holdersVotes := map[string]*types.Holders{}
 
 		powers := a.keeper.GetNormalizedValPowers(ctx)
-
-		for _, valaddr := range votes {
+		for _, valaddr := range att.GetVotes() {
 			validator, _ := sdk.ValAddressFromBech32(valaddr)
-			power := sdk.NewDec(int64(powers[valaddr])).QuoInt64(math.MaxUint16)
 
 			holdersClaim := a.keeper.GetHoldersClaim(ctx, sdk.AccAddress(validator).String(), claim.Epoch).(*types.GenericClaim).GetHoldersClaim()
-			for _, item := range holdersClaim.GetHolders().List {
-				if _, has := holdersVotes[item.Address]; !has {
-					holdersVotes[item.Address] = sdk.NewInt(0)
-				}
+			hash := fmt.Sprintf("%x", holdersClaim.StabilizedClaimHash())
+			holdersVotes[hash] = holdersClaim.Holders
+			holdersTally[hash] = holdersTally[hash] + powers[valaddr]
+		}
 
-				holdersVotes[item.Address] = holdersVotes[item.Address].Add(item.Value.ToDec().Mul(power).TruncateInt())
+		// todo: should we iterate this in sorted way?
+		for hash, votes := range holdersTally {
+			if votes > math.MaxUint16*2/3 {
+				a.keeper.storeHolders(ctx, holdersVotes[hash])
+				return nil
 			}
 		}
-
-		var addresses []string
-		for address := range holdersVotes {
-			addresses = append(addresses, address)
-		}
-		sort.Strings(addresses)
-
-		holders := types.Holders{}
-		for _, address := range addresses {
-			holders.List = append(holders.List, &types.Holder{
-				Address: address,
-				Value:   holdersVotes[address],
-			})
-		}
-
-		a.keeper.storeHolders(ctx, &holders)
 
 	default:
 		return sdkerrors.Wrapf(types.ErrInvalid, "event type: %s", claim.GetType())

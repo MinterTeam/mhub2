@@ -131,7 +131,8 @@ var (
 			distrclient.ProposalHandler,
 			upgradeclient.ProposalHandler,
 			upgradeclient.CancelProposalHandler,
-			mhub2client.ProposalHandler,
+			mhub2client.ProposalColdStorageHandler,
+			mhub2client.ProposalTokensChangeHandler,
 		),
 		params.AppModuleBasic{},
 		crisis.AppModuleBasic{},
@@ -400,7 +401,7 @@ func NewMhub2App(
 		app.bankKeeper,
 		app.slashingKeeper,
 		app.oracleKeeper,
-		sdk.NewIntFromUint64(1e18),
+		sdk.DefaultPowerReduction,
 	)
 
 	app.stakingKeeper = *stakingKeeper.SetHooks(
@@ -419,7 +420,7 @@ func NewMhub2App(
 		AddRoute(paramsproposal.RouterKey, params.NewParamChangeProposalHandler(app.paramsKeeper)).
 		AddRoute(distrtypes.RouterKey, distr.NewCommunityPoolSpendProposalHandler(app.distrKeeper)).
 		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(app.upgradeKeeper)).
-		AddRoute(mhub2types.RouterKey, mhub2.NewColdStorageTransferProposalHandler(app.mhub2Keeper)).
+		AddRoute(mhub2types.RouterKey, mhub2.NewProposalsHandler(app.mhub2Keeper)).
 		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(app.ibcKeeper.ClientKeeper))
 
 	app.govKeeper = govkeeper.NewKeeper(
@@ -596,6 +597,10 @@ func NewMhub2App(
 
 	app.ScopedIBCKeeper = scopedIBCKeeper
 	app.ScopedTransferKeeper = scopedTransferKeeper
+
+	app.upgradeKeeper.SetUpgradeHandler("v0.1.0", func(ctx sdk.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
+		return nil, nil
+	})
 
 	return app
 }

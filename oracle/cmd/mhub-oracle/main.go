@@ -19,10 +19,16 @@ import (
 	"google.golang.org/grpc/backoff"
 )
 
+var holdersUpdatePeriod uint64 = 144
+
 func main() {
 	logger := log.NewTMLogger(os.Stdout)
-	cfg := config.Get()
+	cfg, isTestnet := config.Get()
 	cosmos.Setup(cfg)
+
+	if isTestnet {
+		holdersUpdatePeriod = 1
+	}
 
 	orcAddress, orcPriv := cosmos.GetAccount(cfg.Cosmos.Mnemonic)
 	logger.Info("Orc address", "address", orcAddress.String())
@@ -67,7 +73,7 @@ func relayPricesAndHolders(
 		}
 	}
 
-	if response.GetEpoch().Nonce%10 == 0 {
+	if response.GetEpoch().Nonce%holdersUpdatePeriod == 0 {
 		holders := getHolders(cfg)
 		jsonHolders, _ := json.Marshal(holders.List)
 		logger.Info("Holders", "val", string(jsonHolders))

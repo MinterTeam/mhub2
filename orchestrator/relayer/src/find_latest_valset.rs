@@ -14,5 +14,9 @@ pub async fn find_latest_valset(
     let cosmos_chain_valset =
         cosmos_gravity::query::get_last_observed_valset(grpc_client, chain_id.clone()).await?;
 
+    if cosmos_chain_valset.is_none() {
+        return Err(GravityError::ValsetNotFoundError);
+    }
+
     Ok(cosmos_chain_valset.unwrap())
 }

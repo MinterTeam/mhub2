@@ -24,6 +24,7 @@ import (
 	secp256k12 "github.com/ethereum/go-ethereum/crypto/secp256k1"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/status-im/keycard-go/hexutils"
+	"github.com/stretchr/testify/assert"
 	"github.com/tendermint/tendermint/libs/log"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/backoff"
@@ -193,7 +194,7 @@ func main() {
 	}
 
 	time.Sleep(time.Second * 10)
-	go runOrPanic("mhub-oracle --config=oracle-config.toml --cosmos-mnemonic=%s", cosmosMnemonic)
+	go runOrPanic("mhub-oracle --testnet --config=oracle-config.toml --cosmos-mnemonic=%s", cosmosMnemonic)
 	go runOrPanic("mhub-minter-connector --config=connector-config.toml --cosmos-mnemonic=%s --minter-private-key=%s --minter-multisig-addr=%s", cosmosMnemonic, ethPrivateKeyString, minterMultisig)
 	go runOrPanic("orchestrator --chain-id=ethereum --eth-fee-calculator-url=http://localhost:8840 --cosmos-phrase=%s --ethereum-key=%s --cosmos-grpc=%s --ethereum-rpc=%s --contract-address=%s --fees=%s --address-prefix=hub --metrics-listen=127.0.0.1:3000", cosmosMnemonic, ethPrivateKeyString, "http://localhost:9090", "http://localhost:8545", ethContract, denom)
 	go runOrPanic("orchestrator --chain-id=bsc --eth-fee-calculator-url=http://localhost:8840 --cosmos-phrase=%s --ethereum-key=%s --cosmos-grpc=%s --ethereum-rpc=%s --contract-address=%s --fees=%s --address-prefix=hub --metrics-listen=127.0.0.1:3001", cosmosMnemonic, ethPrivateKeyString, "http://localhost:9090", "http://localhost:8546", bscContract, denom)
@@ -241,6 +242,7 @@ func main() {
 	testMinterToEthereumTransfer(ctx)
 	testMinterToBscTransfer(ctx)
 	testColdStorageTransfer(ctx)
+	testVoteForTokenInfosUpdate(ctx)
 	testEthEthereumToMinterTransfer(ctx)
 	testEthMinterToEthereumTransfer(ctx)
 
@@ -283,7 +285,67 @@ func main() {
 
 	println("All tests are done")
 }
+func testVoteForTokenInfosUpdate(ctx *Context) {
+	ctx.TestsWg.Add(1)
+	addr, priv := cosmos.GetAccount(ctx.CosmosMnemonic)
 
+	initialDeposit := sdk.NewCoins(sdk.NewCoin(denom, sdk.NewInt(10000000)))
+
+	client := mhubtypes.NewQueryClient(ctx.CosmosConn)
+
+	response, err := client.TokenInfos(context.TODO(), &mhubtypes.TokenInfosRequest{})
+	if err != nil {
+		panic(err)
+	}
+
+	newInfos := &response.List
+
+	newInfos.TokenInfos = append(newInfos.TokenInfos, &mhubtypes.TokenInfo{
+		Id:               999,
+		Denom:            "TEST",
+		ChainId:          "minter",
+		ExternalTokenId:  "123",
+		ExternalDecimals: 18,
+		Commission:       bridgeCommission,
+	})
+
+	proposal := &govtypes.MsgSubmitProposal{}
+	proposal.SetInitialDeposit(initialDeposit)
+	proposal.SetProposer(addr)
+	if err := proposal.SetContent(&mhubtypes.TokenInfosChangeProposal{
+		NewInfos: newInfos,
+	}); err != nil {
+		panic(err)
+	}
+
+	cosmos.SendCosmosTx([]sdk.Msg{
+		proposal,
+		govtypes.NewMsgVote(addr, 4, govtypes.OptionYes),
+	}, addr, priv, ctx.CosmosConn, log.NewTMLogger(os.Stdout), true)
+
+	go func() {
+		startTime := time.Now()
+		for {
+			if time.Now().Sub(startTime).Seconds() > testTimeout.Seconds() {
+				panic("Timeout waiting for the token infos to update")
+			}
+
+			response, err := client.TokenInfos(context.TODO(), &mhubtypes.TokenInfosRequest{})
+			if err != nil {
+				panic(err)
+			}
+
+			if !assert.ObjectsAreEqual(&response.List, newInfos) {
+				time.Sleep(time.Second)
+				continue
+			}
+
+			println("SUCCESS: vote for new token list")
+			ctx.TestsWg.Done()
+			break
+		}
+	}()
+}
 func testColdStorageTransfer(ctx *Context) {
 	ctx.TestsWg.Add(1)
 	addr, priv := cosmos.GetAccount(ctx.CosmosMnemonic)

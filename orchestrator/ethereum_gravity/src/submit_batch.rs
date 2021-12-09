@@ -2,10 +2,12 @@ use crate::utils::{get_tx_batch_nonce, GasCost};
 use clarity::PrivateKey as EthPrivateKey;
 use clarity::{Address as EthAddress, Uint256};
 use mhub2_utils::error::GravityError;
+use mhub2_utils::error::GravityError::InvalidEstimationError;
 use mhub2_utils::message_signatures::encode_tx_batch_confirm_hashed;
 use mhub2_utils::types::*;
 use std::collections::HashMap;
 use std::{cmp::min, time::Duration};
+use web30::types::SendTxOption::Nonce;
 use web30::{client::Web3, types::TransactionRequest};
 
 /// this function generates an appropriate Ethereum transaction
@@ -20,6 +22,7 @@ pub async fn send_eth_transaction_batch(
     gravity_contract_address: EthAddress,
     gravity_id: String,
     our_eth_key: EthPrivateKey,
+    nonce: Uint256,
 ) -> Result<(), GravityError> {
     let new_batch_nonce = batch.nonce;
     let eth_address = our_eth_key.to_public_key().unwrap();
@@ -60,7 +63,7 @@ pub async fn send_eth_transaction_batch(
             0u32.into(),
             eth_address,
             our_eth_key,
-            vec![],
+            vec![Nonce(nonce)],
         )
         .await?;
     info!("Sent batch update with txid {:#066x}", tx);
@@ -119,7 +122,7 @@ pub async fn estimate_tx_batch_cost(
         gas: val,
         gas_price,
         total_fee_eth: if eth_fee_calculator_url.is_some() {
-            get_total_batch_fee_in_eth(eth_fee_calculator_url.unwrap(), batch, chain_id)
+            get_total_batch_fee_in_eth(eth_fee_calculator_url.unwrap(), batch, chain_id)?
         } else {
             0u64.into()
         },
@@ -130,7 +133,7 @@ fn get_total_batch_fee_in_eth(
     base_url: String,
     batch: TransactionBatch,
     chain_id: String,
-) -> Uint256 {
+) -> Result<Uint256, GravityError> {
     let mut url: String = base_url.to_owned();
     url.push_str("?contract=".into());
     url.push_str(batch.total_fee.token_contract_address.to_string().as_str());
@@ -138,12 +141,20 @@ fn get_total_batch_fee_in_eth(
     url.push_str(batch.total_fee.amount.to_string().as_str());
     url.push_str("&chain_id=".into());
     url.push_str(&*chain_id.clone());
-    let data = reqwest::blocking::get(url)
-        .unwrap()
-        .json::<HashMap<String, String>>()
-        .unwrap();
+    let data = reqwest::blocking::get(url);
+    if data.is_err() {
+        return Err(InvalidEstimationError);
+    }
 
-    Uint256::from_str_radix(data.get("result").unwrap(), 10).unwrap()
+    let data = data.unwrap().json::<HashMap<String, String>>();
+    if data.is_err() {
+        return Err(InvalidEstimationError);
+    }
+
+    match data.unwrap().get("result") {
+        Some(s) => Ok(Uint256::from_str_radix(s, 10)?),
+        None => Err(InvalidEstimationError),
+    }
 }
 
 /// Encodes the batch payload for both estimate_tx_batch_cost and send_eth_transaction_batch

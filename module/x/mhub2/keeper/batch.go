@@ -125,7 +125,7 @@ func (k Keeper) batchTxExecuted(ctx sdk.Context, chainId types.ChainID, external
 
 	// pay val's commissions
 	if totalValCommission.IsPositive() {
-		valset := k.CurrentSignerSet(ctx, chainId)
+		valset := k.CurrentSignerSet(ctx, "minter")
 		var totalPower uint64
 		for _, val := range valset {
 			totalPower += val.Power

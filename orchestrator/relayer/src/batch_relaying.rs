@@ -12,6 +12,7 @@ use mhub2_utils::message_signatures::encode_tx_batch_confirm_hashed;
 use mhub2_utils::types::Valset;
 use mhub2_utils::types::{BatchConfirmResponse, TransactionBatch};
 use std::collections::HashMap;
+use std::ops::Add;
 use std::time::Duration;
 use tonic::transport::Channel;
 use web30::client::Web3;
@@ -146,7 +147,6 @@ async fn get_batches_and_signatures(
     // older batches so that we don't invalidate newer batches
     for (_key, value) in possible_batches.iter_mut() {
         value.sort();
-        value.reverse();
     }
 
     return possible_batches;
@@ -204,6 +204,13 @@ async fn submit_batches(
             return;
         }
         let latest_ethereum_batch = latest_ethereum_batch.unwrap();
+        let nonce = web3.eth_get_transaction_count(our_ethereum_address).await;
+        if nonce.is_err() {
+            error!("Failed to get latest Ethereum nonce",);
+            return;
+        }
+
+        let mut nonce = nonce.unwrap();
 
         for batch in possible_batches {
             let oldest_signed_batch = batch.batch;
@@ -264,12 +271,64 @@ async fn submit_batches(
                     gravity_contract_address,
                     gravity_id.clone(),
                     ethereum_key,
+                    nonce.clone(),
                 )
                 .await;
+                nonce = nonce.add(1u64.into());
                 if res.is_err() {
                     info!("Batch submission failed with {:?}", res);
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::batch_relaying::SubmittableBatch;
+    use mhub2_utils::types::TransactionBatch;
+
+    #[test]
+    fn sorting() {
+        let mut list: Vec<SubmittableBatch> = Vec::new();
+
+        list.push(SubmittableBatch {
+            batch: TransactionBatch {
+                nonce: 1,
+                batch_timeout: 0,
+                transactions: vec![],
+                total_fee: Default::default(),
+                token_contract: Default::default(),
+            },
+            sigs: vec![],
+        });
+
+        list.push(SubmittableBatch {
+            batch: TransactionBatch {
+                nonce: 3,
+                batch_timeout: 0,
+                transactions: vec![],
+                total_fee: Default::default(),
+                token_contract: Default::default(),
+            },
+            sigs: vec![],
+        });
+
+        list.push(SubmittableBatch {
+            batch: TransactionBatch {
+                nonce: 2,
+                batch_timeout: 0,
+                transactions: vec![],
+                total_fee: Default::default(),
+                token_contract: Default::default(),
+            },
+            sigs: vec![],
+        });
+
+        list.sort();
+
+        assert_eq!(list.get(0).unwrap().batch.nonce, 1u64);
+        assert_eq!(list.get(1).unwrap().batch.nonce, 2u64);
+        assert_eq!(list.get(2).unwrap().batch.nonce, 3u64);
     }
 }
