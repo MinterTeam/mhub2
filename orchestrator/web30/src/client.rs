@@ -15,6 +15,7 @@ use clarity::utils::bytes_to_hex_str;
 use clarity::{Address, PrivateKey, Transaction};
 use num::ToPrimitive;
 use num256::Uint256;
+use std::cmp::max;
 use std::{cmp::min, time::Duration};
 use std::{sync::Arc, time::Instant};
 use tokio::time::sleep as delay_for;
@@ -42,6 +43,10 @@ impl Web3 {
 
     pub fn get_url(&self) -> String {
         self.url.clone()
+    }
+
+    pub async fn get_base_fee_per_gas(&self) -> Result<Option<Uint256>, Web3Error> {
+        Ok(self.eth_get_latest_block().await?.base_fee_per_gas)
     }
 
     pub async fn eth_accounts(&self) -> Result<Vec<Address>, Web3Error> {
@@ -117,10 +122,19 @@ impl Web3 {
             )
             .await
     }
+    /// Get the median gas price over the last 10 blocks. This function does not
+    /// simply wrap eth_gasPrice, in post London chains it also requests the base
+    /// gas from the previous block and prevents the use of a lower value
     pub async fn eth_gas_price(&self) -> Result<Uint256, Web3Error> {
-        self.jsonrpc_client
+        let median_gas = self
+            .jsonrpc_client
             .request_method("eth_gasPrice", Vec::<String>::new(), self.timeout, None)
-            .await
+            .await?;
+        let base_gas = self.get_base_fee_per_gas().await?;
+        Ok(match base_gas {
+            Some(base_gas) => max(base_gas, median_gas),
+            None => median_gas,
+        })
     }
 
     pub async fn eth_estimate_gas(
