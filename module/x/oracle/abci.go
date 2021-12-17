@@ -11,4 +11,8 @@ func EndBlocker(ctx sdk.Context, k keeper.Keeper) {
 	if ctx.BlockHeight()%5 == 0 {
 		k.ProcessCurrentEpoch(ctx)
 	}
+
+	if k.GetCurrentEpoch(ctx) > 10 {
+		k.DeleteOldAttestations(ctx)
+	}
 }
