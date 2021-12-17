@@ -308,8 +308,8 @@ github.com/envoyproxy/go-control-plane v0.9.4/go.mod h1:6rpuAdCZL397s3pYoYcLgu1m
 github.com/envoyproxy/protoc-gen-validate v0.1.0/go.mod h1:iSmxcyjqTsJpI2R4NaDN7+kN2VEUnK/pcBlmesArF7c=
 github.com/ethereum/go-ethereum v1.9.25/go.mod h1:vMkFiYLHI4tgPw4k2j4MHKoovchFE8plZ0M9VMk4/oM=
 github.com/ethereum/go-ethereum v1.10.9/go.mod h1:CaTMQrv51WaAlD2eULQ3f03KiahDRO28fleQcKjWrrg=
-github.com/ethereum/go-ethereum v1.10.10 h1:Ft2GcLQrr2M89l49g9NoqgNtJZ9AahzMb7N6VXKZy5U=
-github.com/ethereum/go-ethereum v1.10.10/go.mod h1:W3yfrFyL9C1pHcwY5hmRHVDaorTiQxhYBkKyu5mEDHw=
+github.com/ethereum/go-ethereum v1.10.13 h1:DEYFP9zk+Gruf3ae1JOJVhNmxK28ee+sMELPLgYTXpA=
+github.com/ethereum/go-ethereum v1.10.13/go.mod h1:W3yfrFyL9C1pHcwY5hmRHVDaorTiQxhYBkKyu5mEDHw=
 github.com/facebookgo/ensure v0.0.0-20160127193407-b4ab57deab51 h1:0JZ+dUmQeA8IIVUMzysrX4/AKuQwWhV2dYQuPZdvdSQ=
 github.com/facebookgo/ensure v0.0.0-20160127193407-b4ab57deab51/go.mod h1:Yg+htXGokKKdzcwhuNDwVvN+uBxDGXJ7G/VN1d8fa64=
 github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 h1:JWuenKqqX8nojtoVVWjGfOF9635RETekkoH6Cc9SX0A=

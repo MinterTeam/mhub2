@@ -9,8 +9,9 @@ require (
 	github.com/MinterTeam/node-grpc-gateway v1.4.3-0.20210901204935-9c018d5064bc
 	github.com/cosmos/cosmos-sdk v0.44.3
 	github.com/cosmos/go-bip39 v1.0.0
-	github.com/ethereum/go-ethereum v1.10.10
+	github.com/ethereum/go-ethereum v1.10.13
 	github.com/status-im/keycard-go v0.0.0-20190316090335-8537d3370df4
+	github.com/stretchr/testify v1.7.0
 	github.com/tendermint/tendermint v0.34.14
 	google.golang.org/grpc v1.42.0
 )
@@ -105,7 +106,6 @@ require (
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.8.1 // indirect
-	github.com/stretchr/testify v1.7.0 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7 // indirect
 	github.com/tecbot/gorocksdb v0.0.0-20191217155057-f0fad39f321c // indirect
