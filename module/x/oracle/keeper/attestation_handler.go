@@ -36,6 +36,8 @@ func (a AttestationHandler) Handle(ctx sdk.Context, att types.Attestation, claim
 					pricesSum[item.Name] = append(pricesSum[item.Name], item.Value)
 				}
 			}
+
+			a.keeper.deletePriceClaim(ctx, sdk.AccAddress(validator).String(), att.Epoch)
 		}
 
 		var priceNames []string
@@ -78,6 +80,7 @@ func (a AttestationHandler) Handle(ctx sdk.Context, att types.Attestation, claim
 			hash := fmt.Sprintf("%x", holdersClaim.StabilizedClaimHash())
 			holdersVotes[hash] = holdersClaim.Holders
 			holdersTally[hash] = holdersTally[hash] + powers[valaddr]
+			a.keeper.deleteHoldersClaim(ctx, sdk.AccAddress(validator).String(), att.Epoch)
 		}
 
 		// todo: should we iterate this in sorted way?

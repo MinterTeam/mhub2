@@ -169,6 +169,7 @@ func (k Keeper) ProcessCurrentEpoch(ctx sdk.Context) {
 		att := k.GetAttestation(ctx, currentEpoch, claim)
 		if att != nil {
 			k.tryAttestation(ctx, att, claim)
+			k.DeleteAttestation(ctx, *att)
 		}
 	}
 
@@ -179,6 +180,7 @@ func (k Keeper) ProcessCurrentEpoch(ctx sdk.Context) {
 		att := k.GetAttestation(ctx, currentEpoch, claim)
 		if att != nil {
 			k.tryAttestation(ctx, att, claim)
+			k.DeleteAttestation(ctx, *att)
 		}
 	}
 }
