@@ -602,6 +602,14 @@ func NewMhub2App(
 		return nil, nil
 	})
 
+	app.upgradeKeeper.SetUpgradeHandler("v0.2.0", func(ctx sdk.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
+		for epoch := app.oracleKeeper.GetCurrentEpoch(ctx) - 10; epoch > 0; epoch++ {
+			app.oracleKeeper.DeleteOldAttestations(ctx, epoch)
+		}
+
+		return nil, nil
+	})
+
 	return app
 }
 

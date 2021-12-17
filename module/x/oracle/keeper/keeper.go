@@ -217,9 +217,7 @@ func (k Keeper) GetNormalizedValPowers(ctx sdk.Context) map[string]uint64 {
 	return bridgeValidators
 }
 
-func (k Keeper) DeleteOldAttestations(ctx sdk.Context) {
-	epoch := k.GetCurrentEpoch(ctx) - 10
-
+func (k Keeper) DeleteOldAttestations(ctx sdk.Context, epoch uint64) {
 	priceAtt := k.GetAttestation(ctx, epoch, &types.MsgPriceClaim{
 		Epoch: epoch,
 	})
