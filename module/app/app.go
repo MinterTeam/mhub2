@@ -607,6 +607,9 @@ func NewMhub2App(
 			app.oracleKeeper.DeleteOldAttestations(ctx, epoch)
 		}
 
+		subspace, _ := app.paramsKeeper.GetSubspace(mhub2types.ModuleName)
+		subspace.Set(ctx, mhub2types.ParamsStoreKeyAverageBscBlockTime, 3000)
+
 		return nil, nil
 	})
 
