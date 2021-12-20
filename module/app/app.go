@@ -608,7 +608,7 @@ func NewMhub2App(
 		}
 
 		subspace, _ := app.paramsKeeper.GetSubspace(mhub2types.ModuleName)
-		subspace.Set(ctx, mhub2types.ParamsStoreKeyAverageBscBlockTime, 3000)
+		subspace.Set(ctx, mhub2types.ParamsStoreKeyAverageBscBlockTime, uint64(3000))
 
 		return nil, nil
 	})
