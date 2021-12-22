@@ -603,9 +603,7 @@ func NewMhub2App(
 	})
 
 	app.upgradeKeeper.SetUpgradeHandler("v0.2.0", func(ctx sdk.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
-		for epoch := app.oracleKeeper.GetCurrentEpoch(ctx) - 10; epoch > 0; epoch++ {
-			app.oracleKeeper.DeleteOldAttestations(ctx, epoch)
-		}
+		app.oracleKeeper.UpgradeToV020(ctx)
 
 		subspace, _ := app.paramsKeeper.GetSubspace(mhub2types.ModuleName)
 		subspace.Set(ctx, mhub2types.ParamsStoreKeyAverageBscBlockTime, uint64(3000))
