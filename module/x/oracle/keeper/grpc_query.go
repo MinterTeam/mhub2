@@ -73,8 +73,8 @@ func (k Keeper) EthFee(context context.Context, _ *types.QueryEthFeeRequest) (*t
 	}
 
 	return &types.QueryEthFeeResponse{
-		Min:  gasPrice.Mul(ethPrice).MulInt64(100000).QuoInt64(gweiInEth),
-		Fast: gasPrice.Mul(ethPrice).MulInt64(200000).QuoInt64(gweiInEth),
+		Min:  gasPrice.Mul(ethPrice).MulInt64(150000).QuoInt64(gweiInEth),
+		Fast: gasPrice.Mul(ethPrice).MulInt64(300000).QuoInt64(gweiInEth),
 	}, nil
 }
 
