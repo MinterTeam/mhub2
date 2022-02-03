@@ -118,6 +118,10 @@ func (k Keeper) batchTxExecuted(ctx sdk.Context, chainId types.ChainID, external
 		totalValCommission.Amount = totalValCommission.Amount.Add(tx.ValCommission.Amount)
 		totalFee.Amount = totalFee.Amount.Add(tx.Fee.Amount)
 		k.SetTxStatus(ctx, tx.TxHash, types.TX_STATUS_BATCH_EXECUTED, txHash)
+		k.SetTxFeeRecord(ctx, tx.TxHash, types.TxFeeRecord{
+			ValCommission: tx.ValCommission.Amount,
+			ExternalFee:   tx.Fee.Amount,
+		})
 	}
 
 	totalValCommission.Amount = k.ConvertFromExternalValue(ctx, chainId, tokenInfo.ExternalTokenId, totalValCommission.Amount)
@@ -217,6 +221,10 @@ func (k Keeper) batchTxExecuted(ctx sdk.Context, chainId types.ChainID, external
 						if err != nil {
 							panic(err)
 						}
+
+						record := k.GetTxFeeRecord(ctx, tx.TxHash)
+						record.ExternalFee = record.ExternalFee.Sub(toRefund)
+						k.SetTxFeeRecord(ctx, tx.TxHash, *record)
 					}
 				}
 			}

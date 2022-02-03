@@ -59,6 +59,8 @@ const (
 	LastObservedSignerSetKey
 
 	TxStatusKey
+
+	TxFeeRecordKey
 )
 
 ////////////////////
@@ -151,4 +153,8 @@ func MakeContractCallTxKey(chainId ChainID, invalscope []byte, invalnonce uint64
 
 func GetTxStatusKey(inTxHash string) []byte {
 	return bytes.Join([][]byte{{TxStatusKey}, []byte(inTxHash)}, []byte{})
+}
+
+func GetTxFeeRecordKey(inTxHash string) []byte {
+	return bytes.Join([][]byte{{TxFeeRecordKey}, []byte(inTxHash)}, []byte{})
 }
