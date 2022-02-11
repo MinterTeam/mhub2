@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"runtime"
 	"strconv"
+	"strings"
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -36,7 +37,7 @@ func AddMonitorCmd() *cobra.Command {
 			if err != nil {
 				panic(err)
 			}
-			
+
 			if _, err := bot.Send(tgbotapi.NewMessage(int64(chatId), "Starting")); err != nil {
 				panic(err)
 			}
@@ -108,7 +109,9 @@ func AddMonitorCmd() *cobra.Command {
 							ChainId: chain.String(),
 						})
 						if err != nil {
-							handleErr(err)
+							if !strings.Contains(err.Error(), "validator is not bonded") {
+								handleErr(err)
+							}
 							continue
 						}
 
