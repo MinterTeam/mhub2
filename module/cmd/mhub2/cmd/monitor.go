@@ -2,7 +2,11 @@ package cmd
 
 import (
 	"context"
+	"errors"
+	"strconv"
 	"time"
+
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
 	"github.com/MinterTeam/mhub2/module/x/mhub2/types"
 
@@ -16,32 +20,52 @@ import (
 // AddMonitorCmd returns monitor cobra Command.
 func AddMonitorCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "monitor",
+		Use:   "monitor [our_address] [telegram_bot_token] [chat_id]",
 		Short: "",
 		Long:  ``,
-		Args:  cobra.ExactArgs(1),
+		Args:  cobra.ExactArgs(3),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			bot, err := tgbotapi.NewBotAPI(args[1])
+			if err != nil {
+				panic(err)
+			}
+
+			chatId, err := strconv.Atoi(args[2])
+			if err != nil {
+				panic(err)
+			}
+
 			ourAddress := args[0]
 			nonceErrorCounter := 0
 
+			handleErr := func(err error) {
+				bot.Send(tgbotapi.NewMessage(int64(chatId), "Error: "+err.Error()))
+			}
+
 			for {
+				time.Sleep(time.Second * 5)
+
 				clientCtx, err := client.GetClientQueryContext(cmd)
 				if err != nil {
-					return err
+					handleErr(err)
+					continue
 				}
 
 				node, err := clientCtx.GetNode()
 				if err != nil {
-					return err
+					handleErr(err)
+					continue
 				}
 
 				status, err := node.Status(context.Background())
 				if err != nil {
-					return err
+					handleErr(err)
+					continue
 				}
 
 				if time.Now().Sub(status.SyncInfo.LatestBlockTime).Minutes() > 1 {
-					panic("Last block on Minter Hub node was more than 1 minute ago")
+					handleErr(errors.New("last block on Minter Hub node was more than 1 minute ago"))
+					continue
 				}
 
 				queryClient := types.NewQueryClient(clientCtx)
@@ -53,7 +77,8 @@ func AddMonitorCmd() *cobra.Command {
 						ChainId: chain.String(),
 					})
 					if err != nil {
-						return err
+						handleErr(err)
+						continue
 					}
 
 					response, err := queryClient.LastSubmittedExternalEvent(context.Background(), &types.LastSubmittedExternalEventRequest{
@@ -62,7 +87,8 @@ func AddMonitorCmd() *cobra.Command {
 					})
 
 					if err != nil {
-						return err
+						handleErr(err)
+						continue
 					}
 
 					nonce := response.EventNonce
@@ -73,7 +99,8 @@ func AddMonitorCmd() *cobra.Command {
 							ChainId: chain.String(),
 						})
 						if err != nil {
-							return err
+							handleErr(err)
+							continue
 						}
 
 						if nonce < response.GetEventNonce() {
@@ -86,10 +113,9 @@ func AddMonitorCmd() *cobra.Command {
 				}
 
 				if nonceErrorCounter > 5 {
-					panic("Event nonce on some external network was not updated for too long. Check your orchestrators and minter-connector")
+					handleErr(errors.New("event nonce on some external network was not updated for too long. Check your orchestrators and minter-connector"))
+					continue
 				}
-
-				time.Sleep(time.Second * 5)
 			}
 
 			return nil
