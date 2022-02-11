@@ -39,7 +39,7 @@ func AddMonitorCmd() *cobra.Command {
 			}
 
 			newText := func() string {
-				return fmt.Sprintf("Watching... %s", time.Now().String())
+				return fmt.Sprintf("Watching...\n%s", time.Now().Format(time.Stamp))
 			}
 
 			startMsg, err := bot.Send(tgbotapi.NewMessage(int64(chatId), newText()))
