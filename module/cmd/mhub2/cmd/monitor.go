@@ -3,6 +3,8 @@ package cmd
 import (
 	"context"
 	"errors"
+	"fmt"
+	"runtime"
 	"strconv"
 	"time"
 
@@ -34,12 +36,19 @@ func AddMonitorCmd() *cobra.Command {
 			if err != nil {
 				panic(err)
 			}
+			
+			if _, err := bot.Send(tgbotapi.NewMessage(int64(chatId), "Starting")); err != nil {
+				panic(err)
+			}
 
 			ourAddress := args[0]
 			nonceErrorCounter := 0
 
 			handleErr := func(err error) {
-				bot.Send(tgbotapi.NewMessage(int64(chatId), "Error: "+err.Error()))
+				pc, filename, line, _ := runtime.Caller(1)
+
+				str := fmt.Sprintf("[error] in %s[%s:%d] %v", runtime.FuncForPC(pc).Name(), filename, line, err)
+				bot.Send(tgbotapi.NewMessage(int64(chatId), str))
 			}
 
 			for {
