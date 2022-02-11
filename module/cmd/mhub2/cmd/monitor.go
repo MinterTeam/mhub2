@@ -38,7 +38,12 @@ func AddMonitorCmd() *cobra.Command {
 				panic(err)
 			}
 
-			if _, err := bot.Send(tgbotapi.NewMessage(int64(chatId), "Starting")); err != nil {
+			newText := func() string {
+				return fmt.Sprintf("Watching... %s", time.Now().String())
+			}
+
+			startMsg, err := bot.Send(tgbotapi.NewMessage(int64(chatId), newText()))
+			if err != nil {
 				panic(err)
 			}
 
@@ -52,7 +57,13 @@ func AddMonitorCmd() *cobra.Command {
 				bot.Send(tgbotapi.NewMessage(int64(chatId), str))
 			}
 
+			i := 0
 			for {
+				i++
+				if i%12 == 0 {
+					bot.Send(tgbotapi.NewEditMessageText(startMsg.Chat.ID, startMsg.MessageID, newText()))
+				}
+
 				time.Sleep(time.Second * 5)
 
 				clientCtx, err := client.GetClientQueryContext(cmd)
