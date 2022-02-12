@@ -55,6 +55,8 @@ func AddMonitorCmd() *cobra.Command {
 
 				str := fmt.Sprintf("[error] in %s[%s:%d] %v", runtime.FuncForPC(pc).Name(), filename, line, err)
 				bot.Send(tgbotapi.NewMessage(int64(chatId), str))
+
+				startMsg, _ = bot.Send(tgbotapi.NewMessage(int64(chatId), newText()))
 			}
 
 			i := 0
