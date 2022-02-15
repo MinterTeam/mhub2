@@ -138,7 +138,7 @@ func AddMonitorCmd() *cobra.Command {
 
 						for _, v := range vals.GetValidators() {
 							if v.OperatorAddress == k.ValidatorAddress {
-								println(v.Description.Identity, response.GetEventNonce())
+								println(v.GetMoniker(), response.GetEventNonce())
 							}
 						}
 
