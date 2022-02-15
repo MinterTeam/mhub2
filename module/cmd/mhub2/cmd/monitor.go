@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
 	"github.com/MinterTeam/mhub2/module/x/mhub2/types"
@@ -92,10 +94,16 @@ func AddMonitorCmd() *cobra.Command {
 				}
 
 				queryClient := types.NewQueryClient(clientCtx)
+				stakingQueryClient := stakingtypes.NewQueryClient(clientCtx)
+				vals, _ := stakingQueryClient.Validators(context.Background(), &stakingtypes.QueryValidatorsRequest{
+					Status:     "",
+					Pagination: nil,
+				})
 
 				chains := []types.ChainID{"ethereum", "minter", "bsc"}
 			loop:
 				for _, chain := range chains {
+					println(chain.String())
 					delegatedKeys, err := queryClient.DelegateKeys(context.Background(), &types.DelegateKeysRequest{
 						ChainId: chain.String(),
 					})
@@ -126,6 +134,12 @@ func AddMonitorCmd() *cobra.Command {
 								handleErr(err)
 							}
 							continue
+						}
+
+						for _, v := range vals.GetValidators() {
+							if v.OperatorAddress == k.ValidatorAddress {
+								println(v.Description.Identity, response.GetEventNonce())
+							}
 						}
 
 						if nonce < response.GetEventNonce() {
