@@ -152,12 +152,13 @@ func (msg *MsgSubmitExternalTxConfirmation) UnpackInterfaces(unpacker cdctypes.A
 }
 
 // NewMsgSendToExternal returns a new MsgSendToEthereum
-func NewMsgSendToExternal(sender sdk.AccAddress, destAddress string, send sdk.Coin, bridgeFee sdk.Coin) *MsgSendToExternal {
+func NewMsgSendToExternal(chainId ChainID, sender sdk.AccAddress, destAddress string, send sdk.Coin, bridgeFee sdk.Coin) *MsgSendToExternal {
 	return &MsgSendToExternal{
 		Sender:            sender.String(),
 		ExternalRecipient: destAddress,
 		Amount:            send,
 		BridgeFee:         bridgeFee,
+		ChainId:           chainId.String(),
 	}
 }
 

@@ -30,8 +30,8 @@ func GetTxCmd(storeKey string) *cobra.Command {
 	}
 
 	txCmd.AddCommand(
-		CmdSendToEthereum(),
-		CmdCancelSendToEthereum(),
+		CmdSendToExternal(),
+		CmdCancelSendToExternal(),
 		CmdRequestBatchTx(),
 		CmdSetDelegateKeys(),
 	)
@@ -39,12 +39,12 @@ func GetTxCmd(storeKey string) *cobra.Command {
 	return txCmd
 }
 
-func CmdSendToEthereum() *cobra.Command {
+func CmdSendToExternal() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "send-to-ethereum [ethereum-reciever] [send-coins] [fee-coins]",
+		Use:     "send-to-external [chain-id] [external-receiver] [send-coins] [fee-coins]",
 		Aliases: []string{"send", "transfer"},
 		Args:    cobra.ExactArgs(3),
-		Short:   "Send tokens from cosmos chain to connected ethereum chain",
+		Short:   "Send tokens from hub to connected external chain",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
@@ -56,22 +56,27 @@ func CmdSendToEthereum() *cobra.Command {
 				return fmt.Errorf("must pass from flag")
 			}
 
-			if !common.IsHexAddress(args[0]) {
+			chainId, err := parseChainId(args[0])
+			if err != nil {
+				return err
+			}
+
+			if !common.IsHexAddress(args[1]) {
 				return fmt.Errorf("must be a valid ethereum address got %s", args[0])
 			}
 
 			// Get amount of coins
-			sendCoin, err := sdk.ParseCoinNormalized(args[1])
+			sendCoin, err := sdk.ParseCoinNormalized(args[2])
 			if err != nil {
 				return err
 			}
 
-			feeCoin, err := sdk.ParseCoinNormalized(args[2])
+			feeCoin, err := sdk.ParseCoinNormalized(args[3])
 			if err != nil {
 				return err
 			}
 
-			msg := types.NewMsgSendToExternal(from, common.HexToAddress(args[0]).Hex(), sendCoin, feeCoin)
+			msg := types.NewMsgSendToExternal(types.ChainID(chainId), from, common.HexToAddress(args[1]).Hex(), sendCoin, feeCoin)
 			if err = msg.ValidateBasic(); err != nil {
 				return err
 			}
@@ -84,11 +89,11 @@ func CmdSendToEthereum() *cobra.Command {
 	return cmd
 }
 
-func CmdCancelSendToEthereum() *cobra.Command {
+func CmdCancelSendToExternal() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "cancel-send-to-external [chain-id] [id]",
 		Args:  cobra.ExactArgs(2),
-		Short: "Cancel ethereum send by id",
+		Short: "Cancel external send by id",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
