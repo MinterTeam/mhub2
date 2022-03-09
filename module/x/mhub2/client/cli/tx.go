@@ -43,7 +43,7 @@ func CmdSendToExternal() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "send-to-external [chain-id] [external-receiver] [send-coins] [fee-coins]",
 		Aliases: []string{"send", "transfer"},
-		Args:    cobra.ExactArgs(3),
+		Args:    cobra.ExactArgs(4),
 		Short:   "Send tokens from hub to connected external chain",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
