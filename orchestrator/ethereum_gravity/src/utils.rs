@@ -4,6 +4,7 @@ use clarity::{abi::encode_tokens, Address as EthAddress};
 use mhub2_utils::error::GravityError;
 use mhub2_utils::types::*;
 use sha3::{Digest, Keccak256};
+use std::ops::{Div, Mul};
 use std::u128::MAX as U128MAX;
 use std::u64::MAX as U64MAX;
 use web30::{client::Web3, jsonrpc::error::Web3Error};
@@ -251,6 +252,11 @@ impl GasCost {
         self.gas.clone() * self.gas_price.clone()
     }
     pub fn is_profitable(&self) -> bool {
-        self.get_total().lt(&self.total_fee_eth)
+        let total = self.get_total();
+
+        total
+            .mul(3u64.into())
+            .div(2u64.into())
+            .lt(&self.total_fee_eth)
     }
 }
