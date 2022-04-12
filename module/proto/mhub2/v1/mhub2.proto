@@ -114,6 +114,17 @@ message TokenInfos {repeated TokenInfo token_infos = 1;}
 
 message IDSet { repeated uint64 ids = 1; }
 
+message TxFeeRecord {
+  string val_commission = 1 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+  string external_fee = 2 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+}
+
 message TxStatus {
   string in_tx_hash = 1 [(gogoproto.jsontag) = "in_tx_hash"];
   string out_tx_hash = 2 [(gogoproto.jsontag) = "out_tx_hash"];

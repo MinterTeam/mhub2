@@ -1104,6 +1104,36 @@
         ]
       }
     },
+    "/mhub2/v1/transaction_fee_record/{tx_hash}": {
+      "get": {
+        "operationId": "Query_TransactionFeeRecord",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1TransactionFeeRecordResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "tx_hash",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
     "/mhub2/v1/transaction_status/{tx_hash}": {
       "get": {
         "operationId": "Query_TransactionStatus",
@@ -1755,11 +1785,30 @@
         }
       }
     },
+    "v1TransactionFeeRecordResponse": {
+      "type": "object",
+      "properties": {
+        "record": {
+          "$ref": "#/definitions/v1TxFeeRecord"
+        }
+      }
+    },
     "v1TransactionStatusResponse": {
       "type": "object",
       "properties": {
         "status": {
           "$ref": "#/definitions/v1TxStatus"
+        }
+      }
+    },
+    "v1TxFeeRecord": {
+      "type": "object",
+      "properties": {
+        "val_commission": {
+          "type": "string"
+        },
+        "external_fee": {
+          "type": "string"
         }
       }
     },

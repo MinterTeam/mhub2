@@ -35,6 +35,10 @@ func (k Keeper) TransactionStatus(ctx context.Context, request *types.Transactio
 	return &types.TransactionStatusResponse{Status: k.GetTxStatus(sdk.UnwrapSDKContext(ctx), request.TxHash)}, nil
 }
 
+func (k Keeper) TransactionFeeRecord(ctx context.Context, request *types.TransactionFeeRecordRequest) (*types.TransactionFeeRecordResponse, error) {
+	return &types.TransactionFeeRecordResponse{Record: k.GetTxFeeRecord(sdk.UnwrapSDKContext(ctx), request.TxHash)}, nil
+}
+
 func (k Keeper) TokenInfos(ctx context.Context, _ *types.TokenInfosRequest) (*types.TokenInfosResponse, error) {
 	return &types.TokenInfosResponse{List: *k.GetTokenInfos(sdk.UnwrapSDKContext(ctx))}, nil
 }
