@@ -335,7 +335,9 @@ func relayValsets(ctx context.Context) {
 	var oldestSignedValset *types.SignerSetTx
 	var oldestSignatures []*types.SignerSetTxConfirmation
 
-	for _, valset := range latestValsets.GetSignerSets() {
+	valsets := latestValsets.GetSignerSets()
+	for i := len(valsets) - 1; i >= 0; i-- {
+		valset := valsets[i]
 		sigs, err := cosmosClient.SignerSetTxConfirmations(c.Background(), &types.SignerSetTxConfirmationsRequest{
 			SignerSetNonce: valset.Nonce,
 			ChainId:        "minter",
