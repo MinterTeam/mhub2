@@ -932,7 +932,7 @@ func deployContractsAndMultisig(prKeyString string) {
 			panic(err)
 		}
 
-		contract := deployContract(pk, client, "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", 97)
+		contract := deployContract(pk, client, "0xae13d989dac2f0debff460ac112a837c89baa7cd", 97)
 
 		println("bsc", contract)
 	}
