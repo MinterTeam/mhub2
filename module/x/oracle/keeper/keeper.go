@@ -169,6 +169,12 @@ func (k Keeper) ProcessCurrentEpoch(ctx sdk.Context) {
 		att := k.GetAttestation(ctx, currentEpoch, claim)
 		if att != nil {
 			k.tryAttestation(ctx, att, claim)
+
+			for _, valaddr := range att.GetVotes() {
+				validator, _ := sdk.ValAddressFromBech32(valaddr)
+				k.deletePriceClaim(ctx, sdk.AccAddress(validator).String(), currentEpoch)
+			}
+
 			k.DeleteAttestation(ctx, *att)
 		}
 	}
@@ -180,6 +186,11 @@ func (k Keeper) ProcessCurrentEpoch(ctx sdk.Context) {
 		att := k.GetAttestation(ctx, currentEpoch, claim)
 		if att != nil {
 			k.tryAttestation(ctx, att, claim)
+
+			for _, valaddr := range att.GetVotes() {
+				validator, _ := sdk.ValAddressFromBech32(valaddr)
+				k.deleteHoldersClaim(ctx, sdk.AccAddress(validator).String(), currentEpoch)
+			}
 			k.DeleteAttestation(ctx, *att)
 		}
 	}
@@ -215,42 +226,6 @@ func (k Keeper) GetNormalizedValPowers(ctx sdk.Context) map[string]uint64 {
 	}
 
 	return bridgeValidators
-}
-
-func (k Keeper) DeleteOldAttestations(ctx sdk.Context, epoch uint64) {
-	priceAtt := k.GetAttestation(ctx, epoch, &types.MsgPriceClaim{
-		Epoch: epoch,
-	})
-
-	holdersAtt := k.GetAttestation(ctx, epoch, &types.MsgHoldersClaim{
-		Epoch: epoch,
-	})
-
-	if priceAtt != nil {
-		for _, valaddr := range priceAtt.GetVotes() {
-			validator, _ := sdk.ValAddressFromBech32(valaddr)
-
-			k.deletePriceClaim(ctx, sdk.AccAddress(validator).String(), epoch)
-		}
-
-		k.DeleteAttestation(ctx, *priceAtt)
-	}
-
-	if holdersAtt != nil {
-		for _, valaddr := range holdersAtt.GetVotes() {
-			validator, _ := sdk.ValAddressFromBech32(valaddr)
-
-			k.deleteHoldersClaim(ctx, sdk.AccAddress(validator).String(), epoch)
-		}
-
-		k.DeleteAttestation(ctx, *holdersAtt)
-	}
-}
-
-func (k Keeper) UpgradeToV020(ctx sdk.Context) {
-	for epoch := k.GetCurrentEpoch(ctx) - 10; epoch > 0; epoch++ {
-		k.DeleteOldAttestations(ctx, epoch)
-	}
 }
 
 // prefixRange turns a prefix into a (start, end) range. The start is the given prefix value and

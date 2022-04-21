@@ -19,7 +19,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
-	types2 "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	secp256k12 "github.com/ethereum/go-ethereum/crypto/secp256k1"
@@ -27,7 +26,6 @@ import (
 	"github.com/status-im/keycard-go/hexutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/tendermint/tendermint/libs/log"
-	tmClient "github.com/tendermint/tendermint/rpc/client/http"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/backoff"
 	"math"
@@ -245,7 +243,6 @@ func main() {
 	testMinterToBscTransfer(ctx)
 	testColdStorageTransfer(ctx)
 	testVoteForTokenInfosUpdate(ctx)
-	testVoteV2Update(ctx)
 	testEthEthereumToMinterTransfer(ctx)
 	testEthMinterToEthereumTransfer(ctx)
 
@@ -345,67 +342,6 @@ func testVoteForTokenInfosUpdate(ctx *Context) {
 			}
 
 			println("SUCCESS: vote for new token list")
-			ctx.TestsWg.Done()
-			break
-		}
-	}()
-}
-
-func testVoteV2Update(ctx *Context) {
-	ctx.TestsWg.Add(1)
-	addr, priv := cosmos.GetAccount(ctx.CosmosMnemonic)
-
-	initialDeposit := sdk.NewCoins(sdk.NewCoin(denom, sdk.NewInt(10000000)))
-
-	client := mhubtypes.NewQueryClient(ctx.CosmosConn)
-	tmCl, err := tmClient.New("http://localhost:26657", "")
-	if err != nil {
-		panic(err)
-	}
-
-	status, err := tmCl.Status(context.TODO())
-	if err != nil {
-		panic(err)
-	}
-
-	proposal := &govtypes.MsgSubmitProposal{}
-	proposal.SetInitialDeposit(initialDeposit)
-	proposal.SetProposer(addr)
-	if err := proposal.SetContent(&types2.SoftwareUpgradeProposal{
-		Title:       "Update",
-		Description: "Update",
-		Plan: types2.Plan{
-			Name:   "v0.2.0",
-			Height: status.SyncInfo.LatestBlockHeight + 8,
-			Info:   "",
-		},
-	}); err != nil {
-		panic(err)
-	}
-
-	cosmos.SendCosmosTx([]sdk.Msg{
-		proposal,
-		govtypes.NewMsgVote(addr, 5, govtypes.OptionYes),
-	}, addr, priv, ctx.CosmosConn, log.NewTMLogger(os.Stdout), true)
-
-	go func() {
-		startTime := time.Now()
-		for {
-			if time.Now().Sub(startTime).Seconds() > testTimeout.Seconds() {
-				panic("Timeout waiting for the update to apply")
-			}
-
-			response, err := client.Params(context.TODO(), &mhubtypes.ParamsRequest{})
-			if err != nil {
-				panic(err)
-			}
-
-			if response.Params.AverageBscBlockTime != 3000 {
-				time.Sleep(time.Second)
-				continue
-			}
-
-			println("SUCCESS: vote v0.2.0 update")
 			ctx.TestsWg.Done()
 			break
 		}

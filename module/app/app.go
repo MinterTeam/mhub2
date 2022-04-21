@@ -626,19 +626,6 @@ func NewMhub2App(
 	app.ScopedIBCKeeper = scopedIBCKeeper
 	app.ScopedTransferKeeper = scopedTransferKeeper
 
-	app.upgradeKeeper.SetUpgradeHandler("v0.1.0", func(ctx sdk.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
-		return nil, nil
-	})
-
-	app.upgradeKeeper.SetUpgradeHandler("v0.2.0", func(ctx sdk.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
-		app.oracleKeeper.UpgradeToV020(ctx)
-
-		subspace, _ := app.paramsKeeper.GetSubspace(mhub2types.ModuleName)
-		subspace.Set(ctx, mhub2types.ParamsStoreKeyAverageBscBlockTime, uint64(3000))
-
-		return nil, nil
-	})
-
 	return app
 }
 
