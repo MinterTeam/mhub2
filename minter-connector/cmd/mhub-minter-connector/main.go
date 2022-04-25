@@ -64,7 +64,7 @@ func main() {
 
 	logger := log.NewTMLogger(os.Stdout)
 
-	txCommitter := tx_committer.RunServer(cosmosConn, cfg.Cosmos.Mnemonic, logger)
+	txCommitter := tx_committer.RunServer(cfg.Cosmos.RpcAddr, cosmosConn, cfg.Cosmos.Mnemonic, logger)
 
 	ctx := context.Context{
 		MinterMultisigAddr: cfg.Minter.MultisigAddr,

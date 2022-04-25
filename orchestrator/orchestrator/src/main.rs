@@ -50,12 +50,13 @@ struct Args {
 
 lazy_static! {
     pub static ref USAGE: String = format!(
-    "Usage: {} [--eth-fee-calculator-url=<furl>] --chain-id=<id> --cosmos-address=<address> --ethereum-key=<key> --cosmos-grpc=<url> --address-prefix=<prefix> --ethereum-rpc=<url> --contract-address=<addr> --metrics-listen=<addr>
+    "Usage: {} [--eth-fee-calculator-url=<furl>] --chain-id=<id> --committer-grpc=<url> --cosmos-address=<address> --ethereum-key=<key> --cosmos-grpc=<url> --address-prefix=<prefix> --ethereum-rpc=<url> --contract-address=<addr> --metrics-listen=<addr>
     Options:
         -h --help                           Show this screen.
-        --cosmos-address=<address>          The address of the Cosmos account  of the validator
+        --cosmos-address=<address>          The address of the Cosmos account of the validator
         --ethereum-key=<ekey>               The Ethereum private key of the validator
         --cosmos-grpc=<gurl>                The Cosmos gRPC url, usually the validator
+        --committer-grpc=<gurl>             The Committer gRPC url
         --address-prefix=<prefix>           The prefix for addresses on this Cosmos chain
         --ethereum-rpc=<eurl>               The Ethereum RPC url, should be a self hosted node
         --contract-address=<addr>           The Ethereum contract address for Gravity, this is temporary

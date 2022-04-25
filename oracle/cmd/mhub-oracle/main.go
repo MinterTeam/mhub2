@@ -42,7 +42,7 @@ func main() {
 	}
 	defer cosmosConn.Close()
 
-	txCommitterConn, err := grpc.Dial("") // todo
+	txCommitterConn, err := grpc.Dial("tcp://127.0.0.1:7070")
 	if err != nil {
 		panic(err)
 	}
