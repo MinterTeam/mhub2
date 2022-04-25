@@ -5,8 +5,10 @@ go 1.17
 replace github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.2-alpha.regen.4
 
 replace github.com/MinterTeam/mhub2/module => ../../mhub2/module
+replace github.com/MinterTeam/mhub2/minter-connector => ../../mhub2/minter-connector
 
 require (
+	github.com/MinterTeam/mhub2/minter-connector latest
 	github.com/MinterTeam/mhub2/module v0.0.0-20210419142331-8f69449b9069
 	github.com/cosmos/cosmos-sdk v0.44.3
 	github.com/cosmos/go-bip39 v1.0.0

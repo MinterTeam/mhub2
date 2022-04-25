@@ -1,7 +1,6 @@
 use clarity::PrivateKey as EthPrivateKey;
-use deep_space::private_key::PrivateKey as CosmosPrivateKey;
 use deep_space::utils::bytes_to_hex_str;
-use deep_space::Contact;
+use deep_space::Address;
 use deep_space::Msg;
 use ethereum_gravity::utils::downcast_uint256;
 use mhub2_proto::mhub2 as proto;
@@ -12,14 +11,12 @@ use mhub2_utils::message_signatures::{
 use mhub2_utils::types::*;
 
 pub fn signer_set_tx_confirmation_messages(
-    contact: &Contact,
     ethereum_key: EthPrivateKey,
     valsets: Vec<Valset>,
-    cosmos_key: CosmosPrivateKey,
+    cosmos_address: Address,
     gravity_id: String,
     chain_id: String,
 ) -> Vec<Msg> {
-    let cosmos_address = cosmos_key.to_address(&contact.get_prefix()).unwrap();
     let ethereum_address = ethereum_key.to_public_key().unwrap();
 
     let mut msgs = Vec::new();
@@ -43,14 +40,12 @@ pub fn signer_set_tx_confirmation_messages(
 }
 
 pub fn batch_tx_confirmation_messages(
-    contact: &Contact,
     ethereum_key: EthPrivateKey,
     batches: Vec<TransactionBatch>,
-    cosmos_key: CosmosPrivateKey,
+    cosmos_address: Address,
     gravity_id: String,
     chain_id: String,
 ) -> Vec<Msg> {
-    let cosmos_address = cosmos_key.to_address(&contact.get_prefix()).unwrap();
     let ethereum_address = ethereum_key.to_public_key().unwrap();
 
     let mut msgs = Vec::new();
@@ -75,14 +70,12 @@ pub fn batch_tx_confirmation_messages(
 }
 
 pub fn contract_call_tx_confirmation_messages(
-    contact: &Contact,
     ethereum_key: EthPrivateKey,
     logic_calls: Vec<LogicCall>,
-    cosmos_key: CosmosPrivateKey,
+    cosmos_address: Address,
     gravity_id: String,
     chain_id: String,
 ) -> Vec<Msg> {
-    let cosmos_address = cosmos_key.to_address(&contact.get_prefix()).unwrap();
     let ethereum_address = ethereum_key.to_public_key().unwrap();
 
     let mut msgs = Vec::new();
@@ -109,16 +102,13 @@ pub fn contract_call_tx_confirmation_messages(
 }
 
 pub fn ethereum_event_messages(
-    contact: &Contact,
-    cosmos_key: CosmosPrivateKey,
+    cosmos_address: Address,
     transfers: Vec<TransferToChainEvent>,
     batches: Vec<TransactionBatchExecutedEvent>,
     logic_calls: Vec<LogicCallExecutedEvent>,
     valsets: Vec<ValsetUpdatedEvent>,
     chain_id: String,
 ) -> Vec<Msg> {
-    let cosmos_address = cosmos_key.to_address(&contact.get_prefix()).unwrap();
-
     // This sorts oracle messages by event nonce before submitting them. It's not a pretty implementation because
     // we're missing an intermediary layer of abstraction. We could implement 'EventTrait' and then implement sort
     // for it, but then when we go to transform 'EventTrait' objects into GravityMsg enum values we'll have all sorts

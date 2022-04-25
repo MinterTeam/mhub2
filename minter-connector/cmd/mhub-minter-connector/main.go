@@ -9,6 +9,7 @@ import (
 	"github.com/MinterTeam/mhub2/minter-connector/context"
 	"github.com/MinterTeam/mhub2/minter-connector/cosmos"
 	"github.com/MinterTeam/mhub2/minter-connector/minter"
+	"github.com/MinterTeam/mhub2/minter-connector/tx_committer"
 	"github.com/MinterTeam/mhub2/module/x/mhub2/types"
 	"github.com/MinterTeam/minter-go-sdk/v2/api/http_client"
 	"github.com/MinterTeam/minter-go-sdk/v2/api/http_client/models"
@@ -33,7 +34,7 @@ var cfg = config.Get()
 
 func main() {
 	cosmos.Setup()
-	orcAddress, orcPriv := cosmos.GetAccount(cfg.Cosmos.Mnemonic)
+	orcAddress, _ := cosmos.GetAccount(cfg.Cosmos.Mnemonic)
 
 	pubKey, err := wallet.PublicKeyByPrivateKey(cfg.Minter.PrivateKey)
 	if err != nil {
@@ -61,14 +62,18 @@ func main() {
 		MinConnectTimeout: time.Second * 5,
 	}))
 
+	logger := log.NewTMLogger(os.Stdout)
+
+	txCommitter := tx_committer.RunServer(cosmosConn, cfg.Cosmos.Mnemonic, logger)
+
 	ctx := context.Context{
 		MinterMultisigAddr: cfg.Minter.MultisigAddr,
 		CosmosConn:         cosmosConn,
 		MinterClient:       minterClient,
 		OrcAddress:         orcAddress,
-		OrcPriv:            orcPriv,
+		TxCommitter:        txCommitter,
 		MinterWallet:       minterWallet,
-		Logger:             log.NewTMLogger(os.Stdout),
+		Logger:             logger,
 	}
 
 	ctx.LoadStatus("connector-status.json", cfg.Minter)
@@ -140,7 +145,7 @@ func relayBatches(ctx context.Context) {
 
 		if len(confirms) > 0 {
 			ctx.Logger.Info("Sending batch confirms")
-			cosmos.SendCosmosTx(confirms, ctx.OrcAddress, ctx.OrcPriv, ctx.CosmosConn, ctx.Logger, false)
+			ctx.TxCommitter.CommitTx(c.TODO(), &tx_committer.CommitTxRequest{Msgs: tx_committer.MarshalMsgs(confirms)})
 		}
 	}
 
@@ -319,7 +324,7 @@ func relayValsets(ctx context.Context) {
 		}
 
 		if len(confirms) > 0 {
-			cosmos.SendCosmosTx(confirms, ctx.OrcAddress, ctx.OrcPriv, ctx.CosmosConn, ctx.Logger, false)
+			ctx.TxCommitter.CommitTx(c.TODO(), &tx_committer.CommitTxRequest{Msgs: tx_committer.MarshalMsgs(confirms)})
 		}
 	}
 
@@ -577,7 +582,7 @@ func relayMinterEvents(ctx context.Context) context.Context {
 	}
 
 	if len(deposits) > 0 || len(batches) > 0 || len(valsets) > 0 {
-		cosmos.SendCosmosTx(cosmos.CreateClaims(ctx.OrcAddress, deposits, batches, valsets), ctx.OrcAddress, ctx.OrcPriv, ctx.CosmosConn, ctx.Logger, true)
+		ctx.TxCommitter.CommitTx(c.TODO(), &tx_committer.CommitTxRequest{Msgs: tx_committer.MarshalMsgs(cosmos.CreateClaims(ctx.OrcAddress, deposits, batches, valsets))})
 		ctx.Commit()
 	}
 

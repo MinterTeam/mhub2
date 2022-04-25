@@ -7,8 +7,7 @@ use crate::metrics;
 use clarity::{utils::bytes_to_hex_str, Address as EthAddress, Uint256};
 use cosmos_gravity::build;
 use cosmos_gravity::query::get_last_event_nonce;
-use deep_space::private_key::PrivateKey as CosmosPrivateKey;
-use deep_space::{Contact, Msg};
+use deep_space::{Address, Contact, Msg};
 use mhub2_proto::mhub2::query_client::QueryClient as Mhub2QueryClient;
 use mhub2_utils::{
     error::GravityError,
@@ -28,13 +27,11 @@ pub async fn check_for_events(
     contact: &Contact,
     grpc_client: &mut Mhub2QueryClient<Channel>,
     gravity_contract_address: EthAddress,
-    cosmos_key: CosmosPrivateKey,
+    our_cosmos_address: Address,
     starting_block: Uint256,
     msg_sender: tokio::sync::mpsc::Sender<Vec<Msg>>,
     chain_id: String,
 ) -> Result<Uint256, GravityError> {
-    let prefix = contact.get_prefix();
-    let our_cosmos_address = cosmos_key.to_address(&prefix).unwrap();
     let latest_block = get_block_number_with_retry(web3).await;
     let mut latest_block = latest_block - get_block_delay(web3).await;
     if latest_block.clone().sub(starting_block.clone()) > 1_000u64.into() {
@@ -151,8 +148,7 @@ pub async fn check_for_events(
             || !logic_calls.is_empty()
         {
             let messages = build::ethereum_event_messages(
-                contact,
-                cosmos_key,
+                our_cosmos_address,
                 deposits.to_owned(),
                 batches.to_owned(),
                 logic_calls.to_owned(),

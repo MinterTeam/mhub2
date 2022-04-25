@@ -7,7 +7,7 @@ import (
 )
 
 type CosmosConfig struct {
-	Mnemonic string `mapstructure:"mnemonic"`
+	Address  string `mapstructure:"address"`
 	GrpcAddr string `mapstructure:"grpc_addr"`
 	RpcAddr  string `mapstructure:"rpc_addr"`
 }
@@ -22,7 +22,7 @@ func Get() (*Config, bool) {
 	cfg := &Config{}
 
 	configPath := flag.String("config", "config.toml", "path to the configuration file")
-	cosmosMnemonic := flag.String("cosmos-mnemonic", "", "")
+	cosmosAddress := flag.String("cosmos-address", "", "")
 	testnet := flag.Bool("testnet", false, "")
 
 	flag.Parse()
@@ -38,8 +38,8 @@ func Get() (*Config, bool) {
 		panic(err)
 	}
 
-	if *cosmosMnemonic != "" {
-		cfg.Cosmos.Mnemonic = *cosmosMnemonic
+	if *cosmosAddress != "" {
+		cfg.Cosmos.Address = *cosmosAddress
 	}
 
 	return cfg, *testnet

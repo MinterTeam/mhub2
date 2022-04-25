@@ -2,17 +2,16 @@ use bytes::BytesMut;
 use clarity::Address as EthAddress;
 use clarity::PrivateKey as EthPrivateKey;
 use deep_space::address::Address;
-use deep_space::coin::Coin;
 use deep_space::error::CosmosGrpcError;
-use deep_space::private_key::PrivateKey as CosmosPrivateKey;
 use deep_space::Contact;
-use deep_space::Fee;
 use deep_space::Msg;
-use mhub2_proto::cosmos_sdk_proto::cosmos::base::abci::v1beta1::TxResponse;
-use mhub2_proto::cosmos_sdk_proto::cosmos::tx::v1beta1::BroadcastMode;
 use mhub2_proto::mhub2 as proto;
+use mhub2_proto::tx_committer::tx_committer_client::TxCommitterClient;
+use mhub2_proto::tx_committer::{CommitTxReply, CommitTxRequest};
 use prost::Message;
+use prost_types::Any;
 use std::time::Duration;
+use tonic::transport::Channel;
 
 pub const MEMO: &str = "Sent using Althea Orchestrator";
 pub const TIMEOUT: Duration = Duration::from_secs(60);
@@ -20,31 +19,21 @@ pub const TIMEOUT: Duration = Duration::from_secs(60);
 /// Send a transaction updating the eth address for the sending
 /// Cosmos address. The sending Cosmos address should be a validator
 pub async fn update_gravity_delegate_addresses(
+    tx_committer: &TxCommitterClient<Channel>,
     contact: &Contact,
+    our_valoper_address: Address,
     delegate_eth_address: EthAddress,
     delegate_cosmos_address: Address,
-    cosmos_key: CosmosPrivateKey,
     ethereum_key: EthPrivateKey,
-    fee: Coin,
     chain_id: String,
-) -> Result<TxResponse, CosmosGrpcError> {
-    let our_valoper_address = cosmos_key
-        .to_address(&contact.get_prefix())
-        .unwrap()
-        // This works so long as the format set by the cosmos hub is maintained
-        // having a main prefix followed by a series of titles for specific keys
-        // this will not work if that convention is broken. This will be resolved when
-        // GRPC exposes prefix endpoints (coming to upstream cosmos sdk soon)
-        .to_bech32(format!("{}valoper", contact.get_prefix()))
-        .unwrap();
-
+) -> Result<CommitTxReply, CosmosGrpcError> {
     let nonce = contact
-        .get_account_info(cosmos_key.to_address(&contact.get_prefix()).unwrap())
+        .get_account_info(our_valoper_address.into())
         .await?
         .sequence;
 
     let eth_sign_msg = proto::DelegateKeysSignMsg {
-        validator_address: our_valoper_address.clone(),
+        validator_address: our_valoper_address.to_string().clone(),
         nonce,
     };
 
@@ -60,121 +49,37 @@ pub async fn update_gravity_delegate_addresses(
         chain_id,
     };
     let msg = Msg::new("/mhub2.v1.MsgDelegateKeys", msg);
-    __send_messages(contact, cosmos_key, fee, vec![msg]).await
-}
-
-/// Sends tokens from Cosmos to Ethereum. These tokens will not be sent immediately instead
-/// they will require some time to be included in a batch
-pub async fn send_to_eth(
-    cosmos_key: CosmosPrivateKey,
-    destination: EthAddress,
-    amount: Coin,
-    fee: Coin,
-    contact: &Contact,
-    chain_id: String,
-) -> Result<TxResponse, CosmosGrpcError> {
-    let cosmos_address = cosmos_key.to_address(&contact.get_prefix()).unwrap();
-
-    let msg = proto::MsgSendToExternal {
-        sender: cosmos_address.to_string(),
-        external_recipient: destination.to_string(),
-        amount: Some(amount.into()),
-        bridge_fee: Some(fee.clone().into()),
-        chain_id: chain_id.clone(),
-    };
-    let msg = Msg::new("/mhub2.v1.MsgSendToExternal", msg);
-    __send_messages(contact, cosmos_key, fee, vec![msg]).await
-}
-
-pub async fn send_request_batch_tx(
-    cosmos_key: CosmosPrivateKey,
-    denom: String,
-    fee: Coin,
-    contact: &Contact,
-    chain_id: String,
-) -> Result<TxResponse, CosmosGrpcError> {
-    let cosmos_address = cosmos_key.to_address(&contact.get_prefix()).unwrap();
-    let msg_request_batch = proto::MsgRequestBatchTx {
-        signer: cosmos_address.to_string(),
-        denom,
-        chain_id: chain_id.clone(),
-    };
-    let msg = Msg::new("/mhub2.v1.MsgRequestBatchTx", msg_request_batch);
-    __send_messages(contact, cosmos_key, fee, vec![msg]).await
-}
-
-// TODO(Levi) teach this branch to accept gas_prices
-async fn __send_messages(
-    contact: &Contact,
-    cosmos_key: CosmosPrivateKey,
-    fee: Coin,
-    messages: Vec<Msg>,
-) -> Result<TxResponse, CosmosGrpcError> {
-    let cosmos_address = cosmos_key.to_address(&contact.get_prefix()).unwrap();
-
-    let fee = Fee {
-        amount: vec![fee],
-        gas_limit: 500_000_000u64 * (messages.len() as u64),
-        granter: None,
-        payer: None,
-    };
-
-    let args = contact.get_message_args(cosmos_address, fee).await?;
-
-    let msg_bytes = cosmos_key.sign_std_msg(&messages, args, MEMO)?;
-
-    let response = contact
-        .send_transaction(msg_bytes, BroadcastMode::Sync)
-        .await?;
-
-    contact.wait_for_tx(response, TIMEOUT).await
+    send_messages(tx_committer, vec![msg]).await
 }
 
 pub async fn send_messages(
-    contact: &Contact,
-    cosmos_key: CosmosPrivateKey,
-    gas_price: (f64, String),
+    tx_committer: &TxCommitterClient<Channel>,
     messages: Vec<Msg>,
-) -> Result<TxResponse, CosmosGrpcError> {
-    let cosmos_address = cosmos_key.to_address(&contact.get_prefix()).unwrap();
-
-    let gas_limit = 500_000_000 * messages.len();
-
-    let fee_amount: f64 = (gas_limit as f64) * gas_price.0;
-    let fee_amount: u64 = fee_amount.abs().ceil() as u64;
-
-    let fee_amount = Coin {
-        denom: gas_price.1,
-        amount: fee_amount.into(),
-    };
-
-    let gas_limit = gas_limit as u64;
-    let fee = Fee {
-        amount: vec![fee_amount],
-        gas_limit,
-        granter: None,
-        payer: None,
-    };
-
-    let args = contact.get_message_args(cosmos_address, fee).await?;
-
-    let msg_bytes = cosmos_key.sign_std_msg(&messages, args, MEMO)?;
-
-    let response = contact
-        .send_transaction(msg_bytes, BroadcastMode::Sync)
+) -> Result<CommitTxReply, CosmosGrpcError> {
+    let response = tx_committer
+        .clone()
+        .commit_tx(CommitTxRequest {
+            msgs: messages
+                .iter()
+                .map(|msg| {
+                    let any_msg: Any = msg.clone().into();
+                    let mut buf = Vec::new();
+                    any_msg.encode(&mut buf).unwrap();
+                    buf
+                })
+                .collect(),
+        })
         .await?;
 
-    contact.wait_for_tx(response, TIMEOUT).await
+    Ok(response.into_inner())
 }
 
 pub async fn send_main_loop(
-    contact: &Contact,
-    cosmos_key: CosmosPrivateKey,
-    gas_price: (f64, String),
+    client: &TxCommitterClient<Channel>,
     mut rx: tokio::sync::mpsc::Receiver<Vec<Msg>>,
 ) {
     while let Some(messages) = rx.recv().await {
-        match send_messages(contact, cosmos_key, gas_price.to_owned(), messages).await {
+        match send_messages(client, messages).await {
             Ok(res) => trace!("okay: {:?}", res),
             Err(err) => {
                 if !err.to_string().contains("account sequence mismatch") {

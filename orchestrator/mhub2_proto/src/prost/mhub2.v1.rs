@@ -146,6 +146,13 @@ pub struct IdSet {
     pub ids: ::prost::alloc::vec::Vec<u64>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
+pub struct TxFeeRecord {
+    #[prost(string, tag = "1")]
+    pub val_commission: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub external_fee: ::prost::alloc::string::String,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TxStatus {
     #[prost(string, tag = "1")]
     pub in_tx_hash: ::prost::alloc::string::String,
@@ -160,6 +167,11 @@ pub struct ColdStorageTransferProposal {
     pub chain_id: ::prost::alloc::string::String,
     #[prost(message, repeated, tag = "2")]
     pub amount: ::prost::alloc::vec::Vec<cosmos_sdk_proto::cosmos::base::v1beta1::Coin>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct TokenInfosChangeProposal {
+    #[prost(message, optional, tag = "1")]
+    pub new_infos: ::core::option::Option<TokenInfos>,
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
@@ -693,6 +705,16 @@ pub struct TransactionStatusRequest {
 pub struct TransactionStatusResponse {
     #[prost(message, optional, tag = "1")]
     pub status: ::core::option::Option<TxStatus>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct TransactionFeeRecordRequest {
+    #[prost(string, tag = "1")]
+    pub tx_hash: ::prost::alloc::string::String,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct TransactionFeeRecordResponse {
+    #[prost(message, optional, tag = "1")]
+    pub record: ::core::option::Option<TxFeeRecord>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct DiscountForHolderRequest {
@@ -1479,6 +1501,20 @@ pub mod query_client {
             })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static("/mhub2.v1.Query/TransactionStatus");
+            self.inner.unary(request.into_request(), path, codec).await
+        }
+        pub async fn transaction_fee_record(
+            &mut self,
+            request: impl tonic::IntoRequest<super::TransactionFeeRecordRequest>,
+        ) -> Result<tonic::Response<super::TransactionFeeRecordResponse>, tonic::Status> {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static("/mhub2.v1.Query/TransactionFeeRecord");
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn discount_for_holder(

@@ -115,12 +115,11 @@ async fn main() {
     let ethereum_address = ethereum_key.to_public_key().unwrap();
     let cosmos_address = cosmos_key.to_address(&contact.get_prefix()).unwrap();
     let res = update_gravity_delegate_addresses(
+        nil,
         &contact,
         ethereum_address,
         cosmos_address,
-        validator_key,
         ethereum_key,
-        fee.clone(),
         args.flag_chain_id.clone(),
     )
     .await
