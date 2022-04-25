@@ -3,6 +3,7 @@ package tx_committer
 import (
 	"context"
 	"github.com/MinterTeam/mhub2/module/app"
+	sdkTypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	crypto "github.com/cosmos/cosmos-sdk/crypto/types"
@@ -18,12 +19,16 @@ import (
 	tmTypes "github.com/tendermint/tendermint/types"
 	"google.golang.org/grpc"
 	"net"
-	"strings"
 	"sync"
 	"time"
 )
 
 var encoding = app.MakeEncodingConfig()
+
+type job struct {
+	msg      sdk.Msg
+	callback func()
+}
 
 type Server struct {
 	UnimplementedTxCommitterServer
@@ -33,22 +38,36 @@ type Server struct {
 	addr          sdk.AccAddress
 	priv          *secp256k1.PrivKey
 
-	txs []sdk.Msg
+	jobs []job
 
 	lock   sync.Mutex
 	logger log.Logger
 }
 
 func (s *Server) CommitTx(_ context.Context, req *CommitTxRequest) (*CommitTxReply, error) {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-
 	msgs, err := UnmarshalMsgs(req.Msgs)
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 
-	s.txs = append(s.txs, msgs...)
+	wg := sync.WaitGroup{}
+	wg.Add(len(msgs))
+
+	s.lock.Lock()
+
+	for _, msg := range msgs {
+
+		s.jobs = append(s.jobs, job{
+			msg: msg,
+			callback: func() {
+				println(2)
+				wg.Done()
+			},
+		})
+	}
+
+	s.lock.Unlock()
+	wg.Wait()
 
 	return nil, nil
 }
@@ -57,8 +76,20 @@ func (s *Server) run() {
 	for {
 		time.Sleep(time.Second * 5)
 		s.lock.Lock()
-		SendCosmosTx(s.cosmosRpcAddr, s.txs, s.addr, s.priv, s.cosmosConn, s.logger, true)
-		s.txs = []sdk.Msg{}
+		if len(s.jobs) == 0 {
+			continue
+		}
+
+		var msgs []sdk.Msg
+		for _, job := range s.jobs {
+			msgs = append(msgs, job.msg)
+		}
+
+		SendCosmosTx(s.cosmosRpcAddr, msgs, s.addr, s.priv, s.cosmosConn, s.logger, true)
+		for _, job := range s.jobs {
+			job.callback()
+		}
+		s.jobs = []job{}
 		s.lock.Unlock()
 	}
 }
@@ -103,7 +134,7 @@ func ParseMnemonic(mnemonic string) (sdk.AccAddress, *secp256k1.PrivKey) {
 func MarshalMsgs(msgs []sdk.Msg) [][]byte {
 	var result [][]byte
 	for _, msg := range msgs {
-		bytes, err := proto.Marshal(msg)
+		bytes, err := encoding.Marshaler.Marshal(sdkTypes.UnsafePackAny(msg))
 		if err != nil {
 			panic(err)
 		}
@@ -116,8 +147,14 @@ func MarshalMsgs(msgs []sdk.Msg) [][]byte {
 func UnmarshalMsgs(data [][]byte) ([]sdk.Msg, error) {
 	var result []sdk.Msg
 	for _, msg := range data {
+		anyMsg := new(sdkTypes.Any)
+		err := proto.Unmarshal(msg, anyMsg)
+		if err != nil {
+			return nil, err
+		}
+
 		var m sdk.Msg
-		err := proto.Unmarshal(msg, m)
+		err = encoding.InterfaceRegistry.UnpackAny(anyMsg, &m)
 		if err != nil {
 			return nil, err
 		}
@@ -209,9 +246,7 @@ func SendCosmosTx(cosmosRpcAddr string, msgs []sdk.Msg, address sdk.AccAddress, 
 
 	result, err := client.BroadcastTxCommit(context.Background(), txBytes)
 	if err != nil {
-		if !strings.Contains(err.Error(), "incorrect account sequence") {
-			logger.Error("Failed broadcast tx", "err", err.Error())
-		}
+		logger.Error("Failed to broadcast tx", "err", err.Error())
 
 		time.Sleep(5 * time.Second)
 		txResponse, err := client.Tx(context.Background(), tmTypes.Tx(txBytes).Hash(), false)
@@ -223,10 +258,7 @@ func SendCosmosTx(cosmosRpcAddr string, msgs []sdk.Msg, address sdk.AccAddress, 
 	}
 
 	if result.DeliverTx.GetCode() != 0 || result.CheckTx.GetCode() != 0 {
-		if result.CheckTx.GetCode() != 32 {
-			logger.Error("Error on sending cosmos tx with", "code", result.CheckTx.GetCode(), "deliver-code", result.DeliverTx.GetCode(), "log", result.CheckTx.GetLog(), "deliver-log", result.DeliverTx.GetLog())
-		}
-
+		logger.Error("Error on sending cosmos tx with", "code", result.CheckTx.GetCode(), "deliver-code", result.DeliverTx.GetCode(), "log", result.CheckTx.GetLog(), "deliver-log", result.DeliverTx.GetLog())
 		if retry {
 			time.Sleep(1 * time.Second)
 			SendCosmosTx(cosmosRpcAddr, msgs, address, priv, cosmosConn, logger, retry)

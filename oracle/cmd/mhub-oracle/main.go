@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/MinterTeam/mhub2/minter-connector/tx_committer"
+	"google.golang.org/grpc/credentials/insecure"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -42,7 +43,7 @@ func main() {
 	}
 	defer cosmosConn.Close()
 
-	txCommitterConn, err := grpc.Dial("tcp://127.0.0.1:7070")
+	txCommitterConn, err := grpc.Dial("tcp://127.0.0.1:7070", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		panic(err)
 	}
