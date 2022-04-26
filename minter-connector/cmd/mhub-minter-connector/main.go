@@ -86,12 +86,12 @@ func main() {
 
 	// main loop
 	for {
+		ctx = relayMinterEvents(ctx)
 		relayBatches(ctx)
 		relayValsets(ctx)
-		ctx = relayMinterEvents(ctx)
 
 		ctx.Logger.Info("Last checked minter block", "height", ctx.LastCheckedMinterBlock(), "eventNonce", ctx.LastEventNonce(), "batchNonce", ctx.LastBatchNonce(), "valsetNonce", ctx.LastValsetNonce())
-		time.Sleep(2 * time.Second)
+		time.Sleep(6 * time.Second)
 	}
 }
 

@@ -8,17 +8,18 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	crypto "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/go-bip39"
-
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	signing2 "github.com/cosmos/cosmos-sdk/x/auth/signing"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
+	"github.com/cosmos/go-bip39"
 	"github.com/golang/protobuf/proto"
 	"github.com/tendermint/tendermint/libs/log"
 	tmClient "github.com/tendermint/tendermint/rpc/client/http"
 	tmTypes "github.com/tendermint/tendermint/types"
 	"google.golang.org/grpc"
 	"net"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -56,11 +57,9 @@ func (s *Server) CommitTx(_ context.Context, req *CommitTxRequest) (*CommitTxRep
 	s.lock.Lock()
 
 	for _, msg := range msgs {
-
 		s.jobs = append(s.jobs, job{
 			msg: msg,
 			callback: func() {
-				println(2)
 				wg.Done()
 			},
 		})
@@ -69,7 +68,9 @@ func (s *Server) CommitTx(_ context.Context, req *CommitTxRequest) (*CommitTxRep
 	s.lock.Unlock()
 	wg.Wait()
 
-	return nil, nil
+	return &CommitTxReply{
+		Code: 0,
+	}, nil
 }
 
 func (s *Server) run() {
@@ -165,6 +166,11 @@ func UnmarshalMsgs(data [][]byte) ([]sdk.Msg, error) {
 }
 
 func SendCosmosTx(cosmosRpcAddr string, msgs []sdk.Msg, address sdk.AccAddress, priv crypto.PrivKey, cosmosConn *grpc.ClientConn, logger log.Logger, retry bool) {
+	for _, msg := range msgs {
+		json, _ := encoding.Marshaler.MarshalJSON(msg)
+		println(string(json))
+	}
+
 	if len(msgs) > 10 {
 		SendCosmosTx(cosmosRpcAddr, msgs[:10], address, priv, cosmosConn, logger, retry)
 		SendCosmosTx(cosmosRpcAddr, msgs[10:], address, priv, cosmosConn, logger, retry)
@@ -258,9 +264,51 @@ func SendCosmosTx(cosmosRpcAddr string, msgs []sdk.Msg, address sdk.AccAddress, 
 	}
 
 	if result.DeliverTx.GetCode() != 0 || result.CheckTx.GetCode() != 0 {
-		logger.Error("Error on sending cosmos tx with", "code", result.CheckTx.GetCode(), "deliver-code", result.DeliverTx.GetCode(), "log", result.CheckTx.GetLog(), "deliver-log", result.DeliverTx.GetLog())
+		if !strings.Contains(result.CheckTx.GetLog(), "account sequence mismatch") {
+			logger.Error("Error on sending cosmos tx with", "code", result.CheckTx.GetCode(), "deliver-code", result.DeliverTx.GetCode(), "log", result.CheckTx.GetLog(), "deliver-log", result.DeliverTx.GetLog())
+		}
+
+		reasonsToSkip := []string{
+			"non contiguous event nonce",
+			"signature duplicate",
+		}
+
+		drop := false
+		for _, reason := range reasonsToSkip {
+			if strings.Contains(result.DeliverTx.GetLog(), reason) {
+				drop = true
+			}
+		}
+
+		if drop {
+			deliverLog := result.DeliverTx.GetLog()
+			deliverLog = strings.SplitAfter(deliverLog, "message index: ")[1]
+			deliverLog = strings.SplitAfter(deliverLog, ":")[0]
+			deliverLog = strings.Trim(deliverLog, ":")
+			index, err := strconv.Atoi(deliverLog)
+			if err != nil {
+				panic(err)
+			}
+
+			var newMsgs []sdk.Msg
+			for i, msg := range msgs {
+				if i == index {
+					continue
+				}
+				newMsgs = append(newMsgs, msg)
+			}
+
+			if len(newMsgs) == 0 {
+				return
+			}
+
+			SendCosmosTx(cosmosRpcAddr, newMsgs, address, priv, cosmosConn, logger, retry)
+
+			return
+		}
+
 		if retry {
-			time.Sleep(1 * time.Second)
+			time.Sleep(5 * time.Second)
 			SendCosmosTx(cosmosRpcAddr, msgs, address, priv, cosmosConn, logger, retry)
 		}
 

@@ -9,7 +9,7 @@ use crate::{
 };
 use clarity::{address::Address as EthAddress, Uint256};
 use clarity::{utils::bytes_to_hex_str, PrivateKey as EthPrivateKey};
-use cosmos_gravity::send::send_main_loop;
+use cosmos_gravity::send::send_messages;
 use cosmos_gravity::{
     build,
     query::{
@@ -19,7 +19,7 @@ use cosmos_gravity::{
 };
 use deep_space::client::ChainStatus;
 use deep_space::error::CosmosGrpcError;
-use deep_space::{Address, Contact, Msg};
+use deep_space::{Address, Contact};
 use ethereum_gravity::utils::get_gravity_id;
 use mhub2_proto::mhub2::query_client::QueryClient as Mhub2QueryClient;
 use mhub2_proto::tx_committer::tx_committer_client::TxCommitterClient;
@@ -49,38 +49,34 @@ pub async fn orchestrator_main_loop(
     web3: Web3,
     contact: Contact,
     grpc_client: Mhub2QueryClient<Channel>,
-    grpc_tx_committer_client: TxCommitterClient<Channel>,
+    grpc_tx_committer_client: &TxCommitterClient<Channel>,
     gravity_contract_address: EthAddress,
     chain_id: String,
     eth_fee_calculator_url: Option<String>,
     metrics_listen: &net::SocketAddr,
 ) {
-    let (tx, rx) = tokio::sync::mpsc::channel(1);
-
-    let a = send_main_loop(&grpc_tx_committer_client, rx);
-
-    let b = eth_oracle_main_loop(
+    let a = eth_oracle_main_loop(
         cosmos_address.clone(),
         web3.clone(),
         contact.clone(),
         grpc_client.clone(),
         gravity_contract_address,
-        tx.clone(),
+        &grpc_tx_committer_client,
         chain_id.clone(),
     );
 
-    let c = eth_signer_main_loop(
+    let b = eth_signer_main_loop(
         cosmos_address.clone(),
         ethereum_key,
         web3.clone(),
         contact.clone(),
         grpc_client.clone(),
         gravity_contract_address,
-        tx.clone(),
+        &grpc_tx_committer_client,
         chain_id.clone(),
     );
 
-    let d = relayer_main_loop(
+    let c = relayer_main_loop(
         ethereum_key,
         web3,
         grpc_client.clone(),
@@ -90,9 +86,9 @@ pub async fn orchestrator_main_loop(
         true,
     );
 
-    let e = metrics_main_loop(metrics_listen);
+    let d = metrics_main_loop(metrics_listen);
 
-    futures::future::join5(a, b, c, d, e).await;
+    futures::future::join4(a, b, c, d).await;
 }
 
 const DELAY: Duration = Duration::from_secs(5);
@@ -105,7 +101,7 @@ pub async fn eth_oracle_main_loop(
     contact: Contact,
     grpc_client: Mhub2QueryClient<Channel>,
     gravity_contract_address: EthAddress,
-    msg_sender: tokio::sync::mpsc::Sender<Vec<Msg>>,
+    tx_committer_client: &TxCommitterClient<Channel>,
     chain_id: String,
 ) {
     let long_timeout_web30 = Web3::new(&web3.get_url(), Duration::from_secs(120));
@@ -174,7 +170,7 @@ pub async fn eth_oracle_main_loop(
             gravity_contract_address,
             our_cosmos_address,
             last_checked_block.clone(),
-            msg_sender.clone(),
+            &tx_committer_client.clone(),
             chain_id.clone(),
         )
         .await
@@ -211,7 +207,7 @@ pub async fn eth_signer_main_loop(
     contact: Contact,
     grpc_client: Mhub2QueryClient<Channel>,
     contract_address: EthAddress,
-    msg_sender: tokio::sync::mpsc::Sender<Vec<Msg>>,
+    tx_committer_client: &TxCommitterClient<Channel>,
     chain_id: String,
 ) {
     let our_ethereum_address = ethereum_key.to_public_key().unwrap();
@@ -291,8 +287,7 @@ pub async fn eth_signer_main_loop(
                         gravity_id.clone(),
                         chain_id.clone(),
                     );
-                    msg_sender
-                        .send(messages)
+                    send_messages(tx_committer_client, messages)
                         .await
                         .expect("Could not send messages");
                 }
@@ -330,8 +325,7 @@ pub async fn eth_signer_main_loop(
                     gravity_id.clone(),
                     chain_id.clone(),
                 );
-                msg_sender
-                    .send(messages)
+                send_messages(tx_committer_client, messages)
                     .await
                     .expect("Could not send messages");
             }
@@ -363,8 +357,7 @@ pub async fn eth_signer_main_loop(
                     gravity_id.clone(),
                     chain_id.clone(),
                 );
-                msg_sender
-                    .send(messages)
+                send_messages(tx_committer_client, messages)
                     .await
                     .expect("Could not send messages");
             }

@@ -39,24 +39,24 @@ struct Args {
     flag_cosmos_address: String,
     flag_ethereum_key: String,
     flag_cosmos_grpc: String,
-    flag_committer_grpc: String,
     flag_address_prefix: String,
     flag_ethereum_rpc: String,
     flag_contract_address: String,
     flag_chain_id: String,
     flag_metrics_listen: String,
+    flag_committer_grpc: Option<String>,
     flag_eth_fee_calculator_url: Option<String>,
 }
 
 lazy_static! {
     pub static ref USAGE: String = format!(
-    "Usage: {} [--eth-fee-calculator-url=<furl>] --chain-id=<id> --committer-grpc=<url> --cosmos-address=<address> --ethereum-key=<key> --cosmos-grpc=<url> --address-prefix=<prefix> --ethereum-rpc=<url> --contract-address=<addr> --metrics-listen=<addr>
+    "Usage: {} [--eth-fee-calculator-url=<furl>] [--committer-grpc=<url>] --chain-id=<id>  --cosmos-address=<address> --ethereum-key=<key> --cosmos-grpc=<url> --address-prefix=<prefix> --ethereum-rpc=<url> --contract-address=<addr> --metrics-listen=<addr>
     Options:
         -h --help                           Show this screen.
         --cosmos-address=<address>          The address of the Cosmos account of the validator
         --ethereum-key=<ekey>               The Ethereum private key of the validator
         --cosmos-grpc=<gurl>                The Cosmos gRPC url, usually the validator
-        --committer-grpc=<gurl>             The Committer gRPC url
+        --committer-grpc=<gurl>             The Committer gRPC url [default: http://localhost:7070]
         --address-prefix=<prefix>           The prefix for addresses on this Cosmos chain
         --ethereum-rpc=<eurl>               The Ethereum RPC url, should be a self hosted node
         --contract-address=<addr>           The Ethereum contract address for Gravity, this is temporary
@@ -104,11 +104,18 @@ async fn main() {
     );
 
     trace!("Probing RPC connections");
+
+    let committer_url = if args.flag_committer_grpc.is_some() {
+        args.flag_committer_grpc.unwrap()
+    } else {
+        "http://localhost:7070".into()
+    };
+
     // probe all rpc connections and see if they are valid
     let connections = create_rpc_connections(
         args.flag_address_prefix,
         Some(args.flag_cosmos_grpc),
-        Some(args.flag_committer_grpc),
+        Some(committer_url),
         Some(args.flag_ethereum_rpc),
         timeout,
     )
@@ -149,7 +156,7 @@ async fn main() {
         connections.web3.unwrap(),
         connections.contact.unwrap(),
         connections.grpc.unwrap(),
-        connections.grpc_committer.unwrap(),
+        &connections.grpc_committer.unwrap(),
         contract_address,
         chain_id.clone(),
         eth_fee_calculator_url.clone(),

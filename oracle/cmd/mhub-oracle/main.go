@@ -43,14 +43,15 @@ func main() {
 	}
 	defer cosmosConn.Close()
 
-	txCommitterConn, err := grpc.Dial("tcp://127.0.0.1:7070", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	txCommitterConn, err := grpc.Dial("127.0.0.1:7070", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		panic(err)
 	}
 	defer txCommitterConn.Close()
+	txCommitter := tx_committer.NewTxCommitterClient(txCommitterConn)
 
 	for {
-		relayPricesAndHolders(cfg, cosmosConn, tx_committer.NewTxCommitterClient(txCommitterConn), logger)
+		relayPricesAndHolders(cfg, cosmosConn, txCommitter, logger)
 
 		time.Sleep(1 * time.Second)
 	}
@@ -68,6 +69,10 @@ func relayPricesAndHolders(cfg *config.Config, cosmosConn *grpc.ClientConn, txCo
 	if err != nil {
 		logger.Error("Error getting current epoch", "err", err.Error())
 		time.Sleep(time.Second)
+		return
+	}
+
+	if response.GetEpoch().GetNonce() == 0 {
 		return
 	}
 
@@ -89,7 +94,10 @@ func relayPricesAndHolders(cfg *config.Config, cosmosConn *grpc.ClientConn, txCo
 			Orchestrator: orcAddress.String(),
 		}
 
-		txCommitter.CommitTx(context.TODO(), &tx_committer.CommitTxRequest{Msgs: tx_committer.MarshalMsgs([]sdk.Msg{holdersClaim})})
+		_, err = txCommitter.CommitTx(context.TODO(), &tx_committer.CommitTxRequest{Msgs: tx_committer.MarshalMsgs([]sdk.Msg{holdersClaim})})
+		if err != nil {
+			logger.Error("Failed to broadcast holders", "err", err.Error())
+		}
 	}
 
 	prices := getPrices(cfg)
@@ -102,7 +110,10 @@ func relayPricesAndHolders(cfg *config.Config, cosmosConn *grpc.ClientConn, txCo
 		Orchestrator: orcAddress.String(),
 	}
 
-	txCommitter.CommitTx(context.TODO(), &tx_committer.CommitTxRequest{Msgs: tx_committer.MarshalMsgs([]sdk.Msg{priceClaim})})
+	_, err = txCommitter.CommitTx(context.TODO(), &tx_committer.CommitTxRequest{Msgs: tx_committer.MarshalMsgs([]sdk.Msg{priceClaim})})
+	if err != nil {
+		logger.Error("Failed to broadcast prices", "err", err.Error())
+	}
 }
 
 func getHolders(cfg *config.Config) *types.Holders {

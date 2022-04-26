@@ -6,7 +6,7 @@ use clarity::Address as EthAddress;
 use deep_space::client::ChainStatus;
 use deep_space::Address as CosmosAddress;
 use deep_space::Contact;
-use mhub2_proto::mhub2::query_client::{QueryClient as Mhub2QueryClient, QueryClient};
+use mhub2_proto::mhub2::query_client::QueryClient as Mhub2QueryClient;
 use mhub2_proto::mhub2::DelegateKeysByExternalSignerRequest;
 use mhub2_proto::mhub2::DelegateKeysByOrchestratorRequest;
 use mhub2_proto::tx_committer::tx_committer_client::TxCommitterClient;

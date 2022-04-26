@@ -8,6 +8,7 @@ import (
 // InitGenesis starts a chain from a genesis state
 func InitGenesis(ctx sdk.Context, k Keeper, data types.GenesisState) {
 	k.SetParams(ctx, *data.Params)
+	k.setCurrentEpoch(ctx, 1)
 
 	// reset attestations in state
 	for _, att := range data.Attestations {
