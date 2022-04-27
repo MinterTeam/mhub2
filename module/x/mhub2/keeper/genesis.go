@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 
@@ -106,69 +105,15 @@ func ExportGenesis(ctx sdk.Context, k Keeper) types.GenesisState {
 
 	for _, chainId := range chains {
 		var (
-			outgoingTxs              []*cdctypes.Any
-			externalTxConfirmations  []*cdctypes.Any
-			attmap                   = k.GetExternalEventVoteRecordMapping(ctx, chainId)
-			externalEventVoteRecords []*types.ExternalEventVoteRecord
-			delegates                = k.getDelegateKeys(ctx, chainId)
-			lastobserved             = k.GetLastObservedEventNonce(ctx, chainId)
-			unbatchedTransfers       = k.getUnbatchedSendToExternals(ctx, chainId)
+			delegates    = k.getDelegateKeys(ctx, chainId)
+			lastobserved = k.GetLastObservedEventNonce(ctx, chainId)
 		)
 
-		// export ethereumEventVoteRecords from state
-		for _, atts := range attmap {
-			// TODO: set height = 0?
-			externalEventVoteRecords = append(externalEventVoteRecords, atts...)
-		}
-
-		// export signer set txs and sigs
-		k.IterateOutgoingTxsByType(ctx, chainId, types.SignerSetTxPrefixByte, func(_ []byte, otx types.OutgoingTx) bool {
-			ota, _ := types.PackOutgoingTx(otx)
-			outgoingTxs = append(outgoingTxs, ota)
-			sstx, _ := otx.(*types.SignerSetTx)
-			k.iterateExternalSignatures(ctx, chainId, sstx.GetStoreIndex(chainId), func(val sdk.ValAddress, sig []byte) bool {
-				siga, _ := types.PackConfirmation(&types.SignerSetTxConfirmation{sstx.Nonce, k.GetValidatorExternalAddress(ctx, chainId, val).Hex(), sig})
-				externalTxConfirmations = append(externalTxConfirmations, siga)
-				return false
-			})
-			return false
-		})
-
-		// export batch txs and sigs
-		k.IterateOutgoingTxsByType(ctx, chainId, types.BatchTxPrefixByte, func(_ []byte, otx types.OutgoingTx) bool {
-			ota, _ := types.PackOutgoingTx(otx)
-			outgoingTxs = append(outgoingTxs, ota)
-			btx, _ := otx.(*types.BatchTx)
-			k.iterateExternalSignatures(ctx, chainId, btx.GetStoreIndex(chainId), func(val sdk.ValAddress, sig []byte) bool {
-				siga, _ := types.PackConfirmation(&types.BatchTxConfirmation{btx.ExternalTokenId, btx.BatchNonce, k.GetValidatorExternalAddress(ctx, chainId, val).Hex(), sig})
-				externalTxConfirmations = append(externalTxConfirmations, siga)
-				return false
-			})
-			return false
-		})
-
-		// export contract call txs and sigs
-		k.IterateOutgoingTxsByType(ctx, chainId, types.ContractCallTxPrefixByte, func(_ []byte, otx types.OutgoingTx) bool {
-			ota, _ := types.PackOutgoingTx(otx)
-			outgoingTxs = append(outgoingTxs, ota)
-			btx, _ := otx.(*types.ContractCallTx)
-			k.iterateExternalSignatures(ctx, chainId, btx.GetStoreIndex(chainId), func(val sdk.ValAddress, sig []byte) bool {
-				siga, _ := types.PackConfirmation(&types.ContractCallTxConfirmation{btx.InvalidationScope, btx.InvalidationNonce, k.GetValidatorExternalAddress(ctx, chainId, val).Hex(), sig})
-				externalTxConfirmations = append(externalTxConfirmations, siga)
-				return false
-			})
-			return false
-		})
-
 		state.ExternalStates = append(state.ExternalStates, &types.ExternalState{
-			ChainId:                    chainId.String(),
-			ExternalEventVoteRecords:   externalEventVoteRecords,
-			DelegateKeys:               delegates,
-			UnbatchedSendToExternalTxs: unbatchedTransfers,
-			LastObservedEventNonce:     lastobserved,
-			OutgoingTxs:                outgoingTxs,
-			Confirmations:              externalTxConfirmations,
-			Sequence:                   k.getOutgoingSequence(ctx, chainId),
+			ChainId:                chainId.String(),
+			DelegateKeys:           delegates,
+			LastObservedEventNonce: lastobserved,
+			Sequence:               k.getOutgoingSequence(ctx, chainId),
 		})
 	}
 

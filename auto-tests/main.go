@@ -195,7 +195,7 @@ func main() {
 	time.Sleep(time.Second * 10)
 	go runOrPanic("mhub-minter-connector --config=connector-config.toml --cosmos-mnemonic=%s --minter-private-key=%s --minter-multisig-addr=%s", cosmosMnemonic, ethPrivateKeyString, minterMultisig)
 	time.Sleep(time.Second * 10)
-	go runOrPanic("mhub-oracle --testnet --config=oracle-config.toml --cosmos-address=%s", hubAddress)
+	go runOrPanic("mhub-oracle --testnet --config=oracle-config.toml")
 
 	client := oracletypes.NewQueryClient(cosmosConn)
 	startTime := time.Now()
@@ -219,8 +219,8 @@ func main() {
 		break
 	}
 
-	go runOrPanic("orchestrator --chain-id=ethereum --eth-fee-calculator-url=http://localhost:8840 --cosmos-address=%s --ethereum-key=%s --cosmos-grpc=%s --ethereum-rpc=%s --contract-address=%s --address-prefix=hub --metrics-listen=127.0.0.1:3000", hubAddress, ethPrivateKeyString, "http://localhost:9090", "http://localhost:8545", ethContract)
-	go runOrPanic("orchestrator --chain-id=bsc --eth-fee-calculator-url=http://localhost:8840 --cosmos-address=%s --ethereum-key=%s --cosmos-grpc=%s --ethereum-rpc=%s --contract-address=%s --address-prefix=hub --metrics-listen=127.0.0.1:3001", hubAddress, ethPrivateKeyString, "http://localhost:9090", "http://localhost:8546", bscContract)
+	go runOrPanic("orchestrator --chain-id=ethereum --eth-fee-calculator-url=http://localhost:8840 --ethereum-key=%s --cosmos-grpc=%s --ethereum-rpc=%s --contract-address=%s --metrics-listen=127.0.0.1:3000", ethPrivateKeyString, "http://localhost:9090", "http://localhost:8545", ethContract)
+	go runOrPanic("orchestrator --chain-id=bsc --eth-fee-calculator-url=http://localhost:8840 --ethereum-key=%s --cosmos-grpc=%s --ethereum-rpc=%s --contract-address=%s --metrics-listen=127.0.0.1:3001", ethPrivateKeyString, "http://localhost:9090", "http://localhost:8546", bscContract)
 	approveERC20ToHub(ethPrivateKey, ethClient, ethContract, erc20addr, ethChainId)
 	approveERC20ToHub(ethPrivateKey, bscClient, bscContract, bep20addr, bscChainId)
 

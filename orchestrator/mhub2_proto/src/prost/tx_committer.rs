@@ -8,6 +8,13 @@ pub struct CommitTxReply {
     #[prost(int32, tag = "1")]
     pub code: i32,
 }
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AddressRequest {}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AddressReply {
+    #[prost(string, tag = "1")]
+    pub address: ::prost::alloc::string::String,
+}
 #[doc = r" Generated client implementations."]
 pub mod tx_committer_client {
     #![allow(unused_variables, dead_code, missing_docs)]
@@ -53,6 +60,20 @@ pub mod tx_committer_client {
             })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static("/tx_committer.TxCommitter/CommitTx");
+            self.inner.unary(request.into_request(), path, codec).await
+        }
+        pub async fn address(
+            &mut self,
+            request: impl tonic::IntoRequest<super::AddressRequest>,
+        ) -> Result<tonic::Response<super::AddressReply>, tonic::Status> {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static("/tx_committer.TxCommitter/Address");
             self.inner.unary(request.into_request(), path, codec).await
         }
     }

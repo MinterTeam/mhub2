@@ -18,6 +18,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type TxCommitterClient interface {
 	CommitTx(ctx context.Context, in *CommitTxRequest, opts ...grpc.CallOption) (*CommitTxReply, error)
+	Address(ctx context.Context, in *AddressRequest, opts ...grpc.CallOption) (*AddressReply, error)
 }
 
 type txCommitterClient struct {
@@ -37,11 +38,21 @@ func (c *txCommitterClient) CommitTx(ctx context.Context, in *CommitTxRequest, o
 	return out, nil
 }
 
+func (c *txCommitterClient) Address(ctx context.Context, in *AddressRequest, opts ...grpc.CallOption) (*AddressReply, error) {
+	out := new(AddressReply)
+	err := c.cc.Invoke(ctx, "/tx_committer.TxCommitter/Address", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // TxCommitterServer is the server API for TxCommitter service.
 // All implementations must embed UnimplementedTxCommitterServer
 // for forward compatibility
 type TxCommitterServer interface {
 	CommitTx(context.Context, *CommitTxRequest) (*CommitTxReply, error)
+	Address(context.Context, *AddressRequest) (*AddressReply, error)
 	mustEmbedUnimplementedTxCommitterServer()
 }
 
@@ -51,6 +62,9 @@ type UnimplementedTxCommitterServer struct {
 
 func (UnimplementedTxCommitterServer) CommitTx(context.Context, *CommitTxRequest) (*CommitTxReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CommitTx not implemented")
+}
+func (UnimplementedTxCommitterServer) Address(context.Context, *AddressRequest) (*AddressReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Address not implemented")
 }
 func (UnimplementedTxCommitterServer) mustEmbedUnimplementedTxCommitterServer() {}
 
@@ -83,6 +97,24 @@ func _TxCommitter_CommitTx_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TxCommitter_Address_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddressRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TxCommitterServer).Address(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/tx_committer.TxCommitter/Address",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TxCommitterServer).Address(ctx, req.(*AddressRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _TxCommitter_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "tx_committer.TxCommitter",
 	HandlerType: (*TxCommitterServer)(nil),
@@ -90,6 +122,10 @@ var _TxCommitter_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CommitTx",
 			Handler:    _TxCommitter_CommitTx_Handler,
+		},
+		{
+			MethodName: "Address",
+			Handler:    _TxCommitter_Address_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

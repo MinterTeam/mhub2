@@ -45,6 +45,12 @@ type Server struct {
 	logger log.Logger
 }
 
+func (s *Server) Address(_ context.Context, req *AddressRequest) (*AddressReply, error) {
+	return &AddressReply{
+		Address: s.addr.String(),
+	}, nil
+}
+
 func (s *Server) CommitTx(_ context.Context, req *CommitTxRequest) (*CommitTxReply, error) {
 	msgs, err := UnmarshalMsgs(req.Msgs)
 	if err != nil {
@@ -78,6 +84,7 @@ func (s *Server) run() {
 		time.Sleep(time.Second * 5)
 		s.lock.Lock()
 		if len(s.jobs) == 0 {
+			s.lock.Unlock()
 			continue
 		}
 
@@ -168,7 +175,7 @@ func UnmarshalMsgs(data [][]byte) ([]sdk.Msg, error) {
 func SendCosmosTx(cosmosRpcAddr string, msgs []sdk.Msg, address sdk.AccAddress, priv crypto.PrivKey, cosmosConn *grpc.ClientConn, logger log.Logger, retry bool) {
 	for _, msg := range msgs {
 		json, _ := encoding.Marshaler.MarshalJSON(msg)
-		println(string(json))
+		logger.Info("New msg", "msg", string(json))
 	}
 
 	if len(msgs) > 10 {
@@ -271,6 +278,7 @@ func SendCosmosTx(cosmosRpcAddr string, msgs []sdk.Msg, address sdk.AccAddress, 
 		reasonsToSkip := []string{
 			"non contiguous event nonce",
 			"signature duplicate",
+			"required price not found or malformed",
 		}
 
 		drop := false

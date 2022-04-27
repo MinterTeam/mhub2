@@ -31,7 +31,19 @@ func main() {
 		holdersUpdatePeriod = 1
 	}
 
-	logger.Info("Orc address", "address", cfg.Cosmos.Address)
+	txCommitterConn, err := grpc.Dial("127.0.0.1:7070", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		panic(err)
+	}
+	defer txCommitterConn.Close()
+	txCommitter := tx_committer.NewTxCommitterClient(txCommitterConn)
+
+	orcAddress, err := txCommitter.Address(context.Background(), &tx_committer.AddressRequest{})
+	if err != nil {
+		panic(err)
+	}
+
+	logger.Info("Orc address", "address", orcAddress.GetAddress())
 
 	cosmosConn, err := grpc.DialContext(context.Background(), cfg.Cosmos.GrpcAddr, grpc.WithInsecure(), grpc.WithConnectParams(grpc.ConnectParams{
 		Backoff:           backoff.DefaultConfig,
@@ -43,22 +55,15 @@ func main() {
 	}
 	defer cosmosConn.Close()
 
-	txCommitterConn, err := grpc.Dial("127.0.0.1:7070", grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		panic(err)
-	}
-	defer txCommitterConn.Close()
-	txCommitter := tx_committer.NewTxCommitterClient(txCommitterConn)
-
 	for {
-		relayPricesAndHolders(cfg, cosmosConn, txCommitter, logger)
+		relayPricesAndHolders(cfg, orcAddress.GetAddress(), cosmosConn, txCommitter, logger)
 
 		time.Sleep(1 * time.Second)
 	}
 }
 
-func relayPricesAndHolders(cfg *config.Config, cosmosConn *grpc.ClientConn, txCommitter tx_committer.TxCommitterClient, logger log.Logger) {
-	orcAddress, err := sdk.AccAddressFromBech32(cfg.Cosmos.Address)
+func relayPricesAndHolders(cfg *config.Config, address string, cosmosConn *grpc.ClientConn, txCommitter tx_committer.TxCommitterClient, logger log.Logger) {
+	orcAddress, err := sdk.AccAddressFromBech32(address)
 	if err != nil {
 		panic(err)
 	}

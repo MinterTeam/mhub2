@@ -6,6 +6,7 @@ package tx_committer;
 
 service TxCommitter {
   rpc CommitTx (CommitTxRequest) returns (CommitTxReply) {}
+  rpc Address (AddressRequest) returns (AddressReply) {}
 }
 
 message CommitTxRequest {
@@ -14,4 +15,11 @@ message CommitTxRequest {
 
 message CommitTxReply {
   int32 code = 1;
+}
+
+message AddressRequest {
+}
+
+message AddressReply {
+  string address = 1;
 }

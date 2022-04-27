@@ -29,6 +29,7 @@ use deep_space::Address;
 use docopt::Docopt;
 use env_logger::Env;
 use main_loop::{ETH_ORACLE_LOOP_SPEED, ETH_SIGNER_LOOP_SPEED};
+use mhub2_proto::tx_committer::AddressRequest;
 use mhub2_utils::connection_prep::create_rpc_connections;
 use mhub2_utils::connection_prep::{check_delegate_addresses, wait_for_cosmos_node_ready};
 use relayer::main_loop::LOOP_SPEED as RELAYER_LOOP_SPEED;
@@ -36,10 +37,8 @@ use std::cmp::min;
 
 #[derive(Debug, Deserialize)]
 struct Args {
-    flag_cosmos_address: String,
     flag_ethereum_key: String,
     flag_cosmos_grpc: String,
-    flag_address_prefix: String,
     flag_ethereum_rpc: String,
     flag_contract_address: String,
     flag_chain_id: String,
@@ -50,10 +49,9 @@ struct Args {
 
 lazy_static! {
     pub static ref USAGE: String = format!(
-    "Usage: {} [--eth-fee-calculator-url=<furl>] [--committer-grpc=<url>] --chain-id=<id>  --cosmos-address=<address> --ethereum-key=<key> --cosmos-grpc=<url> --address-prefix=<prefix> --ethereum-rpc=<url> --contract-address=<addr> --metrics-listen=<addr>
+    "Usage: {} [--eth-fee-calculator-url=<furl>] [--committer-grpc=<url>] --chain-id=<id> --ethereum-key=<key> --cosmos-grpc=<url> --address-prefix=<prefix> --ethereum-rpc=<url> --contract-address=<addr> --metrics-listen=<addr>
     Options:
         -h --help                           Show this screen.
-        --cosmos-address=<address>          The address of the Cosmos account of the validator
         --ethereum-key=<ekey>               The Ethereum private key of the validator
         --cosmos-grpc=<gurl>                The Cosmos gRPC url, usually the validator
         --committer-grpc=<gurl>             The Committer gRPC url [default: http://localhost:7070]
@@ -113,7 +111,7 @@ async fn main() {
 
     // probe all rpc connections and see if they are valid
     let connections = create_rpc_connections(
-        args.flag_address_prefix,
+        "hub".into(),
         Some(args.flag_cosmos_grpc),
         Some(committer_url),
         Some(args.flag_ethereum_rpc),
@@ -123,22 +121,32 @@ async fn main() {
 
     let mut grpc = connections.grpc.clone().unwrap();
     let contact = connections.contact.clone().unwrap();
+    let mut grpc_committer = connections.grpc_committer.clone().unwrap();
 
     let public_eth_key = ethereum_key
         .to_public_key()
         .expect("Invalid Ethereum Private Key!");
+
+    let our_cosmos_address = Address::from_bech32(
+        grpc_committer
+            .address(AddressRequest {})
+            .await
+            .unwrap()
+            .into_inner()
+            .address,
+    )
+    .unwrap();
+
     info!("Starting Gravity Validator companion binary Relayer + Oracle + Eth Signer");
     info!(
         "Ethereum Address: {} Cosmos Address {}",
-        public_eth_key, args.flag_cosmos_address
+        public_eth_key, our_cosmos_address
     );
 
     // check if the cosmos node is syncing, if so wait for it
     // we can't move any steps above this because they may fail on an incorrect
     // historic chain state while syncing occurs
     wait_for_cosmos_node_ready(&contact).await;
-
-    let our_cosmos_address = Address::from_bech32(args.flag_cosmos_address).unwrap();
 
     // check if the delegate addresses are correctly configured
     check_delegate_addresses(
