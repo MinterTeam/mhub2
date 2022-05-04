@@ -89,6 +89,13 @@ func InitGenesis(ctx sdk.Context, k Keeper, data types.GenesisState) {
 			// this will be easy.
 			k.SetExternalSignature(ctx, chainId, conf, sdk.ValAddress{})
 		}
+
+		for _, nonce := range externalState.Nonces {
+			val, _ := sdk.ValAddressFromBech32(nonce.ValidatorAddress)
+			k.setLastEventNonceByValidator(ctx, chainId, val, nonce.LastEventNonce)
+		}
+
+		k.setLastObservedSignerSetTx(ctx, chainId, *externalState.LastObservedValset)
 	}
 }
 
@@ -105,15 +112,27 @@ func ExportGenesis(ctx sdk.Context, k Keeper) types.GenesisState {
 
 	for _, chainId := range chains {
 		var (
-			delegates    = k.getDelegateKeys(ctx, chainId)
-			lastobserved = k.GetLastObservedEventNonce(ctx, chainId)
+			delegates          = k.getDelegateKeys(ctx, chainId)
+			nonces             = k.getNonces(ctx, chainId)
+			lastobserved       = k.GetLastObservedEventNonce(ctx, chainId)
+			lastobservedvalset = k.GetLastObservedSignerSetTx(ctx, chainId)
 		)
+
+		if chainId == "minter" {
+			for i := range nonces {
+				nonces[i].LastEventNonce = 0
+			}
+
+			lastobserved = 0
+		}
 
 		state.ExternalStates = append(state.ExternalStates, &types.ExternalState{
 			ChainId:                chainId.String(),
 			DelegateKeys:           delegates,
+			Nonces:                 nonces,
 			LastObservedEventNonce: lastobserved,
 			Sequence:               k.getOutgoingSequence(ctx, chainId),
+			LastObservedValset:     lastobservedvalset,
 		})
 	}
 

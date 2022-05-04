@@ -49,7 +49,7 @@ struct Args {
 
 lazy_static! {
     pub static ref USAGE: String = format!(
-    "Usage: {} [--eth-fee-calculator-url=<furl>] [--committer-grpc=<url>] --chain-id=<id> --ethereum-key=<key> --cosmos-grpc=<url> --address-prefix=<prefix> --ethereum-rpc=<url> --contract-address=<addr> --metrics-listen=<addr>
+    "Usage: {} [--eth-fee-calculator-url=<furl>] [--committer-grpc=<url>] --chain-id=<id> --ethereum-key=<key> --cosmos-grpc=<url> --ethereum-rpc=<url> --contract-address=<addr> --metrics-listen=<addr>
     Options:
         -h --help                           Show this screen.
         --ethereum-key=<ekey>               The Ethereum private key of the validator
