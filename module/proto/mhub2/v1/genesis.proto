@@ -130,4 +130,5 @@ message ExternalState {
   uint64 sequence = 8;
   repeated Nonce nonces = 9;
   SignerSetTx last_observed_valset = 10;
+  uint64 last_outgoing_batch_tx_nonce = 11;
 }

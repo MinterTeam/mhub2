@@ -11,7 +11,8 @@ type VBuffer struct {
 }
 
 func NewVBuffer(filepath string) *VBuffer {
-	file, err := os.OpenFile(filepath, os.O_RDWR|os.O_CREATE, 0644)
+	os.Remove(filepath)
+	file, err := os.OpenFile(filepath, os.O_RDWR|os.O_CREATE, os.ModePerm)
 	if err != nil {
 		println(err.Error())
 	}

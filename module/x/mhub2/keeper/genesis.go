@@ -95,7 +95,11 @@ func InitGenesis(ctx sdk.Context, k Keeper, data types.GenesisState) {
 			k.setLastEventNonceByValidator(ctx, chainId, val, nonce.LastEventNonce)
 		}
 
-		k.setLastObservedSignerSetTx(ctx, chainId, *externalState.LastObservedValset)
+		if externalState.LastObservedValset != nil {
+			k.setLastObservedSignerSetTx(ctx, chainId, *externalState.LastObservedValset)
+		}
+
+		k.setLastOutgoingBatchNonce(ctx, chainId, externalState.LastOutgoingBatchTxNonce)
 	}
 }
 
@@ -119,20 +123,21 @@ func ExportGenesis(ctx sdk.Context, k Keeper) types.GenesisState {
 		)
 
 		if chainId == "minter" {
-			for i := range nonces {
-				nonces[i].LastEventNonce = 0
-			}
-
 			lastobserved = 0
 		}
 
+		for i := range nonces {
+			nonces[i].LastEventNonce = lastobserved
+		}
+
 		state.ExternalStates = append(state.ExternalStates, &types.ExternalState{
-			ChainId:                chainId.String(),
-			DelegateKeys:           delegates,
-			Nonces:                 nonces,
-			LastObservedEventNonce: lastobserved,
-			Sequence:               k.getOutgoingSequence(ctx, chainId),
-			LastObservedValset:     lastobservedvalset,
+			ChainId:                  chainId.String(),
+			DelegateKeys:             delegates,
+			Nonces:                   nonces,
+			LastObservedEventNonce:   lastobserved,
+			Sequence:                 k.getOutgoingSequence(ctx, chainId),
+			LastObservedValset:       lastobservedvalset,
+			LastOutgoingBatchTxNonce: k.getLastOutgoingBatchNonce(ctx, chainId),
 		})
 	}
 

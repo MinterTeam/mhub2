@@ -417,6 +417,7 @@ func (k Keeper) getDelegateKeys(ctx sdk.Context, chainId types.ChainID) (out []*
 	iter.Close()
 
 	for _, msg := range out {
+		msg.EthSignature = []byte{0}
 		msg.OrchestratorAddress = k.GetExternalOrchestratorAddress(ctx, chainId, common.HexToAddress(msg.ExternalAddress)).String()
 	}
 

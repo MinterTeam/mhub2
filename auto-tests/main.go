@@ -83,6 +83,8 @@ var (
 )
 
 func main() {
+	globalStartTime := time.Now()
+
 	wd := getWd()
 
 	ethPrivateKey, _ := crypto.GenerateKey()
@@ -300,13 +302,94 @@ func main() {
 	testValidatorsCommissionsWithDifferentDecimals(ctx)
 	ctx.TestsWg.Wait()
 
+	time.Sleep(time.Second * 30)
+
+	println("Killing orchestrator, mhub2, mhub-oracle, mhub-minter-connector")
+	stopProcess("orchestrator")
+	stopProcess("mhub2")
+	stopProcess("mhub-oracle")
+	stopProcess("mhub-minter-connector")
+
+	genesis := runOrPanic(os.ExpandEnv("mhub2 export"))
+	os.WriteFile(os.ExpandEnv("$HOME/.mhub2/config/genesis.json"), []byte(genesis), os.ModePerm)
+	runOrPanic(os.ExpandEnv("rm -rf $HOME/.mhub2/data"))
+	runOrPanic(os.ExpandEnv("mkdir $HOME/.mhub2/data"))
+
+	os.WriteFile(os.ExpandEnv("$HOME/.mhub2/data/priv_validator_state.json"), []byte("{}"), os.ModePerm)
+	_ = os.Remove(fmt.Sprintf("%s/connector-status.json", wd))
+
+	config := `[minter]
+chain = "testnet"
+multisig_addr = ""
+private_key = ""
+api_addr = "http://127.0.0.1:8843/v2/"
+start_block = %d
+start_event_nonce = 1
+start_batch_nonce = 1
+start_valset_nonce = 0
+
+[cosmos]
+mnemonic = ""
+grpc_addr = "127.0.0.1:9090"
+rpc_addr = "http://127.0.0.1:26657"`
+	currentStatus, _ := ctx.MinterClient.Status()
+	os.WriteFile("connector-config2.toml", []byte(fmt.Sprintf(config, currentStatus.LatestBlockHeight)), os.ModePerm)
+
+	go runOrPanic("mhub2 start --trace --p2p.laddr tcp://0.0.0.0:36656")
+
+	println("Start genesis tests")
+	testStartFromPreviousGenesis(ctx)
+	time.Sleep(time.Second * 20)
+	testEthereumToMinterTransfer(ctx)
+	testMinterToEthereumTransfer(ctx)
+	ctx.TestsWg.Wait()
+
 	println("Killing orchestrator")
 	stopProcess("orchestrator")
 	testTxTimeout(ctx)
 	testTxTimeoutDifferentDecimals(ctx)
 	ctx.TestsWg.Wait()
 
-	println("All tests are done")
+	println("All tests are done in %s", time.Now().Sub(globalStartTime).String())
+}
+
+func testStartFromPreviousGenesis(ctx *Context) {
+	cosmosConn, err := grpc.DialContext(context.Background(), "localhost:9090", grpc.WithInsecure(), grpc.WithConnectParams(grpc.ConnectParams{
+		Backoff:           backoff.DefaultConfig,
+		MinConnectTimeout: time.Second * 5,
+	}))
+	if err != nil {
+		panic(err)
+	}
+
+	time.Sleep(time.Second * 10)
+	go runOrPanic("mhub-minter-connector --config=connector-config2.toml --cosmos-mnemonic=%s --minter-private-key=%s --minter-multisig-addr=%s", ctx.CosmosMnemonic, ctx.EthPrivateKeyString, ctx.MinterMultisig)
+	time.Sleep(time.Second * 10)
+	go runOrPanic("mhub-oracle --testnet --config=oracle-config.toml")
+
+	client := oracletypes.NewQueryClient(cosmosConn)
+	startTime := time.Now()
+	for {
+		response, err := client.Prices(context.TODO(), &oracletypes.QueryPricesRequest{})
+		if err != nil {
+			panic(err)
+		}
+
+		if time.Now().Sub(startTime).Seconds() > testTimeout.Seconds() {
+			panic("Timeout waiting for prices to update")
+		}
+
+		if len(response.GetPrices().GetList()) == 0 {
+			continue
+		}
+
+		time.Sleep(time.Second)
+		println("SUCCESS: update prices")
+		break
+	}
+
+	go runOrPanic("orchestrator --chain-id=ethereum --eth-fee-calculator-url=http://localhost:8840 --ethereum-key=%s --cosmos-grpc=%s --ethereum-rpc=%s --contract-address=%s --metrics-listen=127.0.0.1:3002", ctx.EthPrivateKeyString, "http://localhost:9090", "http://localhost:8545", ctx.EthContract)
+	go runOrPanic("orchestrator --chain-id=bsc --eth-fee-calculator-url=http://localhost:8840 --ethereum-key=%s --cosmos-grpc=%s --ethereum-rpc=%s --contract-address=%s --metrics-listen=127.0.0.1:3003", ctx.EthPrivateKeyString, "http://localhost:9090", "http://localhost:8546", ctx.BscContract)
 }
 
 func testVoteForTokenInfosUpdate(ctx *Context) {

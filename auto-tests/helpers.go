@@ -213,7 +213,7 @@ func runEvmChain(chainId int, wd string, ethAddress common.Address, privateKey *
 		panic(err)
 	}
 	runOrPanic("geth --networkid %d --datadir %s/data/eth-%d account import --password=eth-password.txt data/private-key-%d.txt", chainId, wd, chainId, chainId)
-	go runOrPanic("geth --miner.gasprice 100000000000 --port %d --maxpeers 0 --allow-insecure-unlock --http --http.port %s --networkid %d --unlock %s --password=eth-password.txt --mine --datadir %s/data/eth-%d", 30303+chainId, port, chainId, ethAddress.Hex(), wd, chainId)
+	go runOrPanic("geth --gcmode=archive --syncmode=full --lightkdf --miner.gasprice 100000000000 --port %d --maxpeers 0 --allow-insecure-unlock --http --http.port %s --networkid %d --unlock %s --password=eth-password.txt --mine --datadir %s/data/eth-%d", 30303+chainId, port, chainId, ethAddress.Hex(), wd, chainId)
 	client, err := ethclient.Dial("http://localhost:" + port)
 	if err != nil {
 		panic(err)
