@@ -7,7 +7,7 @@ require (
 	github.com/MinterTeam/minter-go-node v1.2.2-0.20220418125735-43f4f1846035
 	github.com/MinterTeam/minter-go-sdk/v2 v2.5.2
 	github.com/MinterTeam/node-grpc-gateway v1.6.2-0.20220413090743-53ffbb191668
-	github.com/cosmos/cosmos-sdk v0.45.3
+	github.com/cosmos/cosmos-sdk v0.45.4
 	github.com/cosmos/go-bip39 v1.0.0
 	github.com/ethereum/go-ethereum v1.10.13
 	github.com/status-im/keycard-go v0.0.0-20190316090335-8537d3370df4

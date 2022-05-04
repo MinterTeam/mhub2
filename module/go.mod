@@ -3,7 +3,7 @@ module github.com/MinterTeam/mhub2/module
 go 1.17
 
 require (
-	github.com/cosmos/cosmos-sdk v0.45.3
+	github.com/cosmos/cosmos-sdk v0.45.4
 	github.com/cosmos/ibc-go v1.0.1
 	github.com/ethereum/go-ethereum v1.9.25
 	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1

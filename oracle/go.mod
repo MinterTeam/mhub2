@@ -11,7 +11,7 @@ replace github.com/MinterTeam/mhub2/minter-connector => ../../mhub2/minter-conne
 require (
 	github.com/MinterTeam/mhub2/minter-connector v0.0.0-20220415050344-9b622720d05b
 	github.com/MinterTeam/mhub2/module v0.0.0-20210419142331-8f69449b9069
-	github.com/cosmos/cosmos-sdk v0.45.3
+	github.com/cosmos/cosmos-sdk v0.45.4
 	github.com/cosmos/go-bip39 v1.0.0
 	github.com/spf13/viper v1.10.1
 	github.com/tendermint/tendermint v0.34.19
