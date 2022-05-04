@@ -9,9 +9,10 @@ replace github.com/MinterTeam/mhub2/module => ../../mhub2/module
 require (
 	github.com/MinterTeam/mhub2/module v0.0.0-20210417174508-bac3972b7846
 	github.com/MinterTeam/minter-go-sdk/v2 v2.5.2
-	github.com/cosmos/cosmos-sdk v0.45.3
+	github.com/cosmos/cosmos-sdk v0.45.4
 	github.com/cosmos/go-bip39 v1.0.0
 	github.com/ethereum/go-ethereum v1.10.13
+	github.com/golang/protobuf v1.5.2
 	github.com/mitchellh/mapstructure v1.4.3
 	github.com/spf13/viper v1.10.1
 	github.com/tendermint/tendermint v0.34.19
@@ -67,7 +68,6 @@ require (
 	github.com/godbus/dbus v0.0.0-20190726142602-4481cbc300e2 // indirect
 	github.com/gogo/gateway v1.1.0 // indirect
 	github.com/gogo/protobuf v1.3.3 // indirect
-	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/btree v1.0.0 // indirect
 	github.com/gorilla/handlers v1.5.1 // indirect
