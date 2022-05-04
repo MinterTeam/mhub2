@@ -350,7 +350,7 @@ rpc_addr = "http://127.0.0.1:26657"`
 	testTxTimeoutDifferentDecimals(ctx)
 	ctx.TestsWg.Wait()
 
-	println("All tests are done in %s", time.Now().Sub(globalStartTime).String())
+	println("All tests are done in", time.Now().Sub(globalStartTime).String())
 }
 
 func testStartFromPreviousGenesis(ctx *Context) {

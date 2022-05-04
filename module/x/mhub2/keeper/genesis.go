@@ -116,14 +116,16 @@ func ExportGenesis(ctx sdk.Context, k Keeper) types.GenesisState {
 
 	for _, chainId := range chains {
 		var (
-			delegates          = k.getDelegateKeys(ctx, chainId)
-			nonces             = k.getNonces(ctx, chainId)
-			lastobserved       = k.GetLastObservedEventNonce(ctx, chainId)
-			lastobservedvalset = k.GetLastObservedSignerSetTx(ctx, chainId)
+			delegates              = k.getDelegateKeys(ctx, chainId)
+			nonces                 = k.getNonces(ctx, chainId)
+			lastobserved           = k.GetLastObservedEventNonce(ctx, chainId)
+			lastobservedvalset     = k.GetLastObservedSignerSetTx(ctx, chainId)
+			lastoutgoingbatchnonce = k.getLastOutgoingBatchNonce(ctx, chainId)
 		)
 
 		if chainId == "minter" {
 			lastobserved = 0
+			lastoutgoingbatchnonce = 0
 		}
 
 		for i := range nonces {
@@ -137,7 +139,7 @@ func ExportGenesis(ctx sdk.Context, k Keeper) types.GenesisState {
 			LastObservedEventNonce:   lastobserved,
 			Sequence:                 k.getOutgoingSequence(ctx, chainId),
 			LastObservedValset:       lastobservedvalset,
-			LastOutgoingBatchTxNonce: k.getLastOutgoingBatchNonce(ctx, chainId),
+			LastOutgoingBatchTxNonce: lastoutgoingbatchnonce,
 		})
 	}
 
