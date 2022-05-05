@@ -100,6 +100,7 @@ func InitGenesis(ctx sdk.Context, k Keeper, data types.GenesisState) {
 		}
 
 		k.setLastOutgoingBatchNonce(ctx, chainId, externalState.LastOutgoingBatchTxNonce)
+		k.SetLastObservedExternalBlockHeight(ctx, chainId, externalState.LatestBlockHeight.ExternalHeight)
 	}
 }
 
@@ -140,6 +141,7 @@ func ExportGenesis(ctx sdk.Context, k Keeper) types.GenesisState {
 			Sequence:                 k.getOutgoingSequence(ctx, chainId),
 			LastObservedValset:       lastobservedvalset,
 			LastOutgoingBatchTxNonce: lastoutgoingbatchnonce,
+			LatestBlockHeight:        k.GetLastObservedExternalBlockHeight(ctx, chainId),
 		})
 	}
 
