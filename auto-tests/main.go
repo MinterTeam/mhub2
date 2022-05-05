@@ -252,7 +252,7 @@ func main() {
 	testEthereumMultisigChanges(ctx)
 	testBSCMultisigChanges(ctx)
 	ctx.TestsWg.Wait()
-	time.Sleep(time.Second * 20) // todo: wait for all of networks to confirm valset updates
+	time.Sleep(time.Second * 10) // todo: wait for all of networks to confirm valset updates
 
 	println("Start real tests")
 	testEthereumToMinterTransfer(ctx)
@@ -301,8 +301,6 @@ func main() {
 	println("Running test for validator's commission with different decimals")
 	testValidatorsCommissionsWithDifferentDecimals(ctx)
 	ctx.TestsWg.Wait()
-
-	time.Sleep(time.Second * 30)
 
 	println("Killing orchestrator, mhub2, mhub-oracle, mhub-minter-connector")
 	stopProcess("orchestrator")
