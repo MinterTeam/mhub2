@@ -113,7 +113,7 @@ func (msg MsgPriceClaim) GetSignBytes() []byte {
 func (msg MsgPriceClaim) GetClaimer() sdk.AccAddress {
 	err := msg.ValidateBasic()
 	if err != nil {
-		panic(fmt.Sprintf("MsgDepositClaim failed ValidateBasic! Should have been handled earlier %d %s", msg.Epoch, msg.Orchestrator))
+		panic(fmt.Sprintf("MsgPriceClaim failed ValidateBasic! Should have been handled earlier %d %s", msg.Epoch, msg.Orchestrator))
 	}
 
 	val, _ := sdk.AccAddressFromBech32(msg.Orchestrator)
@@ -174,7 +174,7 @@ func (msg MsgHoldersClaim) GetSignBytes() []byte {
 func (msg MsgHoldersClaim) GetClaimer() sdk.AccAddress {
 	err := msg.ValidateBasic()
 	if err != nil {
-		panic(fmt.Sprintf("MsgDepositClaim failed ValidateBasic! Should have been handled earlier %d %s", msg.Epoch, msg.Orchestrator))
+		panic(fmt.Sprintf("MsgHoldersClaim failed ValidateBasic! Should have been handled earlier %d %s", msg.Epoch, msg.Orchestrator))
 	}
 
 	val, _ := sdk.AccAddressFromBech32(msg.Orchestrator)

@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"github.com/MinterTeam/mhub2/minter-connector/tx_committer"
+	"google.golang.org/grpc/credentials/insecure"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -12,7 +14,6 @@ import (
 	"github.com/MinterTeam/mhub2/module/x/oracle/types"
 	"github.com/MinterTeam/mhub2/oracle/config"
 	"github.com/MinterTeam/mhub2/oracle/cosmos"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/tendermint/tendermint/libs/log"
 	"google.golang.org/grpc"
@@ -30,8 +31,19 @@ func main() {
 		holdersUpdatePeriod = 1
 	}
 
-	orcAddress, orcPriv := cosmos.GetAccount(cfg.Cosmos.Mnemonic)
-	logger.Info("Orc address", "address", orcAddress.String())
+	txCommitterConn, err := grpc.Dial("127.0.0.1:7070", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		panic(err)
+	}
+	defer txCommitterConn.Close()
+	txCommitter := tx_committer.NewTxCommitterClient(txCommitterConn)
+
+	orcAddress, err := txCommitter.Address(context.Background(), &tx_committer.AddressRequest{})
+	if err != nil {
+		panic(err)
+	}
+
+	logger.Info("Orc address", "address", orcAddress.GetAddress())
 
 	cosmosConn, err := grpc.DialContext(context.Background(), cfg.Cosmos.GrpcAddr, grpc.WithInsecure(), grpc.WithConnectParams(grpc.ConnectParams{
 		Backoff:           backoff.DefaultConfig,
@@ -44,25 +56,28 @@ func main() {
 	defer cosmosConn.Close()
 
 	for {
-		relayPricesAndHolders(cfg, cosmosConn, orcAddress, orcPriv, logger)
+		relayPricesAndHolders(cfg, orcAddress.GetAddress(), cosmosConn, txCommitter, logger)
 
 		time.Sleep(1 * time.Second)
 	}
 }
 
-func relayPricesAndHolders(
-	cfg *config.Config,
-	cosmosConn *grpc.ClientConn,
-	orcAddress sdk.AccAddress,
-	orcPriv *secp256k1.PrivKey,
-	logger log.Logger,
-) {
+func relayPricesAndHolders(cfg *config.Config, address string, cosmosConn *grpc.ClientConn, txCommitter tx_committer.TxCommitterClient, logger log.Logger) {
+	orcAddress, err := sdk.AccAddressFromBech32(address)
+	if err != nil {
+		panic(err)
+	}
+
 	oracleClient := types.NewQueryClient(cosmosConn)
 
 	response, err := oracleClient.CurrentEpoch(context.Background(), &types.QueryCurrentEpochRequest{})
 	if err != nil {
 		logger.Error("Error getting current epoch", "err", err.Error())
 		time.Sleep(time.Second)
+		return
+	}
+
+	if response.GetEpoch().GetNonce() == 0 {
 		return
 	}
 
@@ -83,7 +98,11 @@ func relayPricesAndHolders(
 			Holders:      holders,
 			Orchestrator: orcAddress.String(),
 		}
-		cosmos.SendCosmosTx([]sdk.Msg{holdersClaim}, orcAddress, orcPriv, cosmosConn, logger)
+
+		_, err = txCommitter.CommitTx(context.TODO(), &tx_committer.CommitTxRequest{Msgs: tx_committer.MarshalMsgs([]sdk.Msg{holdersClaim})})
+		if err != nil {
+			logger.Error("Failed to broadcast holders", "err", err.Error())
+		}
 	}
 
 	prices := getPrices(cfg)
@@ -96,7 +115,10 @@ func relayPricesAndHolders(
 		Orchestrator: orcAddress.String(),
 	}
 
-	cosmos.SendCosmosTx([]sdk.Msg{priceClaim}, orcAddress, orcPriv, cosmosConn, logger)
+	_, err = txCommitter.CommitTx(context.TODO(), &tx_committer.CommitTxRequest{Msgs: tx_committer.MarshalMsgs([]sdk.Msg{priceClaim})})
+	if err != nil {
+		logger.Error("Failed to broadcast prices", "err", err.Error())
+	}
 }
 
 func getHolders(cfg *config.Config) *types.Holders {

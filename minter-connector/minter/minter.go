@@ -51,21 +51,6 @@ func GetLatestMinterBlockAndNonce(ctx context.Context, currentNonce uint64) cont
 		ctx.Logger.Debug("Scanning blocks", "from", from, "to", to, "nonce", ctx.LastEventNonce)
 
 		for _, block := range blocks.Blocks {
-			// temp fix for missed withdrawal
-			if block.Height == 10233000 {
-				ctx.Logger.Debug("Applying temp fix", "height", block.Height)
-				ctx.Logger.Debug("Found batch")
-
-				if currentNonce > 0 && currentNonce < ctx.LastEventNonce() {
-					ctx.SetLastCheckedMinterBlock(block.Height - 1)
-					ctx.Commit()
-					return ctx
-				}
-
-				ctx.SetLastEventNonce(ctx.LastEventNonce() + 1)
-				ctx.SetLastBatchNonce(ctx.LastBatchNonce() + 1)
-			}
-
 			for _, tx := range block.Transactions {
 				if tx.Type == uint64(transaction.TypeSend) {
 					data, _ := tx.Data.UnmarshalNew()

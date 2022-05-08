@@ -3,7 +3,6 @@ package keeper
 import (
 	"encoding/binary"
 	"fmt"
-	"strconv"
 
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
@@ -49,9 +48,6 @@ func (k Keeper) BuildBatchTx(ctx sdk.Context, chainId types.ChainID, externalTok
 	ctx.EventManager().EmitEvent(sdk.NewEvent(
 		types.EventTypeOutgoingBatch,
 		sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
-		sdk.NewAttribute(types.AttributeKeyContract, k.getBridgeContractAddress(ctx)),
-		sdk.NewAttribute(types.AttributeKeyBridgeChainID, strconv.Itoa(int(k.getBridgeChainID(ctx)))),
-		sdk.NewAttribute(types.AttributeKeyOutgoingBatchID, fmt.Sprint(batch.BatchNonce)),
 		sdk.NewAttribute(types.AttributeKeyNonce, fmt.Sprint(batch.BatchNonce)),
 	))
 
@@ -284,9 +280,6 @@ func (k Keeper) CancelBatchTx(ctx sdk.Context, chainId types.ChainID, externalTo
 		sdk.NewEvent(
 			types.EventTypeOutgoingBatchCanceled,
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
-			sdk.NewAttribute(types.AttributeKeyContract, k.getBridgeContractAddress(ctx)),
-			sdk.NewAttribute(types.AttributeKeyBridgeChainID, strconv.Itoa(int(k.getBridgeChainID(ctx)))),
-			sdk.NewAttribute(types.AttributeKeyOutgoingBatchID, fmt.Sprint(nonce)),
 			sdk.NewAttribute(types.AttributeKeyNonce, fmt.Sprint(nonce)),
 		),
 	)
@@ -332,7 +325,13 @@ func (k Keeper) GetUnSlashedOutgoingTxs(ctx sdk.Context, chainId types.ChainID, 
 	return
 }
 
-func (k Keeper) incrementLastOutgoingBatchNonce(ctx sdk.Context, chainId types.ChainID) uint64 {
+func (k Keeper) setLastOutgoingBatchNonce(ctx sdk.Context, chainId types.ChainID, nonce uint64) {
+	store := ctx.KVStore(k.storeKey)
+	key := append([]byte{types.LastOutgoingBatchNonceKey}, chainId.Bytes()...)
+	store.Set(key, sdk.Uint64ToBigEndian(nonce))
+}
+
+func (k Keeper) getLastOutgoingBatchNonce(ctx sdk.Context, chainId types.ChainID) uint64 {
 	store := ctx.KVStore(k.storeKey)
 	key := append([]byte{types.LastOutgoingBatchNonceKey}, chainId.Bytes()...)
 	bz := store.Get(key)
@@ -340,8 +339,12 @@ func (k Keeper) incrementLastOutgoingBatchNonce(ctx sdk.Context, chainId types.C
 	if bz != nil {
 		id = binary.BigEndian.Uint64(bz)
 	}
-	newId := id + 1
-	bz = sdk.Uint64ToBigEndian(newId)
-	store.Set(key, bz)
+	return id
+}
+
+func (k Keeper) incrementLastOutgoingBatchNonce(ctx sdk.Context, chainId types.ChainID) uint64 {
+	newId := k.getLastOutgoingBatchNonce(ctx, chainId) + 1
+	k.setLastOutgoingBatchNonce(ctx, chainId, newId)
+
 	return newId
 }

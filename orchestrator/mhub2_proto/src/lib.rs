@@ -8,6 +8,9 @@ pub use cosmos_sdk_proto;
 pub mod mhub2 {
     include!("../../mhub2_proto/src/prost/mhub2.v1.rs");
 }
+pub mod tx_committer {
+    include!("../../mhub2_proto/src/prost/tx_committer.rs");
+}
 
 use bytes::BytesMut;
 use prost::Message;

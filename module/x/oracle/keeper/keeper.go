@@ -169,6 +169,13 @@ func (k Keeper) ProcessCurrentEpoch(ctx sdk.Context) {
 		att := k.GetAttestation(ctx, currentEpoch, claim)
 		if att != nil {
 			k.tryAttestation(ctx, att, claim)
+
+			for _, valaddr := range att.GetVotes() {
+				validator, _ := sdk.ValAddressFromBech32(valaddr)
+				k.deletePriceClaim(ctx, sdk.AccAddress(validator).String(), currentEpoch)
+			}
+
+			k.DeleteAttestation(ctx, *att)
 		}
 	}
 
@@ -179,6 +186,12 @@ func (k Keeper) ProcessCurrentEpoch(ctx sdk.Context) {
 		att := k.GetAttestation(ctx, currentEpoch, claim)
 		if att != nil {
 			k.tryAttestation(ctx, att, claim)
+
+			for _, valaddr := range att.GetVotes() {
+				validator, _ := sdk.ValAddressFromBech32(valaddr)
+				k.deleteHoldersClaim(ctx, sdk.AccAddress(validator).String(), currentEpoch)
+			}
+			k.DeleteAttestation(ctx, *att)
 		}
 	}
 }

@@ -9,6 +9,7 @@ use deep_space::Contact;
 use mhub2_proto::mhub2::query_client::QueryClient as Mhub2QueryClient;
 use mhub2_proto::mhub2::DelegateKeysByExternalSignerRequest;
 use mhub2_proto::mhub2::DelegateKeysByOrchestratorRequest;
+use mhub2_proto::tx_committer::tx_committer_client::TxCommitterClient;
 use std::process::exit;
 use std::time::Duration;
 use tokio::time::sleep as delay_for;
@@ -19,6 +20,7 @@ use web30::client::Web3;
 pub struct Connections {
     pub web3: Option<Web3>,
     pub grpc: Option<Mhub2QueryClient<Channel>>,
+    pub grpc_committer: Option<TxCommitterClient<Channel>>,
     pub contact: Option<Contact>,
 }
 
@@ -28,12 +30,23 @@ pub struct Connections {
 pub async fn create_rpc_connections(
     address_prefix: String,
     grpc_url: Option<String>,
+    grpc_committer_url: Option<String>,
     eth_rpc_url: Option<String>,
     timeout: Duration,
 ) -> Connections {
     let mut web3 = None;
     let mut grpc = None;
+    let mut grpc_committer = None;
     let mut contact = None;
+
+    if let Some(grpc_committer_url) = grpc_committer_url {
+        grpc_committer = Some(
+            TxCommitterClient::connect(grpc_committer_url.clone())
+                .await
+                .unwrap(),
+        );
+    }
+
     if let Some(grpc_url) = grpc_url {
         let url = Url::parse(&grpc_url)
             .unwrap_or_else(|_| panic!("Invalid Cosmos gRPC url {}", grpc_url));
@@ -185,6 +198,7 @@ pub async fn create_rpc_connections(
     Connections {
         web3,
         grpc,
+        grpc_committer,
         contact,
     }
 }

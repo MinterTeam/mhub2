@@ -417,6 +417,7 @@ func (k Keeper) getDelegateKeys(ctx sdk.Context, chainId types.ChainID) (out []*
 	iter.Close()
 
 	for _, msg := range out {
+		msg.EthSignature = []byte{0}
 		msg.OrchestratorAddress = k.GetExternalOrchestratorAddress(ctx, chainId, common.HexToAddress(msg.ExternalAddress)).String()
 	}
 
@@ -425,6 +426,27 @@ func (k Keeper) getDelegateKeys(ctx sdk.Context, chainId types.ChainID) (out []*
 	// reason
 	sort.Slice(out[:], func(i, j int) bool {
 		return out[i].ExternalAddress < out[j].ExternalAddress
+	})
+
+	return out
+}
+
+func (k Keeper) getNonces(ctx sdk.Context, chainId types.ChainID) (out []*types.Nonce) {
+	store := ctx.KVStore(k.storeKey)
+	iter := prefix.NewStore(store, append([]byte{types.LastEventNonceByValidatorKey}, chainId.Bytes()...)).Iterator(nil, nil)
+	for ; iter.Valid(); iter.Next() {
+		out = append(out, &types.Nonce{
+			ValidatorAddress: sdk.ValAddress(iter.Key()).String(),
+			LastEventNonce:   binary.BigEndian.Uint64(iter.Value()),
+		})
+	}
+	iter.Close()
+
+	// we iterated over a map, so now we have to sort to ensure the
+	// output here is deterministic, eth address chosen for no particular
+	// reason
+	sort.Slice(out[:], func(i, j int) bool {
+		return out[i].ValidatorAddress < out[j].ValidatorAddress
 	})
 
 	return out

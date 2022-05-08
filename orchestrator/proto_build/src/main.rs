@@ -47,16 +47,24 @@ fn compile_protos(out_dir: &Path, tmp_dir: &Path) {
 
     let mut mhub2_proto_dir = root.clone();
     mhub2_proto_dir.push("module/proto/mhub2/v1");
+    let mut connector_proto_dir = root.clone();
+    connector_proto_dir.push("minter-connector/proto");
+    let mut connector_proto_include_dir = root.clone();
+    connector_proto_include_dir.push("minter-connector/proto");
     let mut mhub2_proto_include_dir = root.clone();
     mhub2_proto_include_dir.push("module/proto");
     let mut third_party_proto_include_dir = root;
     third_party_proto_include_dir.push("module/third_party/proto");
 
     // Paths
-    let proto_paths = [mhub2_proto_dir];
+    let proto_paths = [mhub2_proto_dir, connector_proto_dir];
     // we need to have an include which is just the folder of our protos to satisfy protoc
     // which insists that any passed file be included in a directory passed as an include
-    let proto_include_paths = [mhub2_proto_include_dir, third_party_proto_include_dir];
+    let proto_include_paths = [
+        mhub2_proto_include_dir,
+        third_party_proto_include_dir,
+        connector_proto_include_dir,
+    ];
 
     // List available proto files
     let mut protos: Vec<PathBuf> = vec![];

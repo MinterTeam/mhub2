@@ -213,7 +213,7 @@ func runEvmChain(chainId int, wd string, ethAddress common.Address, privateKey *
 		panic(err)
 	}
 	runOrPanic("geth --networkid %d --datadir %s/data/eth-%d account import --password=eth-password.txt data/private-key-%d.txt", chainId, wd, chainId, chainId)
-	go runOrPanic("geth --miner.gasprice 100000000000 --port %d --maxpeers 0 --allow-insecure-unlock --http --http.port %s --networkid %d --unlock %s --password=eth-password.txt --mine --datadir %s/data/eth-%d", 30303+chainId, port, chainId, ethAddress.Hex(), wd, chainId)
+	go runOrPanic("geth --gcmode=archive --syncmode=full --lightkdf --miner.gasprice 100000000000 --port %d --maxpeers 0 --allow-insecure-unlock --http --http.port %s --networkid %d --unlock %s --password=eth-password.txt --mine --datadir %s/data/eth-%d", 30303+chainId, port, chainId, ethAddress.Hex(), wd, chainId)
 	client, err := ethclient.Dial("http://localhost:" + port)
 	if err != nil {
 		panic(err)
@@ -729,9 +729,26 @@ func populateMinterGenesis(pubkey minterTypes.Pubkey, address common.Address) {
 						BipValue: "1000000000000000000000000",
 					},
 				},
-				Status: 2,
+				Updates:                  nil,
+				Status:                   2,
+				JailedUntil:              0,
+				LastEditCommissionHeight: 0,
 			},
 		},
+		BlockListCandidates: nil,
+		DeletedCandidates:   nil,
+		Waitlist:            nil,
+		Pools: []minterTypes.Pool{
+			{
+				Coin0:    0,
+				Coin1:    minterTypes.USDTID,
+				Reserve0: "1",
+				Reserve1: "1",
+				ID:       1,
+				Orders:   nil,
+			},
+		},
+		NextOrderID: 0,
 		Accounts: []minterTypes.Account{
 			{
 				Address: minterTypes.Address(address),
@@ -749,19 +766,24 @@ func populateMinterGenesis(pubkey minterTypes.Pubkey, address common.Address) {
 						Value: "1000000000000000000000000",
 					},
 				},
-				Nonce: 0,
+				Nonce:               0,
+				MultisigData:        nil,
+				LockStakeUntilBlock: 0,
 			},
 		},
 		Coins: []minterTypes.Coin{
 			{
-				ID:        1,
-				Name:      "HUB",
-				Symbol:    minterTypes.StrToCoinSymbol("HUB"),
-				Volume:    "1000000000000000000000000",
-				Crr:       100,
-				Reserve:   "1000000000000000000000000",
-				MaxSupply: "1000000000000000000000000",
-				Version:   0,
+				ID:           1,
+				Name:         "HUB",
+				Symbol:       minterTypes.StrToCoinSymbol("HUB"),
+				Volume:       "1000000000000000000000000",
+				Crr:          100,
+				Reserve:      "1000000000000000000000000",
+				MaxSupply:    "1000000000000000000000000",
+				Version:      0,
+				OwnerAddress: nil,
+				Mintable:     false,
+				Burnable:     false,
 			},
 			{
 				ID:        2,
@@ -773,7 +795,22 @@ func populateMinterGenesis(pubkey minterTypes.Pubkey, address common.Address) {
 				MaxSupply: "1000000000000000000000000",
 				Version:   0,
 			},
+			{
+				ID:           minterTypes.USDTID,
+				Name:         "USDTE",
+				Symbol:       minterTypes.StrToCoinSymbol("USDTE"),
+				Volume:       "1",
+				Crr:          0,
+				Reserve:      "0",
+				MaxSupply:    "100",
+				Version:      0,
+				OwnerAddress: nil,
+				Mintable:     false,
+				Burnable:     false,
+			},
 		},
+		FrozenFunds: nil,
+		HaltBlocks:  nil,
 		Commission: minterTypes.Commission{
 			Coin:                    0,
 			PayloadByte:             "1",
@@ -821,10 +858,25 @@ func populateMinterGenesis(pubkey minterTypes.Pubkey, address common.Address) {
 			FailedTx:                "1",
 			AddLimitOrder:           "1",
 			RemoveLimitOrder:        "1",
+			MoveStake:               "1",
+			LockStake:               "1",
+			Lock:                    "1",
 		},
-		MaxGas:       100000,
-		TotalSlashed: "0",
-		Version:      "v250",
+		CommissionVotes: nil,
+		UpdateVotes:     nil,
+		UsedChecks:      nil,
+		MaxGas:          100000,
+		TotalSlashed:    "0",
+		Emission:        "0",
+		PrevReward: minterTypes.RewardPrice{
+			Time:       0,
+			AmountBIP:  "1",
+			AmountUSDT: "1",
+			Off:        false,
+			Reward:     "1",
+		},
+		Version:  "v310",
+		Versions: nil,
 	}
 
 	if err := state.Verify(); err != nil {
@@ -880,7 +932,7 @@ func deployContractsAndMultisig(prKeyString string) {
 			panic(err)
 		}
 
-		contract := deployContract(pk, client, "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", 97)
+		contract := deployContract(pk, client, "0xae13d989dac2f0debff460ac112a837c89baa7cd", 97)
 
 		println("bsc", contract)
 	}

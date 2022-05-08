@@ -81,6 +81,7 @@ async fn main() {
     let connections = create_rpc_connections(
         args.flag_address_prefix,
         Some(args.flag_cosmos_grpc),
+        None,
         Some(args.flag_ethereum_rpc),
         LOOP_SPEED,
     )

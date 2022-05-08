@@ -114,6 +114,11 @@ message GenesisState {
   TokenInfos token_infos = 6;
 }
 
+message Nonce {
+  string validator_address = 1;
+  uint64 last_event_nonce = 2;
+}
+
 message ExternalState {
   string chain_id = 1;
   repeated ExternalEventVoteRecord external_event_vote_records = 2;
@@ -123,4 +128,10 @@ message ExternalState {
   repeated google.protobuf.Any outgoing_txs = 6;
   repeated google.protobuf.Any confirmations = 7;
   uint64 sequence = 8;
+  repeated Nonce nonces = 9;
+  SignerSetTx last_observed_valset = 10;
+  uint64 last_outgoing_batch_tx_nonce = 11;
+  LatestBlockHeight latest_block_height = 12 [
+    (gogoproto.nullable) = false
+  ];
 }

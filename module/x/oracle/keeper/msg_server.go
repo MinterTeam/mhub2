@@ -30,7 +30,7 @@ func (k msgServer) HoldersClaim(c context.Context, msg *types.MsgHoldersClaim) (
 	}
 
 	if k.GetCurrentEpoch(ctx) != msg.GetEpoch() {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrLogic, "wrong epoch")
+		return &types.MsgHoldersClaimResponse{}, nil
 	}
 
 	// Add the claim to the store
@@ -62,7 +62,7 @@ func (k msgServer) PriceClaim(c context.Context, msg *types.MsgPriceClaim) (*typ
 	}
 
 	if k.GetCurrentEpoch(ctx) != msg.GetEpoch() {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrLogic, "wrong epoch")
+		return &types.MsgPriceClaimResponse{}, nil
 	}
 
 	tokenInfos := k.Mhub2keeper.GetTokenInfos(ctx)

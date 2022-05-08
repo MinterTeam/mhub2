@@ -44,6 +44,7 @@ import (
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/vesting"
+	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	"github.com/cosmos/cosmos-sdk/x/bank"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -509,6 +510,7 @@ func NewMhub2App(
 		),
 	)
 
+	// genutil crisis params transfer auth vesting bank gov
 	app.mm.SetOrderBeginBlockers(
 		upgradetypes.ModuleName,
 		capabilitytypes.ModuleName,
@@ -520,14 +522,37 @@ func NewMhub2App(
 		ibchost.ModuleName,
 		mhub2types.ModuleName,
 		oracletypes.ModuleName,
+		genutiltypes.ModuleName,
+		crisistypes.ModuleName,
+		paramstypes.ModuleName,
+		authtypes.ModuleName,
+		banktypes.ModuleName,
+		govtypes.ModuleName,
+		vestingtypes.ModuleName,
+		ibctransfertypes.ModuleName,
 	)
+
 	app.mm.SetOrderEndBlockers(
 		crisistypes.ModuleName,
 		govtypes.ModuleName,
 		stakingtypes.ModuleName,
 		mhub2types.ModuleName,
 		oracletypes.ModuleName,
+		slashingtypes.ModuleName,
+		distrtypes.ModuleName,
+		upgradetypes.ModuleName,
+		ibchost.ModuleName,
+		vestingtypes.ModuleName,
+		genutiltypes.ModuleName,
+		capabilitytypes.ModuleName,
+		authtypes.ModuleName,
+		minttypes.ModuleName,
+		evidencetypes.ModuleName,
+		paramstypes.ModuleName,
+		ibctransfertypes.ModuleName,
+		banktypes.ModuleName,
 	)
+
 	app.mm.SetOrderInitGenesis(
 		capabilitytypes.ModuleName,
 		authtypes.ModuleName,
@@ -544,6 +569,9 @@ func NewMhub2App(
 		ibctransfertypes.ModuleName,
 		oracletypes.ModuleName,
 		mhub2types.ModuleName,
+		vestingtypes.ModuleName,
+		paramstypes.ModuleName,
+		upgradetypes.ModuleName,
 	)
 
 	app.mm.RegisterInvariants(&app.crisisKeeper)
@@ -597,10 +625,6 @@ func NewMhub2App(
 
 	app.ScopedIBCKeeper = scopedIBCKeeper
 	app.ScopedTransferKeeper = scopedTransferKeeper
-
-	app.upgradeKeeper.SetUpgradeHandler("v0.1.0", func(ctx sdk.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
-		return nil, nil
-	})
 
 	return app
 }

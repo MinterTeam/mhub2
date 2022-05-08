@@ -3,9 +3,9 @@ package context
 import (
 	"encoding/json"
 	"github.com/MinterTeam/mhub2/minter-connector/config"
+	"github.com/MinterTeam/mhub2/minter-connector/tx_committer"
 	"github.com/MinterTeam/minter-go-sdk/v2/api/http_client"
 	"github.com/MinterTeam/minter-go-sdk/v2/wallet"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/tendermint/tendermint/libs/log"
 	"google.golang.org/grpc"
@@ -28,10 +28,10 @@ type Context struct {
 	CosmosConn   *grpc.ClientConn
 	MinterClient *http_client.Client
 
-	OrcAddress   sdk.AccAddress
-	OrcPriv      *secp256k1.PrivKey
 	MinterWallet *wallet.Wallet
 	Logger       log.Logger
+	TxCommitter  *tx_committer.Server
+	OrcAddress   sdk.AccAddress
 }
 
 func (c *Context) LoadStatus(file string, defaultStatus config.MinterConfig) {

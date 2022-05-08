@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+option go_package = "github.com/MinterTeam/mhub2/minter-connector/tx_committer";
+
+package tx_committer;
+
+service TxCommitter {
+  rpc CommitTx (CommitTxRequest) returns (CommitTxReply) {}
+  rpc Address (AddressRequest) returns (AddressReply) {}
+}
+
+message CommitTxRequest {
+  repeated bytes msgs = 1;
+}
+
+message CommitTxReply {
+  int32 code = 1;
+}
+
+message AddressRequest {
+}
+
+message AddressReply {
+  string address = 1;
+}

@@ -43,6 +43,11 @@ func (k Keeper) storeClaim(ctx sdk.Context, details types.Claim) error {
 	return nil
 }
 
+// storeClaim removes a claim
+func (k Keeper) deleteClaim(ctx sdk.Context, details types.Claim) {
+	ctx.KVStore(k.storeKey).Delete(types.GetClaimKey(details))
+}
+
 // voteForAttestation either gets the attestation for this claim from storage, or creates one if this is the first time a validator
 // has submitted a claim for this exact event
 func (k Keeper) voteForAttestation(
@@ -243,6 +248,26 @@ func (k Keeper) GetPriceClaim(ctx sdk.Context, valaddr string, epoch uint64) typ
 	k.cdc.MustUnmarshal(bz, &claim)
 
 	return &claim
+}
+
+func (k Keeper) deletePriceClaim(ctx sdk.Context, valaddr string, epoch uint64) {
+	store := ctx.KVStore(k.storeKey)
+	details := &types.MsgPriceClaim{
+		Epoch:        epoch,
+		Orchestrator: valaddr,
+	}
+
+	store.Delete(types.GetClaimKey(details))
+}
+
+func (k Keeper) deleteHoldersClaim(ctx sdk.Context, valaddr string, epoch uint64) {
+	store := ctx.KVStore(k.storeKey)
+	details := &types.MsgHoldersClaim{
+		Epoch:        epoch,
+		Orchestrator: valaddr,
+	}
+
+	store.Delete(types.GetClaimKey(details))
 }
 
 // IterateClaimsByValidatorAndType takes a validator key and a claim type and then iterates over these claims

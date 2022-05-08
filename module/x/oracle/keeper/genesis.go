@@ -8,11 +8,14 @@ import (
 // InitGenesis starts a chain from a genesis state
 func InitGenesis(ctx sdk.Context, k Keeper, data types.GenesisState) {
 	k.SetParams(ctx, *data.Params)
+	k.setCurrentEpoch(ctx, 1)
 
-	// reset attestations in state
-	for _, att := range data.Attestations {
-		// TODO: block height?
-		k.SetAttestationUnsafe(ctx, &att)
+	if data.Prices != nil {
+		k.storePrices(ctx, data.Prices)
+	}
+
+	if data.Holders != nil {
+		k.storeHolders(ctx, data.Holders)
 	}
 }
 
@@ -22,6 +25,8 @@ func ExportGenesis(ctx sdk.Context, k Keeper) types.GenesisState {
 	var (
 		p            = k.GetParams(ctx)
 		attmap       = k.GetAttestationMapping(ctx)
+		prices       = k.GetPrices(ctx)
+		holders      = k.GetHolders(ctx)
 		attestations = []types.Attestation{}
 	)
 
@@ -32,7 +37,8 @@ func ExportGenesis(ctx sdk.Context, k Keeper) types.GenesisState {
 	}
 
 	return types.GenesisState{
-		Params:       &p,
-		Attestations: attestations,
+		Params:  &p,
+		Prices:  prices,
+		Holders: holders,
 	}
 }

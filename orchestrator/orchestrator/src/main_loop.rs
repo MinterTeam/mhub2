@@ -9,7 +9,7 @@ use crate::{
 };
 use clarity::{address::Address as EthAddress, Uint256};
 use clarity::{utils::bytes_to_hex_str, PrivateKey as EthPrivateKey};
-use cosmos_gravity::send::send_main_loop;
+use cosmos_gravity::send::send_messages;
 use cosmos_gravity::{
     build,
     query::{
@@ -19,10 +19,10 @@ use cosmos_gravity::{
 };
 use deep_space::client::ChainStatus;
 use deep_space::error::CosmosGrpcError;
-use deep_space::private_key::PrivateKey as CosmosPrivateKey;
-use deep_space::{Contact, Msg};
+use deep_space::{Address, Contact};
 use ethereum_gravity::utils::get_gravity_id;
 use mhub2_proto::mhub2::query_client::QueryClient as Mhub2QueryClient;
+use mhub2_proto::tx_committer::tx_committer_client::TxCommitterClient;
 use relayer::main_loop::relayer_main_loop;
 use std::{
     net,
@@ -44,43 +44,39 @@ pub const ETH_ORACLE_LOOP_SPEED: Duration = Duration::from_secs(13);
 /// very little actual cpu bound work and spend the vast majority
 /// of all execution time sleeping this shouldn't be an issue at all.
 pub async fn orchestrator_main_loop(
-    cosmos_key: CosmosPrivateKey,
+    cosmos_address: Address,
     ethereum_key: EthPrivateKey,
     web3: Web3,
     contact: Contact,
     grpc_client: Mhub2QueryClient<Channel>,
+    grpc_tx_committer_client: &TxCommitterClient<Channel>,
     gravity_contract_address: EthAddress,
-    gas_price: (f64, String),
     chain_id: String,
     eth_fee_calculator_url: Option<String>,
     metrics_listen: &net::SocketAddr,
 ) {
-    let (tx, rx) = tokio::sync::mpsc::channel(1);
-
-    let a = send_main_loop(&contact, cosmos_key, gas_price, rx);
-
-    let b = eth_oracle_main_loop(
-        cosmos_key,
+    let a = eth_oracle_main_loop(
+        cosmos_address.clone(),
         web3.clone(),
         contact.clone(),
         grpc_client.clone(),
         gravity_contract_address,
-        tx.clone(),
+        &grpc_tx_committer_client,
         chain_id.clone(),
     );
 
-    let c = eth_signer_main_loop(
-        cosmos_key,
+    let b = eth_signer_main_loop(
+        cosmos_address.clone(),
         ethereum_key,
         web3.clone(),
         contact.clone(),
         grpc_client.clone(),
         gravity_contract_address,
-        tx.clone(),
+        &grpc_tx_committer_client,
         chain_id.clone(),
     );
 
-    let d = relayer_main_loop(
+    let c = relayer_main_loop(
         ethereum_key,
         web3,
         grpc_client.clone(),
@@ -90,9 +86,9 @@ pub async fn orchestrator_main_loop(
         true,
     );
 
-    let e = metrics_main_loop(metrics_listen);
+    let d = metrics_main_loop(metrics_listen);
 
-    futures::future::join5(a, b, c, d, e).await;
+    futures::future::join4(a, b, c, d).await;
 }
 
 const DELAY: Duration = Duration::from_secs(5);
@@ -100,15 +96,14 @@ const DELAY: Duration = Duration::from_secs(5);
 /// This function is responsible for making sure that Ethereum events are retrieved from the Ethereum blockchain
 /// and ferried over to Cosmos where they will be used to issue tokens or process batches.
 pub async fn eth_oracle_main_loop(
-    cosmos_key: CosmosPrivateKey,
+    our_cosmos_address: Address,
     web3: Web3,
     contact: Contact,
     grpc_client: Mhub2QueryClient<Channel>,
     gravity_contract_address: EthAddress,
-    msg_sender: tokio::sync::mpsc::Sender<Vec<Msg>>,
+    tx_committer_client: &TxCommitterClient<Channel>,
     chain_id: String,
 ) {
-    let our_cosmos_address = cosmos_key.to_address(&contact.get_prefix()).unwrap();
     let long_timeout_web30 = Web3::new(&web3.get_url(), Duration::from_secs(120));
     let mut last_checked_block: Uint256 = get_last_checked_block(
         grpc_client.clone(),
@@ -173,9 +168,9 @@ pub async fn eth_oracle_main_loop(
             &contact,
             &mut grpc_client,
             gravity_contract_address,
-            cosmos_key,
+            our_cosmos_address,
             last_checked_block.clone(),
-            msg_sender.clone(),
+            &tx_committer_client.clone(),
             chain_id.clone(),
         )
         .await
@@ -206,16 +201,15 @@ pub async fn eth_oracle_main_loop(
 /// since these are provided directly by a trusted Cosmsos node they can simply be assumed to be
 /// valid and signed off on.
 pub async fn eth_signer_main_loop(
-    cosmos_key: CosmosPrivateKey,
+    our_cosmos_address: Address,
     ethereum_key: EthPrivateKey,
     web3: Web3,
     contact: Contact,
     grpc_client: Mhub2QueryClient<Channel>,
     contract_address: EthAddress,
-    msg_sender: tokio::sync::mpsc::Sender<Vec<Msg>>,
+    tx_committer_client: &TxCommitterClient<Channel>,
     chain_id: String,
 ) {
-    let our_cosmos_address = cosmos_key.to_address(&contact.get_prefix()).unwrap();
     let our_ethereum_address = ethereum_key.to_public_key().unwrap();
     let mut grpc_client = grpc_client;
 
@@ -287,15 +281,13 @@ pub async fn eth_signer_main_loop(
                         valsets[0].nonce
                     );
                     let messages = build::signer_set_tx_confirmation_messages(
-                        &contact,
                         ethereum_key,
                         valsets,
-                        cosmos_key,
+                        our_cosmos_address,
                         gravity_id.clone(),
                         chain_id.clone(),
                     );
-                    msg_sender
-                        .send(messages)
+                    send_messages(tx_committer_client, messages)
                         .await
                         .expect("Could not send messages");
                 }
@@ -327,15 +319,13 @@ pub async fn eth_signer_main_loop(
                 );
                 let transaction_batches = vec![last_unsigned_batch];
                 let messages = build::batch_tx_confirmation_messages(
-                    &contact,
                     ethereum_key,
                     transaction_batches,
-                    cosmos_key,
+                    our_cosmos_address,
                     gravity_id.clone(),
                     chain_id.clone(),
                 );
-                msg_sender
-                    .send(messages)
+                send_messages(tx_committer_client, messages)
                     .await
                     .expect("Could not send messages");
             }
@@ -361,15 +351,13 @@ pub async fn eth_signer_main_loop(
                 );
                 let logic_calls = vec![logic_call];
                 let messages = build::contract_call_tx_confirmation_messages(
-                    &contact,
                     ethereum_key,
                     logic_calls,
-                    cosmos_key,
+                    our_cosmos_address,
                     gravity_id.clone(),
                     chain_id.clone(),
                 );
-                msg_sender
-                    .send(messages)
+                send_messages(tx_committer_client, messages)
                     .await
                     .expect("Could not send messages");
             }

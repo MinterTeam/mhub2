@@ -31,6 +31,7 @@ var PricesList = PricesResult{Data: []struct {
 	{"bnb", "400"},
 	{"bsc/gas", "5"},
 	{"hub", "0.1"},
+	{"test", "1"},
 }}
 
 func runHoldersServer() {

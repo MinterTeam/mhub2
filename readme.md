@@ -1,4 +1,4 @@
-# Minter Hub 2.0
+# Minter Hub 2.1
 
 ## Build & Install
 
@@ -137,24 +137,18 @@ BSC Contract for testnet: 0x0c8ed00B0A80c4d436E9FCb67986bC3b1ee470d5
 
 ```bash
 orchestrator \
-  --cosmos-phrase=<COSMOS MNEMONIC> \
   --ethereum-key=<ETHEREUM PRIVATE KEY> \
   --cosmos-grpc="http://127.0.0.1:9090" \
   --ethereum-rpc="http://127.0.0.1:8545/" \
-  --fees=hub \
-  --address-prefix=hub \
   --chain-id=ethereum \
   --contract-address=<ADDRESS OF ETHEREUM CONTRACT> 
 ```
 
 ```bash
 orchestrator \
-  --cosmos-phrase=<COSMOS MNEMONIC> \
   --ethereum-key=<ETHEREUM PRIVATE KEY> \
   --cosmos-grpc="http://127.0.0.1:9090" \
   --ethereum-rpc="http://127.0.0.1:8545/" \
-  --fees=hub \
-  --address-prefix=hub \
   --chain-id=bsc \
   --contract-address=<ADDRESS OF BSC CONTRACT> 
 ```
@@ -200,7 +194,6 @@ holders_url = "https://explorer-hub-api.minter.network/api/tokens/1902/holders"
 prices_url = "https://explorer-hub-api.minter.network/api/prices"
 
 [cosmos]
-mnemonic = <COSMOS MNEMONIC>
 grpc_addr = "127.0.0.1:9090"
 rpc_addr = "http://127.0.0.1:26657"
 ```
