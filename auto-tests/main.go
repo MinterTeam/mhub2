@@ -309,6 +309,7 @@ func main() {
 	stopProcess("mhub-minter-connector")
 
 	genesis := runOrPanic(os.ExpandEnv("mhub2 export"))
+	genesis = strings.ReplaceAll(genesis, "mhub-test", "mhub-test-2")
 	os.WriteFile(os.ExpandEnv("$HOME/.mhub2/config/genesis.json"), []byte(genesis), os.ModePerm)
 	runOrPanic(os.ExpandEnv("rm -rf $HOME/.mhub2/data"))
 	runOrPanic(os.ExpandEnv("mkdir $HOME/.mhub2/data"))
