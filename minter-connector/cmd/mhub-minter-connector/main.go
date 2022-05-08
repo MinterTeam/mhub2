@@ -473,22 +473,6 @@ func relayMinterEvents(ctx context.Context) context.Context {
 			ctx.SetLastCheckedMinterBlock(block.Height)
 			ctx.Logger.Debug("Checking block", "height", block.Height)
 
-			// temp fix for missed withdrawal
-			if block.Height == 10233000 {
-				ctx.Logger.Debug("Applying temp fix", "height", block.Height)
-
-				batches = append(batches, cosmos.Batch{
-					BatchNonce: ctx.LastBatchNonce(),
-					EventNonce: ctx.LastEventNonce(),
-					CoinId:     2107,
-					TxHash:     "Mt46922c03e9d0a40991c3ab54f227bc8c833bf7230d9e1c43a66e00f3abeee163",
-					Height:     block.Height,
-				})
-
-				ctx.SetLastEventNonce(ctx.LastEventNonce() + 1)
-				ctx.SetLastBatchNonce(ctx.LastBatchNonce() + 1)
-			}
-
 			for _, tx := range block.Transactions {
 				if tx.Type == uint64(transaction.TypeSend) {
 					data, _ := tx.Data.UnmarshalNew()
