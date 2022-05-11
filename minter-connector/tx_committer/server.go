@@ -279,6 +279,7 @@ func SendCosmosTx(cosmosRpcAddr string, msgs []sdk.Msg, address sdk.AccAddress, 
 			"non contiguous event nonce",
 			"signature duplicate",
 			"required price not found or malformed",
+			"couldn't find outgoing tx",
 		}
 
 		drop := false
