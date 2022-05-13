@@ -51,12 +51,15 @@ func AddMonitorCmd() *cobra.Command {
 
 			ourAddress := args[0]
 			nonceErrorCounter := 0
+			hasNonceError := false
 
 			handleErr := func(err error) {
 				pc, filename, line, _ := runtime.Caller(1)
 
 				str := fmt.Sprintf("[error] in %s[%s:%d] %v", runtime.FuncForPC(pc).Name(), filename, line, err)
-				bot.Send(tgbotapi.NewMessage(int64(chatId), str))
+				if _, err := bot.Send(tgbotapi.NewMessage(int64(chatId), str)); err != nil {
+					println(err.Error())
+				}
 
 				startMsg, _ = bot.Send(tgbotapi.NewMessage(int64(chatId), newText()))
 			}
@@ -65,7 +68,10 @@ func AddMonitorCmd() *cobra.Command {
 			for {
 				i++
 				if i%12 == 0 {
-					bot.Send(tgbotapi.NewEditMessageText(startMsg.Chat.ID, startMsg.MessageID, newText()))
+					_, err := bot.Send(tgbotapi.NewEditMessageText(startMsg.Chat.ID, startMsg.MessageID, newText()))
+					if err != nil {
+						println(err.Error())
+					}
 				}
 
 				time.Sleep(time.Second * 5)
@@ -88,20 +94,16 @@ func AddMonitorCmd() *cobra.Command {
 					continue
 				}
 
-				if time.Now().Sub(status.SyncInfo.LatestBlockTime).Minutes() > 1 {
-					handleErr(errors.New("last block on Minter Hub node was more than 1 minute ago"))
+				if time.Now().Sub(status.SyncInfo.LatestBlockTime).Seconds() > 30 {
+					handleErr(errors.New("last block on Minter Hub node was more than 30 seconds ago"))
 					continue
 				}
 
 				queryClient := types.NewQueryClient(clientCtx)
 				stakingQueryClient := stakingtypes.NewQueryClient(clientCtx)
-				vals, _ := stakingQueryClient.Validators(context.Background(), &stakingtypes.QueryValidatorsRequest{
-					Status:     "",
-					Pagination: nil,
-				})
+				vals, _ := stakingQueryClient.Validators(context.Background(), &stakingtypes.QueryValidatorsRequest{})
 
 				chains := []types.ChainID{"ethereum", "minter", "bsc"}
-			loop:
 				for _, chain := range chains {
 					println(chain.String())
 					delegatedKeys, err := queryClient.DelegateKeys(context.Background(), &types.DelegateKeysRequest{
@@ -143,13 +145,19 @@ func AddMonitorCmd() *cobra.Command {
 						}
 
 						if nonce < response.GetEventNonce() {
-							nonceErrorCounter++
-							break loop
+							hasNonceError = true
 						}
 					}
 
-					nonceErrorCounter = 0
+					if !hasNonceError {
+						nonceErrorCounter = 0
+					}
 				}
+
+				if hasNonceError {
+					nonceErrorCounter += 1
+				}
+				hasNonceError = false
 
 				if nonceErrorCounter > 5 {
 					handleErr(errors.New("event nonce on some external network was not updated for too long. Check your orchestrators and minter-connector"))
