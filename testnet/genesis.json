@@ -301,7 +301,7 @@
             "id": "5",
             "denom": "eth",
             "chain_id": "ethereum",
-            "external_token_id": "0x0a180A76e4466bF68A7F86fB029BEd3cCcFaAac5",
+            "external_token_id": "0xc778417E063141139Fce010982780140Aa0cD5Ab",
             "external_decimals": "18",
             "commission": "0.010000000000000000"
           }
