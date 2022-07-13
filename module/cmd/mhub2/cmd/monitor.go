@@ -41,7 +41,7 @@ func AddMonitorCmd() *cobra.Command {
 			}
 
 			newText := func(t string) string {
-				return fmt.Sprintf("Watching...\n%s\n%s", time.Now().Format(time.Stamp), t)
+				return fmt.Sprintf("Watching...\n%s%s", time.Now().Format(time.Stamp), t)
 			}
 
 			startMsg, err := bot.Send(tgbotapi.NewMessage(int64(chatId), newText("")))
@@ -135,7 +135,7 @@ func AddMonitorCmd() *cobra.Command {
 
 						for _, v := range vals.GetValidators() {
 							if v.OperatorAddress == k.ValidatorAddress {
-								t = fmt.Sprintf("%s\n%s\t%d", t, v.GetMoniker(), response.GetEventNonce())
+								t = fmt.Sprintf("%s\n%d %s", t, response.GetEventNonce(), v.GetMoniker())
 							}
 						}
 
@@ -159,7 +159,6 @@ func AddMonitorCmd() *cobra.Command {
 					continue
 				}
 
-				i++
 				if i%12 == 0 {
 					msg := tgbotapi.NewEditMessageText(startMsg.Chat.ID, startMsg.MessageID, newText(t))
 					msg.ParseMode = "html"
@@ -168,6 +167,7 @@ func AddMonitorCmd() *cobra.Command {
 						println(err.Error())
 					}
 				}
+				i++
 			}
 
 			return nil
