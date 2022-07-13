@@ -40,11 +40,11 @@ func AddMonitorCmd() *cobra.Command {
 				panic(err)
 			}
 
-			newText := func() string {
-				return fmt.Sprintf("Watching...\n%s", time.Now().Format(time.Stamp))
+			newText := func(t string) string {
+				return fmt.Sprintf("Watching...\n%s\n%s", time.Now().Format(time.Stamp), t)
 			}
 
-			startMsg, err := bot.Send(tgbotapi.NewMessage(int64(chatId), newText()))
+			startMsg, err := bot.Send(tgbotapi.NewMessage(int64(chatId), newText("")))
 			if err != nil {
 				panic(err)
 			}
@@ -61,20 +61,14 @@ func AddMonitorCmd() *cobra.Command {
 					println(err.Error())
 				}
 
-				startMsg, _ = bot.Send(tgbotapi.NewMessage(int64(chatId), newText()))
+				startMsg, _ = bot.Send(tgbotapi.NewMessage(int64(chatId), newText("")))
 			}
 
 			i := 0
 			for {
-				i++
-				if i%12 == 0 {
-					_, err := bot.Send(tgbotapi.NewEditMessageText(startMsg.Chat.ID, startMsg.MessageID, newText()))
-					if err != nil {
-						println(err.Error())
-					}
-				}
-
 				time.Sleep(time.Second * 5)
+
+				t := ""
 
 				clientCtx, err := client.GetClientQueryContext(cmd)
 				if err != nil {
@@ -105,7 +99,8 @@ func AddMonitorCmd() *cobra.Command {
 
 				chains := []types.ChainID{"ethereum", "minter", "bsc"}
 				for _, chain := range chains {
-					println(chain.String())
+					t = fmt.Sprintf("%s\n\n<b>%s</b>", t, chain.String())
+
 					delegatedKeys, err := queryClient.DelegateKeys(context.Background(), &types.DelegateKeysRequest{
 						ChainId: chain.String(),
 					})
@@ -140,7 +135,7 @@ func AddMonitorCmd() *cobra.Command {
 
 						for _, v := range vals.GetValidators() {
 							if v.OperatorAddress == k.ValidatorAddress {
-								println(v.GetMoniker(), response.GetEventNonce())
+								t = fmt.Sprintf("%s\n%s\t%d", t, v.GetMoniker(), response.GetEventNonce())
 							}
 						}
 
@@ -162,6 +157,16 @@ func AddMonitorCmd() *cobra.Command {
 				if nonceErrorCounter > 5 {
 					handleErr(errors.New("event nonce on some external network was not updated for too long. Check your orchestrators and minter-connector"))
 					continue
+				}
+
+				i++
+				if i%12 == 0 {
+					msg := tgbotapi.NewEditMessageText(startMsg.Chat.ID, startMsg.MessageID, newText(t))
+					msg.ParseMode = "html"
+					_, err := bot.Send(msg)
+					if err != nil {
+						println(err.Error())
+					}
 				}
 			}
 
