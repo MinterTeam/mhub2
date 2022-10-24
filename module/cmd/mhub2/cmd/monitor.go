@@ -2,17 +2,23 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"runtime"
-	"strconv"
 	"strings"
 	"time"
+
+	"github.com/ethereum/go-ethereum/common"
+
+	"github.com/ethereum/go-ethereum/ethclient"
 
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
+	"github.com/MinterTeam/mhub2/module/solidity"
 	"github.com/MinterTeam/mhub2/module/x/mhub2/types"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -22,20 +28,28 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 )
 
+type MonitorConfig struct {
+	OurAddress    string   `json:"our_address"`
+	TelegramToken string   `json:"telegram_token"`
+	ChatID        int64    `json:"chat_id"`
+	EthereumRPC   []string `json:"ethereum_rpc"`
+	BNBChainRPC   []string `json:"bnb_chain_rpc"`
+}
+
 // AddMonitorCmd returns monitor cobra Command.
 func AddMonitorCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "monitor [our_address] [telegram_bot_token] [chat_id]",
+		Use:   "monitor [config]",
 		Short: "",
 		Long:  ``,
-		Args:  cobra.ExactArgs(3),
+		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			bot, err := tgbotapi.NewBotAPI(args[1])
+			config, err := readConfig(args[0])
 			if err != nil {
-				panic(err)
+				return err
 			}
 
-			chatId, err := strconv.Atoi(args[2])
+			bot, err := tgbotapi.NewBotAPI(config.TelegramToken)
 			if err != nil {
 				panic(err)
 			}
@@ -44,30 +58,26 @@ func AddMonitorCmd() *cobra.Command {
 				return fmt.Sprintf("Watching...\n%s%s", time.Now().Format(time.Stamp), t)
 			}
 
-			startMsg, err := bot.Send(tgbotapi.NewMessage(int64(chatId), newText("")))
+			startMsg, err := bot.Send(tgbotapi.NewMessage(config.ChatID, newText("")))
 			if err != nil {
 				panic(err)
 			}
 
-			ourAddress := args[0]
 			nonceErrorCounter := 0
-			hasNonceError := false
-
 			handleErr := func(err error) {
 				pc, filename, line, _ := runtime.Caller(1)
 
 				str := fmt.Sprintf("[error] in %s[%s:%d] %v", runtime.FuncForPC(pc).Name(), filename, line, err)
-				if _, err := bot.Send(tgbotapi.NewMessage(int64(chatId), str)); err != nil {
+				if _, err := bot.Send(tgbotapi.NewMessage(config.ChatID, str)); err != nil {
 					println(err.Error())
 				}
 
-				startMsg, _ = bot.Send(tgbotapi.NewMessage(int64(chatId), newText("")))
+				startMsg, _ = bot.Send(tgbotapi.NewMessage(config.ChatID, newText("")))
 			}
 
 			i := 0
 			for {
-				time.Sleep(time.Second * 5)
-
+				time.Sleep(time.Minute)
 				t := ""
 
 				clientCtx, err := client.GetClientQueryContext(cmd)
@@ -110,7 +120,7 @@ func AddMonitorCmd() *cobra.Command {
 					}
 
 					response, err := queryClient.LastSubmittedExternalEvent(context.Background(), &types.LastSubmittedExternalEventRequest{
-						Address: ourAddress,
+						Address: config.OurAddress,
 						ChainId: chain.String(),
 					})
 
@@ -119,7 +129,16 @@ func AddMonitorCmd() *cobra.Command {
 						continue
 					}
 
-					nonce := response.EventNonce
+					ourNonce := response.EventNonce
+					actualNonce, err := getActualNonce(chain, config, delegatedKeys.GetDelegateKeys(), queryClient)
+					if err != nil {
+						handleErr(err)
+						continue
+					}
+
+					if ourNonce < actualNonce {
+						nonceErrorCounter++
+					}
 
 					for _, k := range delegatedKeys.GetDelegateKeys() {
 						response, err := queryClient.LastSubmittedExternalEvent(context.Background(), &types.LastSubmittedExternalEventRequest{
@@ -135,24 +154,17 @@ func AddMonitorCmd() *cobra.Command {
 
 						for _, v := range vals.GetValidators() {
 							if v.OperatorAddress == k.ValidatorAddress {
-								t = fmt.Sprintf("%s\n%d %s", t, response.GetEventNonce(), v.GetMoniker())
+								nonce := response.GetEventNonce()
+								alert := ""
+								if nonce < actualNonce {
+									alert = "⚠️"
+								}
+								t = fmt.Sprintf("%s\n%d %s %s", t, nonce, v.GetMoniker(), alert)
 							}
 						}
-
-						if nonce < response.GetEventNonce() {
-							hasNonceError = true
-						}
 					}
 
-					if !hasNonceError {
-						nonceErrorCounter = 0
-					}
 				}
-
-				if hasNonceError {
-					nonceErrorCounter += 1
-				}
-				hasNonceError = false
 
 				if nonceErrorCounter > 5 {
 					handleErr(errors.New("event nonce on some external network was not updated for too long. Check your orchestrators and minter-connector"))
@@ -177,4 +189,88 @@ func AddMonitorCmd() *cobra.Command {
 	flags.AddQueryFlagsToCmd(cmd)
 
 	return cmd
+}
+
+func getActualNonce(chain types.ChainID, config MonitorConfig, keys []*types.MsgDelegateKeys, queryClient types.QueryClient) (uint64, error) {
+	switch chain {
+	case "ethereum", "bsc":
+		return getEvmNonce(chain, config)
+	case "minter":
+		maxNonce := uint64(0)
+		for _, k := range keys {
+			response, err := queryClient.LastSubmittedExternalEvent(context.Background(), &types.LastSubmittedExternalEventRequest{
+				Address: k.OrchestratorAddress,
+				ChainId: chain.String(),
+			})
+			if err != nil {
+				if !strings.Contains(err.Error(), "validator is not bonded") {
+					return 0, err
+				}
+			}
+
+			if maxNonce < response.GetEventNonce() {
+				maxNonce = response.GetEventNonce()
+			}
+		}
+
+		return maxNonce, nil
+	}
+
+	return 0, nil
+}
+
+func getEvmNonce(chain types.ChainID, config MonitorConfig) (uint64, error) {
+	var address common.Address
+	var RPCs []string
+
+	switch chain {
+	case "ethereum":
+		address = common.HexToAddress("0x897c27fa372aa730d4c75b1243e7ea38879194e2")
+		RPCs = config.EthereumRPC
+	case "bsc":
+		address = common.HexToAddress("0xf5b0ed82a0b3e11567081694cc66c3df133f7c8f")
+		RPCs = config.BNBChainRPC
+	}
+
+	maxNonce := uint64(0)
+	for _, rpc := range RPCs {
+		evmClient, err := ethclient.Dial(rpc)
+		if err != nil {
+			continue
+		}
+
+		instance, err := solidity.NewHub2(address, evmClient)
+		if err != nil {
+			continue
+		}
+
+		lastNonce, err := instance.StateLastEventNonce(nil)
+		if err != nil {
+			continue
+		}
+
+		if maxNonce < lastNonce.Uint64() {
+			maxNonce = lastNonce.Uint64()
+		}
+	}
+
+	if maxNonce == 0 {
+		return 0, errors.New("no available nonce source for " + chain.String())
+	}
+
+	return maxNonce, nil
+}
+
+func readConfig(path string) (MonitorConfig, error) {
+	config := MonitorConfig{}
+	configBody, err := os.ReadFile(path)
+	if err != nil {
+		return MonitorConfig{}, err
+	}
+
+	if err := json.Unmarshal(configBody, &config); err != nil {
+		return MonitorConfig{}, err
+	}
+
+	return config, nil
 }
