@@ -55,7 +55,7 @@ func AddMonitorCmd() *cobra.Command {
 			}
 
 			newText := func(t string) string {
-				return fmt.Sprintf("Watching...\n%s%s", time.Now().Format(time.Stamp), t)
+				return fmt.Sprintf("%s%s", time.Now().Format(time.Stamp), t)
 			}
 
 			startMsg, err := bot.Send(tgbotapi.NewMessage(config.ChatID, newText("")))
@@ -108,7 +108,6 @@ func AddMonitorCmd() *cobra.Command {
 
 				chains := []types.ChainID{"ethereum", "minter", "bsc"}
 				for _, chain := range chains {
-					t = fmt.Sprintf("%s\n\n<b>%s</b>", t, chain.String())
 
 					delegatedKeys, err := queryClient.DelegateKeys(context.Background(), &types.DelegateKeysRequest{
 						ChainId: chain.String(),
@@ -118,25 +117,29 @@ func AddMonitorCmd() *cobra.Command {
 						continue
 					}
 
-					response, err := queryClient.LastSubmittedExternalEvent(context.Background(), &types.LastSubmittedExternalEventRequest{
-						Address: config.OurAddress,
-						ChainId: chain.String(),
-					})
-
-					if err != nil {
-						handleErr(err)
-						continue
-					}
-
-					ourNonce := response.EventNonce
 					actualNonce, err := getActualNonce(chain, config, delegatedKeys.GetDelegateKeys(), queryClient)
 					if err != nil {
 						handleErr(err)
 						continue
 					}
 
-					if ourNonce < actualNonce {
-						nonceErrorCounter++
+					t = fmt.Sprintf("%s\n\n<b>%s</b> (%d)", t, chain.String(), actualNonce)
+
+					if config.OurAddress != "" {
+						response, err := queryClient.LastSubmittedExternalEvent(context.Background(), &types.LastSubmittedExternalEventRequest{
+							Address: config.OurAddress,
+							ChainId: chain.String(),
+						})
+
+						if err != nil {
+							handleErr(err)
+							continue
+						}
+
+						ourNonce := response.EventNonce
+						if ourNonce < actualNonce {
+							nonceErrorCounter++
+						}
 					}
 
 					for _, k := range delegatedKeys.GetDelegateKeys() {
@@ -158,7 +161,7 @@ func AddMonitorCmd() *cobra.Command {
 								if nonce < actualNonce {
 									alert = "⚠️"
 								}
-								t = fmt.Sprintf("%s\n%d %s %s", t, nonce, v.GetMoniker(), alert)
+								t = fmt.Sprintf("%s\n%d %s %s", t, nonce, alert, v.GetMoniker())
 							}
 						}
 					}
