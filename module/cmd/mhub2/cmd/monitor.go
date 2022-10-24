@@ -75,7 +75,6 @@ func AddMonitorCmd() *cobra.Command {
 				startMsg, _ = bot.Send(tgbotapi.NewMessage(config.ChatID, newText("")))
 			}
 
-			i := 0
 			for {
 				time.Sleep(time.Minute)
 				t := ""
@@ -171,15 +170,11 @@ func AddMonitorCmd() *cobra.Command {
 					continue
 				}
 
-				if i%12 == 0 {
-					msg := tgbotapi.NewEditMessageText(startMsg.Chat.ID, startMsg.MessageID, newText(t))
-					msg.ParseMode = "html"
-					_, err := bot.Send(msg)
-					if err != nil {
-						println(err.Error())
-					}
+				msg := tgbotapi.NewEditMessageText(startMsg.Chat.ID, startMsg.MessageID, newText(t))
+				msg.ParseMode = "html"
+				if _, err := bot.Send(msg); err != nil {
+					println(err.Error())
 				}
-				i++
 			}
 
 			return nil
