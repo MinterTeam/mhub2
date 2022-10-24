@@ -194,7 +194,28 @@ func AddMonitorCmd() *cobra.Command {
 func getActualNonce(chain types.ChainID, config MonitorConfig, keys []*types.MsgDelegateKeys, queryClient types.QueryClient) (uint64, error) {
 	switch chain {
 	case "ethereum", "bsc":
-		return getEvmNonce(chain, config)
+		var address common.Address
+		var RPCs []string
+
+		switch chain {
+		case "ethereum":
+			address = common.HexToAddress("0x897c27fa372aa730d4c75b1243e7ea38879194e2")
+			RPCs = config.EthereumRPC
+		case "bsc":
+			address = common.HexToAddress("0xf5b0ed82a0b3e11567081694cc66c3df133f7c8f")
+			RPCs = config.BNBChainRPC
+		}
+
+		maxNonce, err := getEvmNonce(address, RPCs)
+		if err != nil {
+			return 0, err
+		}
+
+		if maxNonce == 0 {
+			return 0, errors.New("no available nonce source for " + chain.String())
+		}
+
+		return maxNonce, nil
 	case "minter":
 		maxNonce := uint64(0)
 		for _, k := range keys {
@@ -219,19 +240,7 @@ func getActualNonce(chain types.ChainID, config MonitorConfig, keys []*types.Msg
 	return 0, nil
 }
 
-func getEvmNonce(chain types.ChainID, config MonitorConfig) (uint64, error) {
-	var address common.Address
-	var RPCs []string
-
-	switch chain {
-	case "ethereum":
-		address = common.HexToAddress("0x897c27fa372aa730d4c75b1243e7ea38879194e2")
-		RPCs = config.EthereumRPC
-	case "bsc":
-		address = common.HexToAddress("0xf5b0ed82a0b3e11567081694cc66c3df133f7c8f")
-		RPCs = config.BNBChainRPC
-	}
-
+func getEvmNonce(address common.Address, RPCs []string) (uint64, error) {
 	maxNonce := uint64(0)
 	for _, rpc := range RPCs {
 		evmClient, err := ethclient.Dial(rpc)
@@ -252,10 +261,6 @@ func getEvmNonce(chain types.ChainID, config MonitorConfig) (uint64, error) {
 		if maxNonce < lastNonce.Uint64() {
 			maxNonce = lastNonce.Uint64()
 		}
-	}
-
-	if maxNonce == 0 {
-		return 0, errors.New("no available nonce source for " + chain.String())
 	}
 
 	return maxNonce, nil
