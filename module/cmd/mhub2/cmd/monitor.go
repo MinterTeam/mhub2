@@ -166,7 +166,7 @@ func AddMonitorCmd() *cobra.Command {
 							if v.OperatorAddress == k.ValidatorAddress {
 								nonce := response.GetEventNonce()
 								if nonce < actualNonce {
-									failuresLog = fmt.Sprintf("%s🔴️<b>%s</b> has nonce <b>%d</b> on <b>%s</b> (actual <b>%d</b>)\n", failuresLog, v.GetMoniker(), nonce, chain.String(), actualNonce)
+									failuresLog = fmt.Sprintf("%s⚠️️ <b>%s</b> has nonce <b>%d</b> on <b>%s</b> (actual <b>%d</b>)\n", failuresLog, v.GetMoniker(), nonce, chain.String(), actualNonce)
 									valHasFailure[v.OperatorAddress] = true
 								}
 							}
@@ -192,7 +192,7 @@ func AddMonitorCmd() *cobra.Command {
 				}
 
 				if failuresLog != "" {
-					t = t + "\n\n<b>Failures:</b>" + failuresLog
+					t = t + "\n\n<b>Failures</b>\n" + failuresLog
 				}
 
 				msg := tgbotapi.NewEditMessageText(startMsg.Chat.ID, startMsg.MessageID, newText(t))
