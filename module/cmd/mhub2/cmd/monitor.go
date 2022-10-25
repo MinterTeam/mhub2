@@ -114,7 +114,10 @@ func AddMonitorCmd() *cobra.Command {
 				vals, _ := stakingQueryClient.Validators(context.Background(), &stakingtypes.QueryValidatorsRequest{})
 
 				valHasFailure := map[string]bool{}
+				valHasNonceFailure := map[string]map[types.ChainID]uint64{}
 				failuresLog := ""
+
+				actualNonces := map[types.ChainID]uint64{}
 
 				chains := []types.ChainID{"ethereum", "minter", "bsc"}
 				for _, chain := range chains {
@@ -131,6 +134,8 @@ func AddMonitorCmd() *cobra.Command {
 						handleErr(err)
 						continue
 					}
+
+					actualNonces[chain] = actualNonce
 
 					if config.OurAddress != "" {
 						response, err := queryClient.LastSubmittedExternalEvent(context.Background(), &types.LastSubmittedExternalEventRequest{
@@ -167,7 +172,7 @@ func AddMonitorCmd() *cobra.Command {
 							if v.OperatorAddress == k.ValidatorAddress {
 								nonce := response.GetEventNonce()
 								if nonce < actualNonce {
-									failuresLog = fmt.Sprintf("%s⚠️️ <b>%s</b> has nonce <b>%d</b> on <b>%s</b> (actual <b>%d</b>)\n", failuresLog, v.GetMoniker(), nonce, chain.String(), actualNonce)
+									valHasNonceFailure[v.OperatorAddress][chain] = nonce
 									valHasFailure[v.OperatorAddress] = true
 								}
 							}
@@ -185,9 +190,20 @@ func AddMonitorCmd() *cobra.Command {
 					alert := "🟢"
 					if valHasFailure[v.OperatorAddress] {
 						alert = fmt.Sprintf("🔴️")
-						valHasFailure[v.OperatorAddress] = true
+						failuresLog = fmt.Sprintf("%s⚠️️ <b>%s</b>", failuresLog, v.GetMoniker())
 					}
 					t = fmt.Sprintf("%s\n%s %s", t, alert, v.GetMoniker())
+
+					var nonceErrs []string
+					for _, chain := range chains {
+						nonce := valHasNonceFailure[v.OperatorAddress][chain]
+						if nonce == 0 {
+							continue
+						}
+						nonceErrs = append(nonceErrs, fmt.Sprintf("nonce <b>%d</b> of <b>%d</b> on <b>%s</b>", nonce, actualNonces[chain], chain.String()))
+					}
+
+					failuresLog += strings.Join(nonceErrs, ",") + "\n"
 				}
 
 				for _, chain := range chains {
@@ -198,7 +214,7 @@ func AddMonitorCmd() *cobra.Command {
 				}
 
 				if failuresLog != "" {
-					t = t + "\n\n<b>Failures</b>\n" + failuresLog
+					t = t + "\n\n" + failuresLog
 				}
 
 				msg := tgbotapi.NewEditMessageText(startMsg.Chat.ID, startMsg.MessageID, newText(t))
