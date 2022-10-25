@@ -63,7 +63,7 @@ func AddMonitorCmd() *cobra.Command {
 				panic(err)
 			}
 
-			nonceErrorCounter := 0
+			nonceErrorCounter := make(map[types.ChainID]int)
 			handleErr := func(err error) {
 				pc, filename, line, _ := runtime.Caller(1)
 
@@ -106,9 +106,11 @@ func AddMonitorCmd() *cobra.Command {
 				stakingQueryClient := stakingtypes.NewQueryClient(clientCtx)
 				vals, _ := stakingQueryClient.Validators(context.Background(), &stakingtypes.QueryValidatorsRequest{})
 
+				valHasFailure := map[string]bool{}
+				failuresLog := ""
+
 				chains := []types.ChainID{"ethereum", "minter", "bsc"}
 				for _, chain := range chains {
-
 					delegatedKeys, err := queryClient.DelegateKeys(context.Background(), &types.DelegateKeysRequest{
 						ChainId: chain.String(),
 					})
@@ -138,7 +140,9 @@ func AddMonitorCmd() *cobra.Command {
 
 						ourNonce := response.EventNonce
 						if ourNonce < actualNonce {
-							nonceErrorCounter++
+							nonceErrorCounter[chain]++
+						} else {
+							nonceErrorCounter[chain] = 0
 						}
 					}
 
@@ -157,21 +161,33 @@ func AddMonitorCmd() *cobra.Command {
 						for _, v := range vals.GetValidators() {
 							if v.OperatorAddress == k.ValidatorAddress {
 								nonce := response.GetEventNonce()
-								alert := "🟢"
 								if nonce < actualNonce {
-									alert = fmt.Sprintf("🔴️ (%d)", nonce)
+									failuresLog = fmt.Sprintf("%s🔴️%s has nonce %d on network %s (actual %d)\n", failuresLog, v.GetMoniker(), nonce, chain.String(), actualNonce)
+									valHasFailure[v.OperatorAddress] = true
 								}
-								t = fmt.Sprintf("%s\n%s %s", t, alert, v.GetMoniker())
 							}
 						}
 					}
 
 				}
 
-				if nonceErrorCounter > 5 {
-					handleErr(errors.New("event nonce on some external network was not updated for too long. Check your orchestrators and minter-connector"))
-					continue
+				for _, v := range vals.GetValidators() {
+					alert := "🟢"
+					if valHasFailure[v.OperatorAddress] {
+						alert = fmt.Sprintf("🔴️")
+						valHasFailure[v.OperatorAddress] = true
+					}
+					t = fmt.Sprintf("%s\n%s %s", t, alert, v.GetMoniker())
 				}
+
+				for _, chain := range chains {
+					if nonceErrorCounter[chain] > 5 {
+						handleErr(errors.New("event nonce on " + chain.String() + " was not updated for too long"))
+						continue
+					}
+				}
+
+				t = t + failuresLog
 
 				msg := tgbotapi.NewEditMessageText(startMsg.Chat.ID, startMsg.MessageID, newText(t))
 				msg.ParseMode = "html"
