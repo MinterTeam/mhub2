@@ -194,7 +194,7 @@ func AddMonitorCmd() *cobra.Command {
 					alert := "🟢"
 					if valHasFailure[v.OperatorAddress] {
 						alert = fmt.Sprintf("🔴️")
-						failuresLog = fmt.Sprintf("%s⚠️️ <b>%s</b>", failuresLog, v.GetMoniker())
+						failuresLog = fmt.Sprintf("%s⚠️️ <b>%s</b> ", failuresLog, v.GetMoniker())
 					}
 					t = fmt.Sprintf("%s\n%s %s", t, alert, v.GetMoniker())
 
@@ -207,7 +207,7 @@ func AddMonitorCmd() *cobra.Command {
 						nonceErrs = append(nonceErrs, fmt.Sprintf("nonce <b>%d</b> of <b>%d</b> on <b>%s</b>", nonce, actualNonces[chain], chain.String()))
 					}
 
-					failuresLog += strings.Join(nonceErrs, ",") + "\n"
+					failuresLog += strings.Join(nonceErrs, ", ") + "\n"
 				}
 
 				for _, chain := range chains {
