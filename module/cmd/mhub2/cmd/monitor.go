@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"sort"
 	"strings"
 	"time"
 
@@ -175,7 +176,12 @@ func AddMonitorCmd() *cobra.Command {
 
 				}
 
-				for _, v := range vals.GetValidators() {
+				sortedVals := vals.GetValidators()
+				sort.Slice(sortedVals, func(i, j int) bool {
+					return sortedVals[i].BondedTokens().GT(sortedVals[j].BondedTokens())
+				})
+
+				for _, v := range sortedVals {
 					alert := "🟢"
 					if valHasFailure[v.OperatorAddress] {
 						alert = fmt.Sprintf("🔴️")
