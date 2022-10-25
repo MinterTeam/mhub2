@@ -198,16 +198,16 @@ func AddMonitorCmd() *cobra.Command {
 					}
 					t = fmt.Sprintf("%s\n%s %s", t, alert, v.GetMoniker())
 
-					var nonceErrs []string
-					for _, chain := range chains {
-						nonce := valHasNonceFailure[v.OperatorAddress][chain]
-						if nonce == 0 {
-							continue
+					if valHasFailure[v.OperatorAddress] {
+						var nonceErrs []string
+						for _, chain := range chains {
+							if nonce, ok := valHasNonceFailure[v.OperatorAddress][chain]; ok {
+								nonceErrs = append(nonceErrs, fmt.Sprintf("nonce <b>%d</b> of <b>%d</b> on <b>%s</b>", nonce, actualNonces[chain], chain.String()))
+							}
 						}
-						nonceErrs = append(nonceErrs, fmt.Sprintf("nonce <b>%d</b> of <b>%d</b> on <b>%s</b>", nonce, actualNonces[chain], chain.String()))
-					}
 
-					failuresLog += strings.Join(nonceErrs, ", ") + "\n"
+						failuresLog += strings.Join(nonceErrs, ", ") + "\n"
+					}
 				}
 
 				for _, chain := range chains {
