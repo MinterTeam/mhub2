@@ -117,6 +117,10 @@ func AddMonitorCmd() *cobra.Command {
 				valHasNonceFailure := map[string]map[types.ChainID]uint64{}
 				failuresLog := ""
 
+				for _, val := range vals.GetValidators() {
+					valHasNonceFailure[val.OperatorAddress] = map[types.ChainID]uint64{}
+				}
+
 				actualNonces := map[types.ChainID]uint64{}
 
 				chains := []types.ChainID{"ethereum", "minter", "bsc"}
