@@ -59,9 +59,24 @@ func AddMonitorCmd() *cobra.Command {
 				return fmt.Sprintf("%s\n%s", time.Now().Format(time.Stamp), t)
 			}
 
-			startMsg, err := bot.Send(tgbotapi.NewMessage(config.ChatID, newText("")))
+			chat, err := bot.GetChat(tgbotapi.ChatInfoConfig{
+				ChatConfig: tgbotapi.ChatConfig{
+					ChatID: config.ChatID,
+				},
+			})
 			if err != nil {
 				panic(err)
+			}
+
+			var startMsg tgbotapi.Message
+
+			if chat.PinnedMessage != nil {
+				startMsg = *chat.PinnedMessage
+			} else {
+				startMsg, err = bot.Send(tgbotapi.NewMessage(config.ChatID, newText("")))
+				if err != nil {
+					panic(err)
+				}
 			}
 
 			nonceErrorCounter := make(map[types.ChainID]int)
