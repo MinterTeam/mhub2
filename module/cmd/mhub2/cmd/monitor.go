@@ -75,8 +75,14 @@ func AddMonitorCmd() *cobra.Command {
 				startMsg, _ = bot.Send(tgbotapi.NewMessage(config.ChatID, newText("")))
 			}
 
+			initialized := false
+
 			for {
-				time.Sleep(time.Minute)
+				if initialized {
+					time.Sleep(time.Minute)
+				}
+
+				initialized = true
 				t := ""
 
 				clientCtx, err := client.GetClientQueryContext(cmd)
@@ -125,8 +131,6 @@ func AddMonitorCmd() *cobra.Command {
 						continue
 					}
 
-					t = fmt.Sprintf("%s\n\n<b>%s</b> (%d)", t, chain.String(), actualNonce)
-
 					if config.OurAddress != "" {
 						response, err := queryClient.LastSubmittedExternalEvent(context.Background(), &types.LastSubmittedExternalEventRequest{
 							Address: config.OurAddress,
@@ -162,7 +166,7 @@ func AddMonitorCmd() *cobra.Command {
 							if v.OperatorAddress == k.ValidatorAddress {
 								nonce := response.GetEventNonce()
 								if nonce < actualNonce {
-									failuresLog = fmt.Sprintf("%s🔴️%s has nonce %d on network %s (actual %d)\n", failuresLog, v.GetMoniker(), nonce, chain.String(), actualNonce)
+									failuresLog = fmt.Sprintf("%s🔴️<b>%s</b> has nonce <b>%d</b> on <b>%s</b> (actual <b>%d</b>)\n", failuresLog, v.GetMoniker(), nonce, chain.String(), actualNonce)
 									valHasFailure[v.OperatorAddress] = true
 								}
 							}
@@ -187,7 +191,9 @@ func AddMonitorCmd() *cobra.Command {
 					}
 				}
 
-				t = t + failuresLog
+				if failuresLog != "" {
+					t = t + "\n\n<b>Failures:</b>" + failuresLog
+				}
 
 				msg := tgbotapi.NewEditMessageText(startMsg.Chat.ID, startMsg.MessageID, newText(t))
 				msg.ParseMode = "html"
