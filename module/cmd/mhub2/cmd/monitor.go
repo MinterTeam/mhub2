@@ -196,7 +196,7 @@ func AddMonitorCmd() *cobra.Command {
 						alert = fmt.Sprintf("🔴️")
 						failuresLog = fmt.Sprintf("%s⚠️️ <b>%s</b> ", failuresLog, v.GetMoniker())
 					}
-					t = fmt.Sprintf("%s\n%s %s", t, alert, v.GetMoniker())
+					t = fmt.Sprintf("%s\n%s %s (%d HUB)", t, alert, v.GetMoniker(), v.BondedTokens().QuoRaw(1e18).Int64())
 
 					if valHasFailure[v.OperatorAddress] {
 						var nonceErrs []string
