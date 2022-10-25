@@ -79,6 +79,12 @@ func AddMonitorCmd() *cobra.Command {
 				if err != nil {
 					panic(err)
 				}
+
+				bot.Request(tgbotapi.PinChatMessageConfig{
+					ChatID:              startMsg.Chat.ID,
+					MessageID:           startMsg.MessageID,
+					DisableNotification: true,
+				})
 			}
 
 			nonceErrorCounter := make(map[types.ChainID]int)
@@ -91,7 +97,13 @@ func AddMonitorCmd() *cobra.Command {
 				}
 
 				msg := tgbotapi.NewMessage(config.ChatID, newText(""))
+				msg.DisableNotification = true
 				startMsg, _ = bot.Send(msg)
+				bot.Request(tgbotapi.PinChatMessageConfig{
+					ChatID:              startMsg.Chat.ID,
+					MessageID:           startMsg.MessageID,
+					DisableNotification: true,
+				})
 			}
 
 			initialized := false
