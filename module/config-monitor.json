@@ -1,0 +1,7 @@
+{
+  "our_address": "hub1...",
+  "telegram_token": "",
+  "chat_id": 0,
+  "ethereum_rpc": ["https://mainnet.infura.io/v3/"],
+  "bnb_chain_rpc": ["https://bscrpc.com/"]
+}
