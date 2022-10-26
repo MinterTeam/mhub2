@@ -5,11 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/big"
 	"os"
 	"runtime"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -36,6 +39,8 @@ type MonitorConfig struct {
 	EthereumRPC   []string `json:"ethereum_rpc"`
 	BNBChainRPC   []string `json:"bnb_chain_rpc"`
 }
+
+const blockDelay = 6
 
 // AddMonitorCmd returns monitor cobra Command.
 func AddMonitorCmd() *cobra.Command {
@@ -329,7 +334,14 @@ func getEvmNonce(address common.Address, RPCs []string) (uint64, error) {
 			continue
 		}
 
-		lastNonce, err := instance.StateLastEventNonce(nil)
+		latestBlock, err := evmClient.BlockNumber(context.TODO())
+		if err != nil {
+			continue
+		}
+
+		lastNonce, err := instance.StateLastEventNonce(&bind.CallOpts{
+			BlockNumber: big.NewInt(int64(latestBlock - blockDelay)),
+		})
 		if err != nil {
 			continue
 		}
