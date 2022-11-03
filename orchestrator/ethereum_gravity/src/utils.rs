@@ -7,6 +7,7 @@ use sha3::{Digest, Keccak256};
 use std::u128::MAX as U128MAX;
 use std::u64::MAX as U64MAX;
 use web30::{client::Web3, jsonrpc::error::Web3Error};
+use web30::types::TransactionRequest;
 
 // pub fn get_correct_sig_for_address(
 //     address: CosmosAddress,
@@ -140,15 +141,19 @@ pub async fn get_tx_batch_nonce(
     web3: &Web3,
 ) -> Result<u64, Web3Error> {
     let val = web3
-        .simulate_transaction(
-            gravity_contract_address,
-            0u64.into(),
-            encode_call(
-                "state_lastBatchNonce(address)",
-                &[Token::Address(erc20_contract_address)],
-            )?,
-            caller_address,
-            None,
+        .eth_call(
+            TransactionRequest{
+                from: Some(caller_address),
+                to: gravity_contract_address,
+                gas: None,
+                gas_price: None,
+                value: None,
+                data: Some(encode_call(
+                    "state_lastBatchNonce(address)",
+                    &[erc20_contract_address.into()],
+                )?.into()),
+                nonce: None,
+            },
         )
         .await?;
     // the go represents all nonces as u64, there's no
