@@ -25,7 +25,7 @@ pub async fn send_eth_transaction_batch(
     nonce: Uint256,
 ) -> Result<(), GravityError> {
     let new_batch_nonce = batch.nonce;
-    let eth_address = our_eth_key.to_public_key().unwrap();
+    let eth_address = our_eth_key.to_address();
     info!(
         "Ordering signatures and submitting TransactionBatch {}:{} to Ethereum",
         batch.token_contract, new_batch_nonce
@@ -100,7 +100,7 @@ pub async fn estimate_tx_batch_cost(
     eth_fee_calculator_url: Option<String>,
     chain_id: String,
 ) -> Result<GasCost, GravityError> {
-    let our_eth_address = our_eth_key.to_public_key().unwrap();
+    let our_eth_address = our_eth_key.to_address();
     let our_balance = web3.eth_get_balance(our_eth_address).await?;
     let our_nonce = web3.eth_get_transaction_count(our_eth_address).await?;
     let gas_limit = min((u64::MAX - 1).into(), our_balance.clone());

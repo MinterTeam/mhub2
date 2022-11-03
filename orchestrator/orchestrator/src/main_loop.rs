@@ -210,7 +210,7 @@ pub async fn eth_signer_main_loop(
     tx_committer_client: &TxCommitterClient<Channel>,
     chain_id: String,
 ) {
-    let our_ethereum_address = ethereum_key.to_public_key().unwrap();
+    let our_ethereum_address = ethereum_key.to_address();
     let mut grpc_client = grpc_client;
 
     let gravity_id = get_gravity_id(contract_address, our_ethereum_address, &web3).await;

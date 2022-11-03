@@ -28,7 +28,30 @@ where
     hex_str_to_bytes(&s).map_err(serde::de::Error::custom)
 }
 
-#[derive(Serialize, Deserialize, Debug, Default, Clone, Eq, PartialEq, Hash)]
+/// As received by getTransactionReceipt
+#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq, Hash)]
+pub struct TransactionReceipt {
+    /// hash of the transactions this log was created from. null when its pending log.
+    #[serde(rename = "transactionHash")]
+    pub transaction_hash: Option<Data>,
+    /// integer of the transactions index position log was created from. null when its pending log.
+    #[serde(rename = "transactionIndex")]
+    pub transaction_index: Option<Uint256>,
+    /// hash of the block where this log was in. null when its pending. null when its pending log.
+    #[serde(rename = "blockHash")]
+    pub block_hash: Option<Data>,
+    /// the block number where this log was in. null when its pending. null when its pending log.
+    #[serde(rename = "blockNumber")]
+    pub block_number: Option<Uint256>,
+    pub from: Address,
+    pub to: Address,
+    #[serde(rename = "cumulativeGasUsed")]
+    pub cumulative_gas_used: Uint256,
+    #[serde(rename = "gasUsed")]
+    pub gas_used: Uint256,
+}
+
+#[derive(Serialize, Deserialize, Debug, Default, Clone, Eq, PartialEq)]
 pub struct Log {
     /// true when the log was removed, due to a chain reorganization. false if its a valid log.
     pub removed: Option<bool>,
@@ -80,29 +103,6 @@ impl From<Vec<u8>> for Data {
     fn from(v: Vec<u8>) -> Self {
         Data(v)
     }
-}
-
-/// As received by getTransactionReceipt
-#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq, Hash)]
-pub struct TransactionReceipt {
-    /// hash of the transactions this log was created from. null when its pending log.
-    #[serde(rename = "transactionHash")]
-    pub transaction_hash: Option<Data>,
-    /// integer of the transactions index position log was created from. null when its pending log.
-    #[serde(rename = "transactionIndex")]
-    pub transaction_index: Option<Uint256>,
-    /// hash of the block where this log was in. null when its pending. null when its pending log.
-    #[serde(rename = "blockHash")]
-    pub block_hash: Option<Data>,
-    /// the block number where this log was in. null when its pending. null when its pending log.
-    #[serde(rename = "blockNumber")]
-    pub block_number: Option<Uint256>,
-    pub from: Address,
-    pub to: Address,
-    #[serde(rename = "cumulativeGasUsed")]
-    pub cumulative_gas_used: Uint256,
-    #[serde(rename = "gasUsed")]
-    pub gas_used: Uint256,
 }
 
 /// As received by getTransactionByHash
@@ -293,6 +293,10 @@ pub struct XdaiBlock {
     pub gas_limit: Uint256,
     #[serde(rename = "gasUsed")]
     pub gas_used: Uint256,
+    /// this field will not exist until after
+    /// the london hardfork
+    #[serde(rename = "baseFeePerGas")]
+    pub base_fee_per_gas: Option<Uint256>,
     pub hash: Uint256,
     #[serde(rename = "logsBloom")]
     pub logs_bloom: Data,
@@ -373,12 +377,19 @@ pub struct ConciseBlock {
 pub struct ConciseXdaiBlock {
     pub author: Address,
     pub difficulty: Uint256,
-    #[serde(rename = "extraData")]
+    #[serde(
+        rename = "extraData",
+        deserialize_with = "parse_possibly_empty_hex_val"
+    )]
     pub extra_data: Uint256,
     #[serde(rename = "gasLimit")]
     pub gas_limit: Uint256,
     #[serde(rename = "gasUsed")]
     pub gas_used: Uint256,
+    /// this field will not exist until after
+    /// the london hardfork
+    #[serde(rename = "baseFeePerGas")]
+    pub base_fee_per_gas: Option<Uint256>,
     pub hash: Uint256,
     #[serde(rename = "logsBloom")]
     pub logs_bloom: Data,
@@ -411,6 +422,7 @@ pub struct ConciseXdaiBlock {
 pub enum SendTxOption {
     GasPrice(Uint256),
     GasPriceMultiplier(f32),
+    GasLimitMultiplier(f32),
     GasLimit(Uint256),
     NetworkId(u64),
     Nonce(Uint256),
@@ -425,6 +437,21 @@ where
         Ok(val) => Ok(val),
         Err(_e) => Ok(0u32.into()),
     }
+}
+
+/// This enum encapsulates the syncing status returned by a call to eth_syncing
+/// This will either return a bool 'false' if not syncing, or an object with details
+/// about which blocks are syncing
+#[derive(Serialize, Debug, Deserialize, Clone, PartialEq, Eq)]
+#[serde(untagged)]
+pub enum SyncingStatus {
+    NotSyncing(bool),
+    #[serde(rename_all = "camelCase")]
+    Syncing {
+        starting_block: Uint256,
+        current_block: Uint256,
+        highest_block: Uint256,
+    },
 }
 
 #[cfg(test)]

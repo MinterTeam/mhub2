@@ -6,32 +6,31 @@
 //!
 use crate::jsonrpc::client::HttpClient;
 use crate::jsonrpc::error::Web3Error;
-use crate::types::{
-    Block, Log, NewFilter, TransactionReceipt, TransactionRequest, TransactionResponse,
-};
+use crate::types::{Block, Log, NewFilter, SyncingStatus, TransactionReceipt, TransactionRequest, TransactionResponse};
 use crate::types::{ConciseBlock, ConciseXdaiBlock, Data, SendTxOption, XdaiBlock};
-use clarity::abi::{encode_call, Token};
 use clarity::utils::bytes_to_hex_str;
 use clarity::{Address, PrivateKey, Transaction};
-use num::ToPrimitive;
+use num::{ToPrimitive, Zero};
 use num256::Uint256;
 use std::cmp::max;
 use std::{cmp::min, time::Duration};
 use std::{sync::Arc, time::Instant};
 use tokio::time::sleep as delay_for;
 
+const ETHEREUM_INTRINSIC_GAS: u32 = 21000;
+
 /// An instance of Web3Client.
 #[derive(Clone)]
 pub struct Web3 {
     url: String,
-    jsonrpc_client: Arc<Box<HttpClient>>,
+    jsonrpc_client: Arc<HttpClient>,
     timeout: Duration,
 }
 
 impl Web3 {
     pub fn new(url: &str, timeout: Duration) -> Self {
         Self {
-            jsonrpc_client: Arc::new(Box::new(HttpClient::new(url))),
+            jsonrpc_client: Arc::new(HttpClient::new(url)),
             timeout,
             url: url.to_string(),
         }
@@ -45,13 +44,9 @@ impl Web3 {
         self.url.clone()
     }
 
-    pub async fn get_base_fee_per_gas(&self) -> Result<Option<Uint256>, Web3Error> {
-        Ok(self.eth_get_latest_block().await?.base_fee_per_gas)
-    }
-
     pub async fn eth_accounts(&self) -> Result<Vec<Address>, Web3Error> {
         self.jsonrpc_client
-            .request_method("eth_accounts", Vec::<String>::new(), self.timeout, None)
+            .request_method("eth_accounts", Vec::<String>::new(), self.timeout)
             .await
     }
 
@@ -59,7 +54,7 @@ impl Web3 {
     pub async fn eth_chainid(&self) -> Result<Option<Uint256>, Web3Error> {
         let ret: Result<Uint256, Web3Error> = self
             .jsonrpc_client
-            .request_method("eth_chainId", Vec::<String>::new(), self.timeout, None)
+            .request_method("eth_chainId", Vec::<String>::new(), self.timeout)
             .await;
 
         Ok(Some(ret?))
@@ -68,14 +63,14 @@ impl Web3 {
     pub async fn net_version(&self) -> Result<u64, Web3Error> {
         let ret: Result<String, Web3Error> = self
             .jsonrpc_client
-            .request_method("net_version", Vec::<String>::new(), self.timeout, None)
+            .request_method("net_version", Vec::<String>::new(), self.timeout)
             .await;
         Ok(ret?.parse()?)
     }
 
     pub async fn eth_new_filter(&self, new_filter: NewFilter) -> Result<Uint256, Web3Error> {
         self.jsonrpc_client
-            .request_method("eth_newFilter", vec![new_filter], self.timeout, None)
+            .request_method("eth_newFilter", vec![new_filter], self.timeout)
             .await
     }
 
@@ -85,7 +80,6 @@ impl Web3 {
                 "eth_getFilterChanges",
                 vec![format!("{:#x}", filter_id.clone())],
                 self.timeout,
-                Some(10_000_000),
             )
             .await
     }
@@ -96,65 +90,101 @@ impl Web3 {
                 "eth_uninstallFilter",
                 vec![format!("{:#x}", filter_id.clone())],
                 self.timeout,
-                None,
             )
             .await
     }
 
     pub async fn eth_get_logs(&self, new_filter: NewFilter) -> Result<Vec<Log>, Web3Error> {
         self.jsonrpc_client
-            .request_method(
-                "eth_getLogs",
-                vec![new_filter],
-                self.timeout,
-                Some(10_000_000),
-            )
+            .request_method("eth_getLogs", vec![new_filter], self.timeout)
             .await
     }
 
     pub async fn eth_get_transaction_count(&self, address: Address) -> Result<Uint256, Web3Error> {
-        self.jsonrpc_client
-            .request_method(
-                "eth_getTransactionCount",
-                vec![address.to_string(), "latest".to_string()],
-                self.timeout,
-                None,
-            )
-            .await
+        //check if the node is still syncing
+        match self.eth_syncing().await? {
+            false => {
+                self.jsonrpc_client
+                    .request_method(
+                        "eth_getTransactionCount",
+                        vec![address.to_string(), "latest".to_string()],
+                        self.timeout,
+                    )
+                    .await
+            }
+            true => Err(Web3Error::SyncingNode(
+                "Cannot perform eth_getTransactionCount".to_string(),
+            )),
+        }
     }
+
     /// Get the median gas price over the last 10 blocks. This function does not
     /// simply wrap eth_gasPrice, in post London chains it also requests the base
     /// gas from the previous block and prevents the use of a lower value
     pub async fn eth_gas_price(&self) -> Result<Uint256, Web3Error> {
-        let median_gas = self
-            .jsonrpc_client
-            .request_method("eth_gasPrice", Vec::<String>::new(), self.timeout, None)
-            .await?;
-        let base_gas = self.get_base_fee_per_gas().await?;
-        Ok(match base_gas {
-            Some(base_gas) => max(base_gas, median_gas),
-            None => median_gas,
-        })
+        match self.eth_syncing().await? {
+            false => {
+                let median_gas = self
+                    .jsonrpc_client
+                    .request_method("eth_gasPrice", Vec::<String>::new(), self.timeout)
+                    .await?;
+                if let Some(gas) = self.get_base_fee_per_gas().await? {
+                    if median_gas < gas {
+                        Ok(gas)
+                    } else {
+                        Ok(median_gas)
+                    }
+                } else {
+                    Ok(median_gas)
+                }
+            }
+            _ => Err(Web3Error::SyncingNode(
+                "Cannot perform eth_gas_price".to_string(),
+            )),
+        }
     }
 
     pub async fn eth_estimate_gas(
         &self,
         transaction: TransactionRequest,
     ) -> Result<Uint256, Web3Error> {
+        if let Ok(true) = self.eth_syncing().await {
+            warn!("Eth Node is still syncing, request may not work if block is not synced");
+        }
+
         self.jsonrpc_client
-            .request_method("eth_estimateGas", vec![transaction], self.timeout, None)
+            .request_method("eth_estimateGas", vec![transaction], self.timeout)
             .await
     }
 
     pub async fn eth_get_balance(&self, address: Address) -> Result<Uint256, Web3Error> {
-        self.jsonrpc_client
-            .request_method(
-                "eth_getBalance",
-                vec![address.to_string(), "latest".to_string()],
-                self.timeout,
-                None,
-            )
-            .await
+        //check if the node is still syncing
+        match self.eth_syncing().await? {
+            false => {
+                self.jsonrpc_client
+                    .request_method(
+                        "eth_getBalance",
+                        vec![address.to_string(), "latest".to_string()],
+                        self.timeout,
+                    )
+                    .await
+            }
+            true => Err(Web3Error::SyncingNode(
+                "Cannot perform eth_getBalance".to_string(),
+            )),
+        }
+    }
+
+    /// Returns a bool indicating whether our eth node is currently syncing or not
+    pub async fn eth_syncing(&self) -> Result<bool, Web3Error> {
+        let res: SyncingStatus = self
+            .jsonrpc_client
+            .request_method("eth_syncing", Vec::<String>::new(), self.timeout)
+            .await?;
+        match res {
+            SyncingStatus::Syncing { .. } => Ok(true),
+            SyncingStatus::NotSyncing(..) => Ok(false),
+        }
     }
 
     pub async fn eth_send_transaction(
@@ -162,14 +192,22 @@ impl Web3 {
         transactions: Vec<TransactionRequest>,
     ) -> Result<Uint256, Web3Error> {
         self.jsonrpc_client
-            .request_method("eth_sendTransaction", transactions, self.timeout, None)
+            .request_method("eth_sendTransaction", transactions, self.timeout)
             .await
     }
 
     pub async fn eth_call(&self, transaction: TransactionRequest) -> Result<Data, Web3Error> {
-        self.jsonrpc_client
-            .request_method("eth_call", (transaction, "latest"), self.timeout, None)
-            .await
+        //syncing check
+        match self.eth_syncing().await? {
+            false => {
+                self.jsonrpc_client
+                    .request_method("eth_call", (transaction, "latest"), self.timeout)
+                    .await
+            }
+            true => Err(Web3Error::SyncingNode(
+                "Cannot perform eth_call".to_string(),
+            )),
+        }
     }
 
     pub async fn eth_call_at_height(
@@ -177,112 +215,182 @@ impl Web3 {
         transaction: TransactionRequest,
         block: Uint256,
     ) -> Result<Data, Web3Error> {
+        let latest_known_block = self.eth_synced_block_number().await?;
+        if block <= latest_known_block {
+            self.jsonrpc_client
+                .request_method("eth_call", (transaction, block), self.timeout)
+                .await
+        } else if self.eth_syncing().await? {
+            Err(Web3Error::SyncingNode(
+                "Cannot perform eth_call_at_height".to_string(),
+            ))
+        } else {
+            //Invalid block number
+            Err(Web3Error::BadInput(
+                "Cannot perform eth_call_at_height, block number invalid".to_string(),
+            ))
+        }
+    }
+
+    /// Retrieves the latest synced block number regardless of state of eth node
+    pub async fn eth_synced_block_number(&self) -> Result<Uint256, Web3Error> {
         self.jsonrpc_client
-            .request_method("eth_call", (transaction, block), self.timeout, None)
+            .request_method("eth_blockNumber", Vec::<String>::new(), self.timeout)
             .await
     }
 
     pub async fn eth_block_number(&self) -> Result<Uint256, Web3Error> {
-        self.jsonrpc_client
-            .request_method("eth_blockNumber", Vec::<String>::new(), self.timeout, None)
-            .await
+        match self.eth_syncing().await? {
+            false => self.eth_synced_block_number().await,
+            true => Err(Web3Error::SyncingNode(
+                "Cannot perform eth_block_number".to_string(),
+            )),
+        }
     }
 
     pub async fn eth_get_block_by_number(&self, block_number: Uint256) -> Result<Block, Web3Error> {
-        self.jsonrpc_client
-            .request_method(
-                "eth_getBlockByNumber",
-                (format!("{:#x}", block_number), true),
-                self.timeout,
-                Some(5_000_000),
-            )
-            .await
+        let latest_known_block = self.eth_synced_block_number().await?;
+        if block_number <= latest_known_block {
+            self.jsonrpc_client
+                .request_method(
+                    "eth_getBlockByNumber",
+                    (format!("{:#x}", block_number), true),
+                    self.timeout,
+                )
+                .await
+        } else if self.eth_syncing().await? {
+            Err(Web3Error::SyncingNode(
+                "Cannot perform eth_get_block_by_number".to_string(),
+            ))
+        } else {
+            Err(Web3Error::BadInput(
+                "Cannot perform eth_get_block_by_number, block number invalid".to_string(),
+            ))
+        }
     }
 
     pub async fn xdai_get_block_by_number(
         &self,
         block_number: Uint256,
     ) -> Result<XdaiBlock, Web3Error> {
-        self.jsonrpc_client
-            .request_method(
-                "eth_getBlockByNumber",
-                (format!("{:#x}", block_number), true),
-                self.timeout,
-                Some(5_000_000),
-            )
-            .await
+        let latest_known_block = self.eth_synced_block_number().await?;
+        if block_number <= latest_known_block {
+            self.jsonrpc_client
+                .request_method(
+                    "eth_getBlockByNumber",
+                    (format!("{:#x}", block_number), true),
+                    self.timeout,
+                )
+                .await
+        } else if self.eth_syncing().await? {
+            Err(Web3Error::SyncingNode(
+                "Cannot perform xdai_get_block_by_number".to_string(),
+            ))
+        } else {
+            Err(Web3Error::BadInput(
+                "Cannot perform xdai_get_block_by_number, block number invalid".to_string(),
+            ))
+        }
     }
 
     pub async fn eth_get_concise_block_by_number(
         &self,
         block_number: Uint256,
     ) -> Result<ConciseBlock, Web3Error> {
-        self.jsonrpc_client
-            .request_method(
-                "eth_getBlockByNumber",
-                (format!("{:#x}", block_number), false),
-                self.timeout,
-                None,
-            )
-            .await
+        let latest_known_block = self.eth_synced_block_number().await?;
+        if block_number <= latest_known_block {
+            self.jsonrpc_client
+                .request_method(
+                    "eth_getBlockByNumber",
+                    (format!("{:#x}", block_number), false),
+                    self.timeout,
+                )
+                .await
+        } else if self.eth_syncing().await? {
+            Err(Web3Error::SyncingNode(
+                "Cannot perform eth_get_concise_block_by_number".to_string(),
+            ))
+        } else {
+            Err(Web3Error::BadInput(
+                "Cannot perform eth_get_concise_block_by_number, block number invalid".to_string(),
+            ))
+        }
     }
 
     pub async fn xdai_get_concise_block_by_number(
         &self,
         block_number: Uint256,
     ) -> Result<ConciseXdaiBlock, Web3Error> {
-        self.jsonrpc_client
-            .request_method(
-                "eth_getBlockByNumber",
-                (format!("{:#x}", block_number), false),
-                self.timeout,
-                None,
-            )
-            .await
+        let latest_known_block = self.eth_synced_block_number().await?;
+        if block_number <= latest_known_block {
+            self.jsonrpc_client
+                .request_method(
+                    "eth_getBlockByNumber",
+                    (format!("{:#x}", block_number), false),
+                    self.timeout,
+                )
+                .await
+        } else if self.eth_syncing().await? {
+            Err(Web3Error::SyncingNode(
+                "Cannot perform xdai_get_concise_block_by_number".to_string(),
+            ))
+        } else {
+            Err(Web3Error::BadInput(
+                "Cannot perform xdai_get_concise_block_by_number, block number invalid".to_string(),
+            ))
+        }
     }
 
     pub async fn eth_get_latest_block(&self) -> Result<ConciseBlock, Web3Error> {
-        self.jsonrpc_client
-            .request_method(
-                "eth_getBlockByNumber",
-                ("latest", false),
-                self.timeout,
-                None,
-            )
-            .await
+        match self.eth_syncing().await? {
+            false => {
+                self.jsonrpc_client
+                    .request_method("eth_getBlockByNumber", ("latest", false), self.timeout)
+                    .await
+            }
+            _ => Err(Web3Error::SyncingNode(
+                "Cannot perform eth_get_latest_block".to_string(),
+            )),
+        }
     }
 
     pub async fn xdai_get_latest_block(&self) -> Result<ConciseXdaiBlock, Web3Error> {
-        self.jsonrpc_client
-            .request_method(
-                "eth_getBlockByNumber",
-                ("latest", false),
-                self.timeout,
-                None,
-            )
-            .await
+        match self.eth_syncing().await? {
+            false => {
+                self.jsonrpc_client
+                    .request_method("eth_getBlockByNumber", ("latest", false), self.timeout)
+                    .await
+            }
+            _ => Err(Web3Error::SyncingNode(
+                "Cannot perform xdai_get_latest_block".to_string(),
+            )),
+        }
     }
 
     pub async fn eth_get_latest_block_full(&self) -> Result<Block, Web3Error> {
-        self.jsonrpc_client
-            .request_method(
-                "eth_getBlockByNumber",
-                ("latest", true),
-                self.timeout,
-                Some(5_000_000),
-            )
-            .await
+        match self.eth_syncing().await? {
+            false => {
+                self.jsonrpc_client
+                    .request_method("eth_getBlockByNumber", ("latest", true), self.timeout)
+                    .await
+            }
+            _ => Err(Web3Error::SyncingNode(
+                "Cannot perform eth_get_latest_block".to_string(),
+            )),
+        }
     }
 
     pub async fn xdai_get_latest_block_full(&self) -> Result<XdaiBlock, Web3Error> {
-        self.jsonrpc_client
-            .request_method(
-                "eth_getBlockByNumber",
-                ("latest", true),
-                self.timeout,
-                Some(5_000_000),
-            )
-            .await
+        match self.eth_syncing().await? {
+            false => {
+                self.jsonrpc_client
+                    .request_method("eth_getBlockByNumber", ("latest", true), self.timeout)
+                    .await
+            }
+            _ => Err(Web3Error::SyncingNode(
+                "Cannot perform xdai_get_latest_block".to_string(),
+            )),
+        }
     }
 
     pub async fn eth_send_raw_transaction(&self, data: Vec<u8>) -> Result<Uint256, Web3Error> {
@@ -291,14 +399,18 @@ impl Web3 {
                 "eth_sendRawTransaction",
                 vec![format!("0x{}", bytes_to_hex_str(&data))],
                 self.timeout,
-                None,
             )
             .await
     }
+
     pub async fn eth_get_transaction_by_hash(
         &self,
         hash: Uint256,
     ) -> Result<Option<TransactionResponse>, Web3Error> {
+        if let Ok(true) = self.eth_syncing().await {
+            warn!("Eth node is currently syncing, eth_get_transaction_by_hash may not work if transaction is not synced");
+        }
+
         self.jsonrpc_client
             .request_method(
                 "eth_getTransactionByHash",
@@ -306,37 +418,22 @@ impl Web3 {
                 // returning it we'll keep it consistent.
                 vec![format!("{:#066x}", hash)],
                 self.timeout,
-                None,
             )
             .await
     }
-    pub async fn eth_get_transaction_receipt(
-        &self,
-        hash: Uint256,
-    ) -> Result<Option<TransactionReceipt>, Web3Error> {
-        self.jsonrpc_client
-            .request_method(
-                "eth_getTransactionReceipt",
-                // XXX: Technically it doesn't need to be Uint256, but since send_raw_transaction is
-                // returning it we'll keep it consistent.
-                vec![format!("{:#066x}", hash)],
-                self.timeout,
-                None,
-            )
-            .await
-    }
+
     pub async fn evm_snapshot(&self) -> Result<Uint256, Web3Error> {
         self.jsonrpc_client
-            .request_method("evm_snapshot", Vec::<String>::new(), self.timeout, None)
+            .request_method("evm_snapshot", Vec::<String>::new(), self.timeout)
             .await
     }
+
     pub async fn evm_revert(&self, snapshot_id: Uint256) -> Result<Uint256, Web3Error> {
         self.jsonrpc_client
             .request_method(
                 "evm_revert",
                 vec![format!("{:#066x}", snapshot_id)],
                 self.timeout,
-                None,
             )
             .await
     }
@@ -361,15 +458,25 @@ impl Web3 {
     ) -> Result<Uint256, Web3Error> {
         let mut gas_price = None;
         let mut gas_price_multiplier = 1f32;
+        let mut gas_limit_multiplier = 1f32;
         let mut gas_limit = None;
         let mut network_id = None;
         let our_balance = self.eth_get_balance(own_address).await?;
+        if our_balance.is_zero() || our_balance < ETHEREUM_INTRINSIC_GAS.into() {
+            // We only know that the balance is insufficient, we don't know how much gas is needed
+            return Err(Web3Error::InsufficientGas {
+                balance: our_balance,
+                base_gas: ETHEREUM_INTRINSIC_GAS.into(),
+                gas_required: ETHEREUM_INTRINSIC_GAS.into(),
+            });
+        }
         let mut nonce = self.eth_get_transaction_count(own_address).await?;
 
         for option in options {
             match option {
                 SendTxOption::GasPrice(gp) => gas_price = Some(gp),
                 SendTxOption::GasPriceMultiplier(gpm) => gas_price_multiplier = gpm,
+                SendTxOption::GasLimitMultiplier(glm) => gas_limit_multiplier = glm,
                 SendTxOption::GasLimit(gl) => gas_limit = Some(gl),
                 SendTxOption::NetworkId(ni) => network_id = Some(ni),
                 SendTxOption::Nonce(n) => nonce = n,
@@ -392,7 +499,7 @@ impl Web3 {
             }
         };
 
-        let gas_limit = if let Some(gl) = gas_limit {
+        let mut gas_limit = if let Some(gl) = gas_limit {
             gl
         } else {
             let gas = self
@@ -410,6 +517,14 @@ impl Web3 {
             .await?
         };
 
+        // multiply limit by gasLimitMultiplier
+        let gas_limit_128 = gas_limit.to_u128();
+        if let Some(v) = gas_limit_128 {
+            gas_limit = ((v as f32 * gas_limit_multiplier) as u128).into()
+        } else {
+            gas_limit *= (gas_limit_multiplier.round() as u128).into()
+        }
+
         let network_id = if let Some(ni) = network_id {
             ni
         } else {
@@ -418,8 +533,21 @@ impl Web3 {
 
         // this is an edge case where we are about to send a transaction that can't possibly
         // be valid, we simply don't have the the funds to pay the full gas amount we are promising
-        // in this case we reduce the gas price to exactly what we can afford.
+        // this segment computes either the highest valid gas price we can pay or in the post-london
+        // chain case errors if we can't meet the minimum fee
         if gas_price.clone() * gas_limit.clone() > our_balance {
+            let base_fee_per_gas = self.get_base_fee_per_gas().await?;
+            if let Some(base_fee_per_gas) = base_fee_per_gas {
+                if base_fee_per_gas.clone() * gas_limit.clone() > our_balance {
+                    return Err(Web3Error::InsufficientGas {
+                        balance: our_balance,
+                        base_gas: base_fee_per_gas,
+                        gas_required: gas_limit,
+                    });
+                }
+            }
+            // this will give some value >= base_fee_per_gas * gas_limit
+            // in post-london and some non zero value in pre-london
             gas_price = our_balance / gas_limit.clone();
         }
 
@@ -443,26 +571,45 @@ impl Web3 {
         .await
     }
 
-    /// Sends a transaction which does not change blockchain state, usually to get information.
+    /// Simulates an Ethereum contract call by making a fake transaction and sending it to a special endpoint
+    /// this code is executed exactly as if it where an actual transaction executing. This can be used to execute
+    /// both getter endpoints on Solidity contracts and to test actual executions. User beware, this function requires
+    /// ETH in the caller address to run. Even if you're just trying to call a getter function and never need to actually
+    /// run code this faithful simulation will fail if you have no ETH to pay for gas.
+    ///
+    /// In an attempt to maximize the amount of info you can get with this function gas is computed for you as the maximum
+    /// possible value, if you need to get  gas estimation you should use `web3.eth_estimate_gas` instead.
+    ///
     /// optionally this data can come from some historic block
-    pub async fn contract_call(
+    pub async fn simulate_transaction(
         &self,
         contract_address: Address,
-        sig: &str,
-        tokens: &[Token],
+        value: Uint256,
+        data: Vec<u8>,
         own_address: Address,
         height: Option<Uint256>,
     ) -> Result<Vec<u8>, Web3Error> {
-        let payload = encode_call(sig, tokens)?;
+        let our_balance = self.eth_get_balance(own_address).await?;
+        if our_balance.is_zero() || our_balance < ETHEREUM_INTRINSIC_GAS.into() {
+            // We only know that the balance is insufficient, we don't know how much gas is needed
+            return Err(Web3Error::InsufficientGas {
+                balance: our_balance,
+                base_gas: ETHEREUM_INTRINSIC_GAS.into(),
+                gas_required: ETHEREUM_INTRINSIC_GAS.into(),
+            });
+        }
 
+        let nonce = self.eth_get_transaction_count(own_address).await?;
+
+        let gas = self.simulated_gas_price_and_limit(our_balance).await?;
         let transaction = TransactionRequest {
             from: Some(own_address),
             to: contract_address,
-            nonce: None,
-            gas: None,
-            gas_price: None,
-            value: None,
-            data: Some(Data(payload)),
+            gas: Some(gas.limit.into()),
+            nonce: Some(nonce.clone().into()),
+            gas_price: Some(gas.price.into()),
+            value: Some(value.clone().into()),
+            data: Some(data.clone().into()),
         };
 
         match height {
@@ -554,30 +701,82 @@ impl Web3 {
         balance: Uint256,
     ) -> Result<SimulatedGas, Web3Error> {
         const GAS_LIMIT: u128 = 12450000;
-        let block = self.eth_get_latest_block().await;
-        let test = self.xdai_get_latest_block().await;
-        // handle the xdai case, at least until xDai upgrades to London, this is needed
-        // because getting the eth block may fail spuriously on xdai
-        if block.is_err() && test.is_ok() {
-            let price: Uint256 = 1u8.into();
-            let limit = min(GAS_LIMIT.into(), balance / price.clone());
-            return Ok(SimulatedGas { limit, price });
-        }
+        let gas_price = self.eth_gas_price().await?;
+        let limit = min(GAS_LIMIT.into(), balance / gas_price.clone());
+        Ok(SimulatedGas { limit, price: gas_price })
+    }
 
-        // we are on Eth, now we need to see if it's pre or post London
-        let block = block?;
-        let price = if let Some(base_gas) = block.base_fee_per_gas {
-            // post London
-            base_gas
-        } else {
-            // pre London
-            1u8.into()
-        };
-        let limit = min(GAS_LIMIT.into(), balance / price.clone());
-        Ok(SimulatedGas { limit, price })
+    /// Navigates the block request process to properly identify the base fee no matter
+    /// what network (xDai or ETH) is being used. Returns `None` if a pre-London fork
+    /// network is in use and `Some(base_fee_per_gas)` if a post London network is in
+    /// use
+    async fn get_base_fee_per_gas(&self) -> Result<Option<Uint256>, Web3Error> {
+        let eth = self.eth_get_latest_block().await;
+        let xdai = self.xdai_get_latest_block().await;
+        // we don't know what network we're on, so we request both blocks and
+        // see which one succeeds. This could in theory be removed if we
+        // combine the eth and xdai blocks or require some sort of flag on init
+        // for the web30 struct
+        match (eth, xdai) {
+            // this case is confusing, I'm pretty sure, but not 100% sure that
+            // it's impossible. That being said we better handle it just to be safe
+            // if we have some polyglot block that is interpretable through both types
+            // this entire section contains a lot of guesswork for cases that will probably
+            // never happen
+            (Ok(eth_block), Ok(xdai_block)) => {
+                warn!("Found polyglot blocks! {:?} {:?}", eth_block, xdai_block);
+                match (eth_block.base_fee_per_gas, xdai_block.base_fee_per_gas) {
+                    // polyglot block, these values should be identical, but take the max
+                    (Some(base_gas_a), Some(base_gas_b)) => Ok(Some(max(base_gas_a, base_gas_b))),
+                    // this is event more crazy than a polyglot block, the field name is the same
+                    // nevertheless we should take the value that exists
+                    (Some(base_gas), None) | (None, Some(base_gas)) => Ok(Some(base_gas)),
+
+                    (None, None) => Ok(None),
+                }
+            }
+            (Err(_), Ok(block)) => Ok(block.base_fee_per_gas),
+            (Ok(block), Err(_)) => Ok(block.base_fee_per_gas),
+            // if both error it's probably the same error so lets pick the first
+            // and return it
+            (Err(e), Err(_)) => Err(e),
+        }
+    }
+
+    /// Waits for the next Ethereum block to be produced
+    pub async fn wait_for_next_block(&self, timeout: Duration) -> Result<(), Web3Error> {
+        let start = Instant::now();
+        let mut last_height: Option<Uint256> = None;
+        while Instant::now() - start < timeout {
+            match (self.eth_block_number().await, last_height.clone()) {
+                (Ok(n), None) => last_height = Some(n),
+                (Ok(block_height), Some(last_height)) => {
+                    if block_height > last_height {
+                        return Ok(());
+                    }
+                }
+                // errors should not exit early
+                (Err(_), _) => {}
+            }
+        }
+        Err(Web3Error::NoBlockProduced { time: timeout })
+    }
+
+    pub async fn eth_get_transaction_receipt(
+        &self,
+        hash: Uint256,
+    ) -> Result<Option<TransactionReceipt>, Web3Error> {
+        self.jsonrpc_client
+            .request_method(
+                "eth_getTransactionReceipt",
+                // XXX: Technically it doesn't need to be Uint256, but since send_raw_transaction is
+                // returning it we'll keep it consistent.
+                vec![format!("{:#066x}", hash)],
+                self.timeout,
+            )
+            .await
     }
 }
-
 struct SimulatedGas {
     limit: Uint256,
     price: Uint256,
@@ -587,8 +786,8 @@ struct SimulatedGas {
 fn test_chain_id() {
     use actix::System;
     let runner = System::new();
-    let web3 = Web3::new("https://eth.althea.net", Duration::from_secs(5));
-    let web3_xdai = Web3::new("https://dai.althea.net", Duration::from_secs(5));
+    let web3 = Web3::new("https://eth.althea.net", Duration::from_secs(30));
+    let web3_xdai = Web3::new("https://dai.althea.net", Duration::from_secs(30));
     runner.block_on(async move {
         assert_eq!(Some(Uint256::from(1u8)), web3.eth_chainid().await.unwrap());
         assert_eq!(
@@ -602,19 +801,19 @@ fn test_chain_id() {
 fn test_net_version() {
     use actix::System;
     let runner = System::new();
-    let web3_xdai = Web3::new("https://dai.althea.net", Duration::from_secs(5));
-    let web3 = Web3::new("https://eth.althea.net", Duration::from_secs(5));
+    let web3_xdai = Web3::new("https://dai.althea.net", Duration::from_secs(30));
+    let web3 = Web3::new("https://eth.althea.net", Duration::from_secs(30));
     runner.block_on(async move {
         assert_eq!(1u64, web3.net_version().await.unwrap());
         assert_eq!(100u64, web3_xdai.net_version().await.unwrap());
     })
 }
-
+#[ignore]
 #[test]
 fn test_complex_response() {
     use actix::System;
     let runner = System::new();
-    let web3 = Web3::new("https://eth.althea.net", Duration::from_secs(5));
+    let web3 = Web3::new("https://eth.althea.net", Duration::from_secs(30));
     let txid1 = "0x8b9ef028f99016cd3cb8d4168df7491a0bf44f08b678d37f63ab61e782c500ab"
         .parse()
         .unwrap();
@@ -630,7 +829,7 @@ fn test_complex_response() {
 fn test_transaction_count_response() {
     use actix::System;
     let runner = System::new();
-    let web3 = Web3::new("https://eth.althea.net", Duration::from_secs(5));
+    let web3 = Web3::new("https://eth.althea.net", Duration::from_secs(30));
     let address: Address = "0x04668ec2f57cc15c381b461b9fedab5d451c8f7f"
         .parse()
         .unwrap();
@@ -645,9 +844,13 @@ fn test_transaction_count_response() {
 fn test_block_response() {
     use actix::System;
     let runner = System::new();
-    let web3 = Web3::new("https://eth.altheamesh.com", Duration::from_secs(5));
+    let web3 = Web3::new("https://eth.althea.net", Duration::from_secs(30));
     runner.block_on(async move {
         let val = web3.eth_get_latest_block().await;
+        let val = val.expect("Actix failure");
+        assert!(val.number > 10u32.into());
+
+        let val = web3.eth_get_latest_block_full().await;
         let val = val.expect("Actix failure");
         assert!(val.number > 10u32.into());
     });
@@ -657,10 +860,78 @@ fn test_block_response() {
 fn test_dai_block_response() {
     use actix::System;
     let runner = System::new();
-    let web3 = Web3::new("https://dai.althea.net", Duration::from_secs(5));
+    let web3 = Web3::new("https://dai.althea.net", Duration::from_secs(30));
     runner.block_on(async move {
         let val = web3.xdai_get_latest_block().await;
         let val = val.expect("Actix failure");
         assert!(val.number > 10u32.into());
+    });
+}
+
+/// Testing all function that involve a syncing node check
+#[ignore]
+#[test]
+fn test_syncing_check_functions() {
+    use actix::System;
+    let runner = System::new();
+    ////// TEST ON NON SYNCING BLOCK
+    let web3 = Web3::new("https://dai.althea.net", Duration::from_secs(30));
+    ////// TEST ON SYNCING BLOCK
+    //let web3 = Web3::new("http://127.0.0.1:8545", Duration::from_secs(30));
+    runner.block_on(async move {
+        let random_address = "0xE04b765c6Ffcc5981DDDcf7e6E2c9E7DB634Df72";
+        let val = web3
+            .eth_get_balance(Address::parse_and_validate(random_address).unwrap())
+            .await;
+        println!("{:?}", val);
+
+        let val = web3
+            .eth_get_transaction_count(Address::parse_and_validate(random_address).unwrap())
+            .await;
+        println!("{:?}", val);
+
+        let val = web3.eth_block_number().await;
+        println!("{:?}", val);
+
+        let val = web3.eth_synced_block_number().await;
+        println!("{:?}", val);
+
+        let val = web3.eth_gas_price().await;
+        println!("{:?}", val);
+
+        //// CHECK THAT when using syncing block, we retrieve a synced block without error
+        // let val = web3.eth_get_block_by_number(4792816_u128.into()).await;
+        // assert!(!val.is_err());
+
+        // let val = web3.eth_get_block_by_number(4792815_u128.into()).await;
+        // assert!(!val.is_err());
+
+        // let val = web3.eth_get_block_by_number(8792900_u128.into()).await;
+        // assert!(val.is_err());
+        // /////////
+
+        let val = web3
+            .eth_get_block_by_number(web3.eth_block_number().await.unwrap())
+            .await;
+        println!("{:?}", val);
+
+        #[allow(unused_variables)]
+        let val = web3.eth_get_block_by_number(20000000_u128.into()).await;
+        //println!("{:?}", val);
+
+        #[allow(unused_variables)]
+        let val = web3
+            .eth_get_concise_block_by_number(web3.eth_block_number().await.unwrap())
+            .await;
+        //println!("{:?}", val);
+
+        let val = web3
+            .eth_get_concise_block_by_number(web3.eth_block_number().await.unwrap() + 1_u128.into())
+            .await;
+        println!("{:?}", val);
+
+        #[allow(unused_variables)]
+        let val = web3.eth_get_latest_block().await;
+        //println!("{:?}", val);
     });
 }

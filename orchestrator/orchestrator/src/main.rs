@@ -124,8 +124,7 @@ async fn main() {
     let mut grpc_committer = connections.grpc_committer.clone().unwrap();
 
     let public_eth_key = ethereum_key
-        .to_public_key()
-        .expect("Invalid Ethereum Private Key!");
+        .to_address();
 
     let our_cosmos_address = Address::from_bech32(
         grpc_committer

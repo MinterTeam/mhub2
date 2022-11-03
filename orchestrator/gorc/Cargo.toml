@@ -19,7 +19,7 @@ relayer = { path = "../relayer" }
 web30 = {path = "../web30" }
 
 deep_space ={git="https://github.com/iqlusioninc/deep_space/", branch="zaki/tendermint_0_21"}
-clarity = "0.4.12"
+clarity = "0.5.2"
 actix-rt = "2.2"
 rpassword = "5"
 bip32 = "0.2"

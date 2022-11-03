@@ -13,7 +13,7 @@ mhub2_proto = {path = "../mhub2_proto"}
 web30 = {path = "../web30" }
 
 deep_space ={git="https://github.com/iqlusioninc/deep_space/", branch="zaki/tendermint_0_21"}
-clarity = "0.4.11"
+clarity = "0.5.2"
 serde = "1.0"
 num256 = "0.3"
 log = "0.4"

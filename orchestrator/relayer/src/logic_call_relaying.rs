@@ -24,7 +24,7 @@ pub async fn relay_logic_calls(
     timeout: Duration,
     chain_id: String,
 ) {
-    let our_ethereum_address = ethereum_key.to_public_key().unwrap();
+    let our_ethereum_address = ethereum_key.to_address();
 
     let latest_calls = get_latest_logic_calls(grpc_client, chain_id.clone()).await;
     trace!("Latest Logic calls {:?}", latest_calls);

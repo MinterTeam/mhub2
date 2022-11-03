@@ -17,7 +17,7 @@ pub fn signer_set_tx_confirmation_messages(
     gravity_id: String,
     chain_id: String,
 ) -> Vec<Msg> {
-    let ethereum_address = ethereum_key.to_public_key().unwrap();
+    let ethereum_address = ethereum_key.to_address();
 
     let mut msgs = Vec::new();
     for valset in valsets {
@@ -46,7 +46,7 @@ pub fn batch_tx_confirmation_messages(
     gravity_id: String,
     chain_id: String,
 ) -> Vec<Msg> {
-    let ethereum_address = ethereum_key.to_public_key().unwrap();
+    let ethereum_address = ethereum_key.to_address();
 
     let mut msgs = Vec::new();
     for batch in batches {
@@ -76,7 +76,7 @@ pub fn contract_call_tx_confirmation_messages(
     gravity_id: String,
     chain_id: String,
 ) -> Vec<Msg> {
-    let ethereum_address = ethereum_key.to_public_key().unwrap();
+    let ethereum_address = ethereum_key.to_address();
 
     let mut msgs = Vec::new();
     for logic_call in logic_calls {

@@ -21,7 +21,7 @@ web30 = {path = "../web30" }
 
 deep_space ={git="https://github.com/iqlusioninc/deep_space/", branch="zaki/tendermint_0_21"}
 serde_derive = "1.0"
-clarity = "0.4.11"
+clarity = "0.5.2"
 docopt = "1"
 serde = "1.0"
 actix-rt = "2"

@@ -24,7 +24,7 @@ pub fn address_to_event(address: Address) -> [u8; 32] {
 
 fn bytes_to_data(s: &[u8]) -> String {
     let mut val = "0x".to_string();
-    val.push_str(&bytes_to_hex_str(&s));
+    val.push_str(&bytes_to_hex_str(s));
     val
 }
 
@@ -164,7 +164,7 @@ impl Web3 {
             topics: Some(final_topics),
         };
 
-        Ok(self.eth_get_logs(new_filter).await?)
+        self.eth_get_logs(new_filter).await
     }
 
     /// Checks for multiple events as defined by arbitrary user input over a block range. If no ending block is provided
@@ -202,6 +202,6 @@ impl Web3 {
             topics: Some(final_topics),
         };
 
-        Ok(self.eth_get_logs(new_filter).await?)
+        self.eth_get_logs(new_filter).await
     }
 }

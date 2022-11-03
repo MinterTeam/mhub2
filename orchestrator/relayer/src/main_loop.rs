@@ -25,7 +25,7 @@ pub async fn relayer_main_loop(
     do_relay_valsets: bool,
 ) {
     let balance = web3
-        .eth_get_balance(ethereum_key.to_public_key().unwrap())
+        .eth_get_balance(ethereum_key.to_address())
         .await
         .unwrap();
     if balance == 0u8.into() {
@@ -36,7 +36,7 @@ pub async fn relayer_main_loop(
     loop {
         let loop_start = Instant::now();
 
-        let our_ethereum_address = ethereum_key.to_public_key().unwrap();
+        let our_ethereum_address = ethereum_key.to_address();
         let current_eth_valset = find_latest_valset(&mut grpc_client, chain_id.clone()).await;
         if current_eth_valset.is_err() {
             error!("Could not get current valset! {:?}", current_eth_valset);

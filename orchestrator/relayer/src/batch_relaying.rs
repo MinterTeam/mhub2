@@ -175,7 +175,7 @@ async fn submit_batches(
     eth_fee_calculator_url: Option<String>,
     chain_id: String,
 ) {
-    let our_ethereum_address = ethereum_key.to_public_key().unwrap();
+    let our_ethereum_address = ethereum_key.to_address();
     let ethereum_block_height = if let Ok(bn) = web3.eth_block_number().await {
         bn
     } else {

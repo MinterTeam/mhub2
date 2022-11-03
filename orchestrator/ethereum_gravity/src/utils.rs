@@ -1,4 +1,4 @@
-use clarity::abi::Token;
+use clarity::abi::{encode_call, Token};
 use clarity::Uint256;
 use clarity::{abi::encode_tokens, Address as EthAddress};
 use mhub2_utils::error::GravityError;
@@ -115,10 +115,10 @@ pub async fn get_valset_nonce(
     web3: &Web3,
 ) -> Result<u64, Web3Error> {
     let val = web3
-        .contract_call(
+        .simulate_transaction(
             contract_address,
-            "state_lastValsetNonce()",
-            &[],
+            0u64.into(),
+            encode_call("state_lastValsetNonce()", &[])?,
             caller_address,
             None,
         )
@@ -140,10 +140,13 @@ pub async fn get_tx_batch_nonce(
     web3: &Web3,
 ) -> Result<u64, Web3Error> {
     let val = web3
-        .contract_call(
+        .simulate_transaction(
             gravity_contract_address,
-            "lastBatchNonce(address)",
-            &[erc20_contract_address.into()],
+            0u64.into(),
+            encode_call(
+                "state_lastBatchNonce(address)",
+                &[Token::Address(erc20_contract_address)],
+            )?,
             caller_address,
             None,
         )
@@ -165,10 +168,13 @@ pub async fn get_logic_call_nonce(
     web3: &Web3,
 ) -> Result<u64, Web3Error> {
     let val = web3
-        .contract_call(
+        .simulate_transaction(
             gravity_contract_address,
-            "lastLogicCallNonce(bytes32)",
-            &[Token::Bytes(invalidation_id)],
+            0_u64.into(),
+            encode_call(
+                "lastLogicCallNonce(bytes32)",
+                &[Token::Bytes(invalidation_id)],
+            )?,
             caller_address,
             None,
         )
@@ -189,10 +195,10 @@ pub async fn get_event_nonce(
     web3: &Web3,
 ) -> Result<u64, Web3Error> {
     let val = web3
-        .contract_call(
+        .simulate_transaction(
             gravity_contract_address,
-            "state_lastEventNonce()",
-            &[],
+            0_u64.into(),
+            encode_call("state_lastEventNonce()", &[])?,
             caller_address,
             None,
         )
@@ -213,10 +219,10 @@ pub async fn get_gravity_id(
     web3: &Web3,
 ) -> Result<Vec<u8>, Web3Error> {
     let val = web3
-        .contract_call(
+        .simulate_transaction(
             contract_address,
-            "state_gravityId()",
-            &[],
+            0u64.into(),
+            encode_call("state_gravityId()", &[])?,
             caller_address,
             None,
         )
@@ -231,7 +237,7 @@ pub async fn get_erc20_symbol(
     web3: &Web3,
 ) -> Result<String, GravityError> {
     let val_symbol = web3
-        .contract_call(contract_address, "symbol()", &[], caller_address, None)
+        .simulate_transaction(contract_address, 0u64.into(), encode_call("symbol()", &[])?, caller_address, None)
         .await?;
     // Pardon the unwrap, but this is temporary code, intended only for the tests, to help them
     // deal with a deprecated feature (the symbol), which will be removed soon

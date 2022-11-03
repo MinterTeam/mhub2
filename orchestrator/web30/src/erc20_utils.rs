@@ -21,14 +21,12 @@ impl Web3 {
         own_address: Address,
         target_contract: Address,
     ) -> Result<bool, Web3Error> {
+        let payload = encode_call(
+            "allowance(address,address)",
+            &[own_address.into(), target_contract.into()],
+        )?;
         let allowance = self
-            .contract_call(
-                erc20,
-                "allowance(address,address)",
-                &[own_address.into(), target_contract.into()],
-                own_address,
-                None,
-            )
+            .simulate_transaction(erc20, 0u8.into(), payload, own_address, None)
             .await?;
 
         let allowance = Uint256::from_bytes_be(match allowance.get(0..32) {
@@ -62,7 +60,7 @@ impl Web3 {
         timeout: Option<Duration>,
         options: Vec<SendTxOption>,
     ) -> Result<Uint256, Web3Error> {
-        let own_address = eth_private_key.to_public_key()?;
+        let own_address = eth_private_key.to_address();
         let payload = encode_call(
             "approve(address,uint256)",
             &[target_contract.into(), Uint256::max_value().into()],
@@ -81,14 +79,11 @@ impl Web3 {
 
         // wait for transaction to enter the chain if the user has requested it
         if let Some(timeout) = timeout {
-            self.wait_for_event_alt(
+            future_timeout(
                 timeout,
-                vec![erc20],
-                "Approval(address,address,uint256)",
-                vec![vec![own_address.into()], vec![target_contract.into()]],
-                |_| true,
+                self.wait_for_transaction(txid.clone(), timeout, None),
             )
-            .await?;
+            .await??;
         }
 
         Ok(txid)
@@ -112,7 +107,7 @@ impl Web3 {
         wait_timeout: Option<Duration>,
         options: Vec<SendTxOption>,
     ) -> Result<Uint256, Web3Error> {
-        let sender_address = sender_private_key.to_public_key()?;
+        let sender_address = sender_private_key.to_address();
 
         // if the user sets a gas limit we should honor it, if they don't we
         // should add the default
@@ -158,14 +153,9 @@ impl Web3 {
         erc20: Address,
         target_address: Address,
     ) -> Result<Uint256, Web3Error> {
+        let payload = encode_call("balanceOf(address)", &[target_address.into()])?;
         let balance = self
-            .contract_call(
-                erc20,
-                "balanceOf(address)",
-                &[target_address.into()],
-                target_address,
-                None,
-            )
+            .simulate_transaction(erc20, 0u8.into(), payload, target_address, None)
             .await?;
 
         Ok(Uint256::from_bytes_be(match balance.get(0..32) {
@@ -183,12 +173,19 @@ impl Web3 {
         erc20: Address,
         caller_address: Address,
     ) -> Result<String, Web3Error> {
+        let payload = encode_call("name()", &[])?;
         let name = self
-            .contract_call(erc20, "name()", &[], caller_address, None)
+            .simulate_transaction(erc20, 0u8.into(), payload, caller_address, None)
             .await?;
 
         match String::from_utf8(name) {
-            Ok(val) => Ok(val),
+            Ok(mut val) => {
+                // the value returned is actually in Ethereum ABI encoded format
+                // stripping control characters is an easy way to strip off the encoding
+                val.retain(|v| !v.is_control());
+                let val = val.trim().to_string();
+                Ok(val)
+            }
             Err(_e) => Err(Web3Error::ContractCallError(
                 "name is not valid utf8".to_string(),
             )),
@@ -200,12 +197,19 @@ impl Web3 {
         erc20: Address,
         caller_address: Address,
     ) -> Result<String, Web3Error> {
+        let payload = encode_call("symbol()", &[])?;
         let symbol = self
-            .contract_call(erc20, "symbol()", &[], caller_address, None)
+            .simulate_transaction(erc20, 0u8.into(), payload, caller_address, None)
             .await?;
 
         match String::from_utf8(symbol) {
-            Ok(val) => Ok(val),
+            Ok(mut val) => {
+                // the value returned is actually in Ethereum ABI encoded format
+                // stripping control characters is an easy way to strip off the encoding
+                val.retain(|v| !v.is_control());
+                let val = val.trim().to_string();
+                Ok(val)
+            }
             Err(_e) => Err(Web3Error::ContractCallError(
                 "name is not valid utf8".to_string(),
             )),
@@ -217,8 +221,9 @@ impl Web3 {
         erc20: Address,
         caller_address: Address,
     ) -> Result<Uint256, Web3Error> {
+        let payload = encode_call("decimals()", &[])?;
         let decimals = self
-            .contract_call(erc20, "decimals()", &[], caller_address, None)
+            .simulate_transaction(erc20, 0u8.into(), payload, caller_address, None)
             .await?;
 
         Ok(Uint256::from_bytes_be(match decimals.get(0..32) {
@@ -230,4 +235,65 @@ impl Web3 {
             }
         }))
     }
+
+    pub async fn get_erc20_supply(
+        &self,
+        erc20: Address,
+        caller_address: Address,
+    ) -> Result<Uint256, Web3Error> {
+        let payload = encode_call("totalSupply()", &[])?;
+        let decimals = self
+            .simulate_transaction(erc20, 0u8.into(), payload, caller_address, None)
+            .await?;
+
+        Ok(Uint256::from_bytes_be(match decimals.get(0..32) {
+            Some(val) => val,
+            None => {
+                return Err(Web3Error::ContractCallError(
+                    "Bad response from ERC20 Total Supply".to_string(),
+                ))
+            }
+        }))
+    }
+}
+
+#[test]
+fn test_erc20_metadata() {
+    use actix::System;
+    let runner = System::new();
+    let web3 = Web3::new("https://eth.althea.net", Duration::from_secs(30));
+    let dai_address = "0x6b175474e89094c44da98b954eedeac495271d0f"
+        .parse()
+        .unwrap();
+    // random coinbase address hoping it always has eth to 'pay' for this call
+    let caller_address = "0x503828976D22510aad0201ac7EC88293211D23Da"
+        .parse()
+        .unwrap();
+    runner.block_on(async move {
+        assert_eq!(
+            web3.get_erc20_decimals(dai_address, caller_address)
+                .await
+                .unwrap(),
+            18u8.into()
+        );
+        let num: Uint256 = 1000u32.into();
+        assert!(
+            web3.get_erc20_supply(dai_address, caller_address)
+                .await
+                .unwrap()
+                > num
+        );
+        assert_eq!(
+            web3.get_erc20_symbol(dai_address, caller_address)
+                .await
+                .unwrap(),
+            "DAI"
+        );
+        assert_eq!(
+            web3.get_erc20_name(dai_address, caller_address)
+                .await
+                .unwrap(),
+            "Dai Stablecoin"
+        );
+    })
 }

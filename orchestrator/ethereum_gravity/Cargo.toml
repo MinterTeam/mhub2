@@ -11,7 +11,7 @@ mhub2_utils = {path = "../mhub2_utils" }
 web30 = {path = "../web30" }
 
 deep_space ={git="https://github.com/iqlusioninc/deep_space/", branch="zaki/tendermint_0_21"}
-clarity = "0.4.11"
+clarity = "0.5.2"
 num256 = "0.3"
 log = "0.4"
 sha3 = "0.9"
