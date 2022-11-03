@@ -227,6 +227,9 @@ func AddMonitorCmd() *cobra.Command {
 
 				for _, v := range sortedVals {
 					alert := "🟢"
+					if v.IsJailed() {
+						alert = "⚫️"
+					}
 					if valHasFailure[v.OperatorAddress] {
 						alert = fmt.Sprintf("🔴️")
 						failuresLog = fmt.Sprintf("%s⚠️️ <b>%s</b> ", failuresLog, v.GetMoniker())
