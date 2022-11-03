@@ -589,25 +589,12 @@ impl Web3 {
         own_address: Address,
         height: Option<Uint256>,
     ) -> Result<Vec<u8>, Web3Error> {
-        let our_balance = self.eth_get_balance(own_address).await?;
-        if our_balance.is_zero() || our_balance < ETHEREUM_INTRINSIC_GAS.into() {
-            // We only know that the balance is insufficient, we don't know how much gas is needed
-            return Err(Web3Error::InsufficientGas {
-                balance: our_balance,
-                base_gas: ETHEREUM_INTRINSIC_GAS.into(),
-                gas_required: ETHEREUM_INTRINSIC_GAS.into(),
-            });
-        }
-
-        let nonce = self.eth_get_transaction_count(own_address).await?;
-
-        let gas = self.simulated_gas_price_and_limit(our_balance).await?;
         let transaction = TransactionRequest {
             from: Some(own_address),
             to: contract_address,
-            gas: Some(gas.limit.into()),
-            nonce: Some(nonce.clone().into()),
-            gas_price: Some(gas.price.into()),
+            gas: None,
+            nonce: None,
+            gas_price: None,
             value: Some(value.clone().into()),
             data: Some(data.clone().into()),
         };
