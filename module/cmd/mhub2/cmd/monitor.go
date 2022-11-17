@@ -309,7 +309,7 @@ func getActualNonce(chain types.ChainID, config MonitorConfig, keys []*types.Msg
 				ChainId: chain.String(),
 			})
 			if err != nil {
-				if !strings.Contains(err.Error(), "validator is not bonded") {
+				if !strings.Contains(err.Error(), "validator is not bonded") && !strings.Contains(err.Error(), "not orchestrator or validator") {
 					return 0, err
 				}
 			}
