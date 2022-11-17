@@ -201,7 +201,8 @@ func AddMonitorCmd() *cobra.Command {
 							ChainId: chain.String(),
 						})
 						if err != nil {
-							if !strings.Contains(err.Error(), "validator is not bonded") {
+							if !strings.Contains(err.Error(), "validator is not bonded") &&
+								!strings.Contains(err.Error(), "not orchestrator or validator") {
 								handleErr(err)
 							}
 							continue
