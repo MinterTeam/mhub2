@@ -722,6 +722,9 @@ func (k Keeper) GetCommissionForHolder(ctx sdk.Context, addresses []string, comm
 	// 8 HUB -40%
 	// 16 HUB -50%
 	// 32 HUB -60%
+	// 64 HUB -70%
+	// 128 HUB -80%
+	// 256 HUB -90%
 
 	discount1 := convertDecimals(0, 18, sdk.NewInt(1))
 	discount2 := convertDecimals(0, 18, sdk.NewInt(2))
@@ -729,8 +732,17 @@ func (k Keeper) GetCommissionForHolder(ctx sdk.Context, addresses []string, comm
 	discount8 := convertDecimals(0, 18, sdk.NewInt(8))
 	discount16 := convertDecimals(0, 18, sdk.NewInt(16))
 	discount32 := convertDecimals(0, 18, sdk.NewInt(32))
+	discount64 := convertDecimals(0, 18, sdk.NewInt(64))
+	discount128 := convertDecimals(0, 18, sdk.NewInt(128))
+	discount256 := convertDecimals(0, 18, sdk.NewInt(256))
 
 	switch {
+	case maxValue.GTE(discount256):
+		return commission.Sub(commission.MulInt64(90).QuoInt64(100))
+	case maxValue.GTE(discount128):
+		return commission.Sub(commission.MulInt64(80).QuoInt64(100))
+	case maxValue.GTE(discount64):
+		return commission.Sub(commission.MulInt64(70).QuoInt64(100))
 	case maxValue.GTE(discount32):
 		return commission.Sub(commission.MulInt64(60).QuoInt64(100))
 	case maxValue.GTE(discount16):
