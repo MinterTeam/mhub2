@@ -153,10 +153,10 @@ pub async fn eth_oracle_main_loop(
                 delay_for(DELAY).await;
                 continue;
             }
-            (Err(_), Err(_)) => {
+            (Err(eth_err), Err(cosmos_err)) => {
                 metrics::COSMOS_UNAVAILABLE.inc();
                 metrics::ETHEREUM_UNAVAILABLE.inc();
-                error!("Could not reach Ethereum or Cosmos rpc!");
+                error!("Could not reach Ethereum or Cosmos rpc! {} {}", eth_err, cosmos_err);
                 delay_for(DELAY).await;
                 continue;
             }

@@ -37,6 +37,7 @@ type MonitorConfig struct {
 	TelegramToken string   `json:"telegram_token"`
 	ChatID        int64    `json:"chat_id"`
 	EthereumRPC   []string `json:"ethereum_rpc"`
+	MetagardenRPC []string `json:"metagarden_rpc"`
 	BNBChainRPC   []string `json:"bnb_chain_rpc"`
 }
 
@@ -158,7 +159,7 @@ func AddMonitorCmd() *cobra.Command {
 
 				actualNonces := map[types.ChainID]uint64{}
 
-				chains := []types.ChainID{"ethereum", "minter", "bsc"}
+				chains := []types.ChainID{"ethereum", "minter", "bsc", "metagarden"}
 				for _, chain := range chains {
 					delegatedKeys, err := queryClient.DelegateKeys(context.Background(), &types.DelegateKeysRequest{
 						ChainId: chain.String(),
@@ -274,7 +275,7 @@ func AddMonitorCmd() *cobra.Command {
 
 func getActualNonce(chain types.ChainID, config MonitorConfig, keys []*types.MsgDelegateKeys, queryClient types.QueryClient) (uint64, error) {
 	switch chain {
-	case "ethereum", "bsc":
+	case "ethereum", "bsc", "metagarden":
 		var address common.Address
 		var RPCs []string
 
@@ -285,6 +286,9 @@ func getActualNonce(chain types.ChainID, config MonitorConfig, keys []*types.Msg
 		case "bsc":
 			address = common.HexToAddress("0xf5b0ed82a0b3e11567081694cc66c3df133f7c8f")
 			RPCs = config.BNBChainRPC
+		case "metagarden":
+			address = common.HexToAddress("0xf5b0ed82a0b3e11567081694cc66c3df133f7c8f")
+			RPCs = config.MetagardenRPC
 		}
 
 		maxNonce, err := getEvmNonce(address, RPCs)

@@ -195,7 +195,7 @@ func DefaultParams() *Params {
 		SlashFractionEthereumSignature:            sdk.NewDec(1).Quo(sdk.NewDec(1000)),
 		SlashFractionConflictingEthereumSignature: sdk.NewDec(1).Quo(sdk.NewDec(1000)),
 		UnbondSlashingSignerSetTxsWindow:          10000,
-		Chains:                                    []string{"ethereum", "minter", "bsc", "hub"},
+		Chains:                                    []string{"ethereum", "minter", "bsc", "hub", "metagarden"},
 		OutgoingTxTimeout:                         86400000 - 1,
 	}
 }

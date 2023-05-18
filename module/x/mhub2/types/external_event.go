@@ -186,7 +186,7 @@ func (sse *SignerSetTxExecutedEvent) Validate(chainId ChainID) error {
 
 func validateExternalId(id string, chainId ChainID) error {
 	switch chainId {
-	case "ethereum", "bsc":
+	case "ethereum", "bsc", "metagarden":
 		if !common.IsHexAddress(id) {
 			return sdkerrors.Wrap(ErrInvalid, "ethereum contract address")
 		}
