@@ -756,6 +756,8 @@ func (k Keeper) GetColdStorageAddr(ctx sdk.Context, chainId types.ChainID) strin
 		return "0x58BD8047F441B9D511aEE9c581aEb1caB4FE0b6d"
 	case "bsc":
 		return "0xbCc2Fa395c6198096855c932f4087cF1377d28EE"
+	case "metagarden":
+		return "0x..." // todo
 	}
 
 	panic("unknown network")
