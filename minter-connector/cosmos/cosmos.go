@@ -68,10 +68,14 @@ func CreateClaims(orcAddress sdk.AccAddress, deposits []Deposit, batches []Batch
 		fee, _ := sdk.NewIntFromString(deposit.Fee)
 
 		switch deposit.Type {
-		case command.TypeSendToEth, command.TypeSendToBsc:
+		case command.TypeSendToEth, command.TypeSendToBsc, command.TypeSendToMetagarden:
 			receiverChain := "ethereum"
 			if deposit.Type == command.TypeSendToBsc {
 				receiverChain = "bsc"
+			}
+
+			if deposit.Type == command.TypeSendToMetagarden {
+				receiverChain = "metagarden"
 			}
 
 			event, err := mhub.PackEvent(&mhub.TransferToChainEvent{
