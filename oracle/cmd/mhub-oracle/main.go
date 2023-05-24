@@ -203,6 +203,7 @@ func getPrices(cfg *config.Config) *types.Prices {
 		return getPrices(cfg)
 	}
 
+	hasMetagardenGasPrice := false
 	for _, item := range pricesList.Data {
 		v, err := sdk.NewDecFromStr(item.Price)
 		if err != nil {
@@ -213,6 +214,17 @@ func getPrices(cfg *config.Config) *types.Prices {
 		prices.List = append(prices.List, &types.Price{
 			Name:  item.Denom,
 			Value: v,
+		})
+
+		if item.Denom == "metagarden/gas" {
+			hasMetagardenGasPrice = true
+		}
+	}
+
+	if !hasMetagardenGasPrice {
+		prices.List = append(prices.List, &types.Price{
+			Name:  "metagarden/gas",
+			Value: sdk.NewDec(20),
 		})
 	}
 
