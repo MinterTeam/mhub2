@@ -99,6 +99,28 @@
         ]
       }
     },
+    "/oracle/v1/metagarden_fee": {
+      "get": {
+        "operationId": "Query_MetagardenFee",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1QueryMetagardenFeeResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "tags": [
+          "Query"
+        ]
+      }
+    },
     "/oracle/v1/prices": {
       "get": {
         "operationId": "Query_Prices",
@@ -280,6 +302,17 @@
       "properties": {
         "holders": {
           "$ref": "#/definitions/v1Holders"
+        }
+      }
+    },
+    "v1QueryMetagardenFeeResponse": {
+      "type": "object",
+      "properties": {
+        "min": {
+          "type": "string"
+        },
+        "fast": {
+          "type": "string"
         }
       }
     },

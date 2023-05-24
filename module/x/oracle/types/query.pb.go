@@ -418,6 +418,80 @@ func (m *QueryBscFeeResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryBscFeeResponse proto.InternalMessageInfo
 
+type QueryMetagardenFeeRequest struct {
+}
+
+func (m *QueryMetagardenFeeRequest) Reset()         { *m = QueryMetagardenFeeRequest{} }
+func (m *QueryMetagardenFeeRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryMetagardenFeeRequest) ProtoMessage()    {}
+func (*QueryMetagardenFeeRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_34238c8dfdfcd7ec, []int{10}
+}
+func (m *QueryMetagardenFeeRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryMetagardenFeeRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryMetagardenFeeRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryMetagardenFeeRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryMetagardenFeeRequest.Merge(m, src)
+}
+func (m *QueryMetagardenFeeRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryMetagardenFeeRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryMetagardenFeeRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryMetagardenFeeRequest proto.InternalMessageInfo
+
+type QueryMetagardenFeeResponse struct {
+	Min  github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,1,opt,name=min,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"min"`
+	Fast github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,2,opt,name=fast,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"fast"`
+}
+
+func (m *QueryMetagardenFeeResponse) Reset()         { *m = QueryMetagardenFeeResponse{} }
+func (m *QueryMetagardenFeeResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryMetagardenFeeResponse) ProtoMessage()    {}
+func (*QueryMetagardenFeeResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_34238c8dfdfcd7ec, []int{11}
+}
+func (m *QueryMetagardenFeeResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryMetagardenFeeResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryMetagardenFeeResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryMetagardenFeeResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryMetagardenFeeResponse.Merge(m, src)
+}
+func (m *QueryMetagardenFeeResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryMetagardenFeeResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryMetagardenFeeResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryMetagardenFeeResponse proto.InternalMessageInfo
+
 func init() {
 	proto.RegisterType((*QueryCurrentEpochRequest)(nil), "oracle.v1.QueryCurrentEpochRequest")
 	proto.RegisterType((*QueryCurrentEpochResponse)(nil), "oracle.v1.QueryCurrentEpochResponse")
@@ -429,46 +503,52 @@ func init() {
 	proto.RegisterType((*QueryEthFeeResponse)(nil), "oracle.v1.QueryEthFeeResponse")
 	proto.RegisterType((*QueryBscFeeRequest)(nil), "oracle.v1.QueryBscFeeRequest")
 	proto.RegisterType((*QueryBscFeeResponse)(nil), "oracle.v1.QueryBscFeeResponse")
+	proto.RegisterType((*QueryMetagardenFeeRequest)(nil), "oracle.v1.QueryMetagardenFeeRequest")
+	proto.RegisterType((*QueryMetagardenFeeResponse)(nil), "oracle.v1.QueryMetagardenFeeResponse")
 }
 
 func init() { proto.RegisterFile("oracle/v1/query.proto", fileDescriptor_34238c8dfdfcd7ec) }
 
 var fileDescriptor_34238c8dfdfcd7ec = []byte{
-	// 544 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xcc, 0x94, 0x41, 0x6b, 0xd4, 0x40,
-	0x14, 0xc7, 0x37, 0xb5, 0x4d, 0xe9, 0xe8, 0xc1, 0x4e, 0xb7, 0xba, 0x1b, 0x34, 0x5b, 0xa2, 0x14,
-	0x05, 0xcd, 0xb0, 0xeb, 0x17, 0x28, 0xdb, 0x56, 0x04, 0x11, 0xb4, 0x78, 0xf2, 0x22, 0xc9, 0xec,
-	0xdb, 0x24, 0xb8, 0xc9, 0xa4, 0x99, 0x49, 0xb1, 0x78, 0xf3, 0x13, 0x08, 0x1e, 0x3d, 0xf8, 0x75,
-	0x7a, 0x2c, 0x78, 0x11, 0x0f, 0x45, 0x76, 0xfd, 0x20, 0xb2, 0x33, 0x93, 0x34, 0x69, 0xba, 0x7b,
-	0xf0, 0xe4, 0x29, 0xe1, 0x3f, 0x6f, 0x7e, 0xff, 0x7f, 0x78, 0xef, 0x05, 0x6d, 0xb3, 0xcc, 0xa3,
-	0x13, 0x20, 0x27, 0x7d, 0x72, 0x9c, 0x43, 0x76, 0xea, 0xa6, 0x19, 0x13, 0x0c, 0x6f, 0x28, 0xd9,
-	0x3d, 0xe9, 0x5b, 0xf7, 0x02, 0xc6, 0x82, 0x09, 0x10, 0x2f, 0x8d, 0x88, 0x97, 0x24, 0x4c, 0x78,
-	0x22, 0x62, 0x09, 0x57, 0x85, 0x56, 0xe5, 0xbe, 0x38, 0x4d, 0xa1, 0x90, 0xef, 0x5c, 0xca, 0x69,
-	0x16, 0xd1, 0x52, 0x6f, 0x07, 0x2c, 0x60, 0xf2, 0x95, 0xcc, 0xdf, 0x94, 0xea, 0x58, 0xa8, 0xf3,
-	0x66, 0x6e, 0xbe, 0x9f, 0x67, 0x19, 0x24, 0xe2, 0x30, 0x65, 0x34, 0x3c, 0x82, 0xe3, 0x1c, 0xb8,
-	0x70, 0xf6, 0x51, 0xf7, 0x9a, 0x33, 0x9e, 0xb2, 0x84, 0x03, 0xde, 0x45, 0x6b, 0x30, 0x17, 0x3a,
-	0xc6, 0x8e, 0xf1, 0xe8, 0xe6, 0xe0, 0xb6, 0x5b, 0xc6, 0x76, 0x55, 0xa1, 0x3a, 0x76, 0xda, 0x08,
-	0x4b, 0xc8, 0x6b, 0x99, 0xa5, 0x40, 0xef, 0xa1, 0xad, 0x9a, 0xaa, 0xa1, 0x8f, 0x91, 0xa9, 0x32,
-	0x6b, 0xea, 0x66, 0x85, 0xaa, 0x4b, 0x75, 0x81, 0xb3, 0xad, 0x09, 0x2f, 0xd8, 0x64, 0x04, 0x59,
-	0x09, 0x3e, 0x40, 0xed, 0xba, 0xac, 0xc9, 0x4f, 0xd0, 0x7a, 0xa8, 0x24, 0x8d, 0xc6, 0x15, 0x74,
-	0x51, 0x5c, 0x94, 0x94, 0xa1, 0x0f, 0x45, 0xf8, 0x1c, 0xa0, 0x60, 0x7f, 0x33, 0xb4, 0x67, 0x21,
-	0x6b, 0xf6, 0x1e, 0xba, 0x11, 0x47, 0x89, 0xe4, 0x6e, 0x0c, 0xdd, 0xb3, 0x8b, 0x5e, 0xeb, 0xd7,
-	0x45, 0x6f, 0x37, 0x88, 0x44, 0x98, 0xfb, 0x2e, 0x65, 0x31, 0xa1, 0x8c, 0xc7, 0x8c, 0xeb, 0xc7,
-	0x53, 0x3e, 0xfa, 0xa0, 0x1b, 0x76, 0x00, 0xf4, 0x68, 0x7e, 0x15, 0x0f, 0xd1, 0xea, 0xd8, 0xe3,
-	0xa2, 0xb3, 0xf2, 0x4f, 0x08, 0x79, 0xb7, 0xcc, 0x3c, 0xe4, 0xf4, 0xba, 0xcc, 0x85, 0xfc, 0x3f,
-	0x65, 0x1e, 0x7c, 0x5f, 0x45, 0x6b, 0x32, 0x1d, 0xfe, 0x84, 0x6e, 0x55, 0xc7, 0x0c, 0x3f, 0xa8,
-	0xb4, 0x67, 0xd1, 0x80, 0x5a, 0x0f, 0x97, 0x17, 0xa9, 0x4f, 0x75, 0x76, 0x3e, 0xff, 0xf8, 0xf3,
-	0x75, 0xc5, 0xc2, 0x1d, 0x72, 0xb9, 0x19, 0x72, 0x36, 0x09, 0x55, 0xe5, 0x38, 0x44, 0xa6, 0x6a,
-	0x29, 0xbe, 0x7f, 0x95, 0x58, 0x9b, 0x00, 0xcb, 0x5e, 0x74, 0xac, 0xad, 0x7a, 0xd2, 0xaa, 0x8b,
-	0xef, 0x56, 0xad, 0x44, 0x08, 0x19, 0xe4, 0xf1, 0xfb, 0x31, 0x00, 0xa6, 0xc8, 0x54, 0x8d, 0x68,
-	0x3a, 0xd5, 0xfa, 0xd6, 0x74, 0xaa, 0xf7, 0xcf, 0xb1, 0xa4, 0x53, 0x1b, 0xe3, 0x8a, 0x93, 0xcf,
-	0xa9, 0x34, 0xf1, 0x91, 0xa9, 0x96, 0xa5, 0x69, 0x52, 0xdb, 0xc2, 0xa6, 0x49, 0x7d, 0x1d, 0x9d,
-	0xae, 0x34, 0xd9, 0xc2, 0x9b, 0xe4, 0xea, 0x3f, 0x05, 0x8f, 0xd1, 0xba, 0xde, 0x1a, 0xdc, 0xa0,
-	0xd4, 0x57, 0xd2, 0xea, 0x2d, 0x3c, 0x5f, 0xf2, 0x2d, 0x7a, 0x13, 0x87, 0x2f, 0xcf, 0xa6, 0xb6,
-	0x71, 0x3e, 0xb5, 0x8d, 0xdf, 0x53, 0xdb, 0xf8, 0x32, 0xb3, 0x5b, 0xe7, 0x33, 0xbb, 0xf5, 0x73,
-	0x66, 0xb7, 0xde, 0xf5, 0x2b, 0x93, 0xf6, 0x2a, 0x4a, 0x04, 0x64, 0x6f, 0xc1, 0x8b, 0x49, 0x1c,
-	0xe6, 0xfe, 0x80, 0xc4, 0x6c, 0x94, 0x4f, 0x80, 0x7c, 0x2c, 0x88, 0x72, 0xf0, 0x7c, 0x53, 0xfe,
-	0xf3, 0x9e, 0xfd, 0x0d, 0x00, 0x00, 0xff, 0xff, 0x11, 0xf2, 0x1f, 0x4f, 0x7a, 0x05, 0x00, 0x00,
+	// 598 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xcc, 0x55, 0x41, 0x6b, 0xd4, 0x40,
+	0x18, 0xdd, 0x54, 0x77, 0x4b, 0x47, 0x05, 0x3b, 0xdd, 0xea, 0x6e, 0xaa, 0xd9, 0x1a, 0xb5, 0x28,
+	0x68, 0x86, 0x5d, 0xff, 0x40, 0xd9, 0xb6, 0x22, 0x48, 0x41, 0x8b, 0x27, 0x2f, 0x92, 0x64, 0xbf,
+	0x4d, 0x82, 0x9b, 0x4c, 0x9a, 0x4c, 0x8a, 0xc5, 0x83, 0xe0, 0x2f, 0x10, 0x3c, 0x7a, 0x11, 0x7f,
+	0x4d, 0x8f, 0x05, 0x2f, 0xe2, 0xa1, 0xc8, 0xae, 0x3f, 0x44, 0x76, 0x66, 0x92, 0x4e, 0x9a, 0xdd,
+	0x0a, 0x3d, 0xf5, 0xb4, 0xe1, 0xcd, 0x9b, 0xf7, 0xde, 0x24, 0x6f, 0xbe, 0x45, 0xab, 0x34, 0xb1,
+	0xdd, 0x11, 0x90, 0x83, 0x2e, 0xd9, 0xcf, 0x20, 0x39, 0xb4, 0xe2, 0x84, 0x32, 0x8a, 0x97, 0x04,
+	0x6c, 0x1d, 0x74, 0xf5, 0x3b, 0x1e, 0xa5, 0xde, 0x08, 0x88, 0x1d, 0x07, 0xc4, 0x8e, 0x22, 0xca,
+	0x6c, 0x16, 0xd0, 0x28, 0x15, 0x44, 0x5d, 0xd9, 0xcf, 0x0e, 0x63, 0xc8, 0xe1, 0x5b, 0xa7, 0x70,
+	0x9c, 0x04, 0x6e, 0x81, 0x37, 0x3d, 0xea, 0x51, 0xfe, 0x48, 0xa6, 0x4f, 0x02, 0x35, 0x75, 0xd4,
+	0x7a, 0x3d, 0x35, 0xdf, 0xca, 0x92, 0x04, 0x22, 0xb6, 0x13, 0x53, 0xd7, 0xdf, 0x83, 0xfd, 0x0c,
+	0x52, 0x66, 0x6e, 0xa1, 0xf6, 0x8c, 0xb5, 0x34, 0xa6, 0x51, 0x0a, 0x78, 0x03, 0xd5, 0x61, 0x0a,
+	0xb4, 0xb4, 0x75, 0xed, 0xd1, 0xb5, 0xde, 0x4d, 0xab, 0x88, 0x6d, 0x09, 0xa2, 0x58, 0x36, 0x9b,
+	0x08, 0x73, 0x91, 0x57, 0x3c, 0x4b, 0x2e, 0xbd, 0x89, 0x56, 0x4a, 0xa8, 0x14, 0x7d, 0x8c, 0x1a,
+	0x22, 0xb3, 0x54, 0x5d, 0x56, 0x54, 0x25, 0x55, 0x12, 0xcc, 0x55, 0xa9, 0xf0, 0x82, 0x8e, 0x06,
+	0x90, 0x14, 0xc2, 0xdb, 0xa8, 0x59, 0x86, 0xa5, 0xf2, 0x13, 0xb4, 0xe8, 0x0b, 0x48, 0x4a, 0x63,
+	0x45, 0x3a, 0x27, 0xe7, 0x94, 0x22, 0xf4, 0x0e, 0xf3, 0x9f, 0x03, 0xe4, 0xda, 0xdf, 0x34, 0xe9,
+	0x99, 0xc3, 0x52, 0x7b, 0x13, 0x5d, 0x09, 0x83, 0x88, 0xeb, 0x2e, 0xf5, 0xad, 0xa3, 0x93, 0x4e,
+	0xed, 0xf7, 0x49, 0x67, 0xc3, 0x0b, 0x98, 0x9f, 0x39, 0x96, 0x4b, 0x43, 0xe2, 0xd2, 0x34, 0xa4,
+	0xa9, 0xfc, 0x79, 0x9a, 0x0e, 0xde, 0xcb, 0x0f, 0xb6, 0x0d, 0xee, 0xde, 0x74, 0x2b, 0xee, 0xa3,
+	0xab, 0x43, 0x3b, 0x65, 0xad, 0x85, 0x0b, 0x49, 0xf0, 0xbd, 0x45, 0xe6, 0x7e, 0xea, 0xce, 0xca,
+	0x9c, 0xc3, 0x97, 0x2a, 0xf3, 0x9a, 0x6c, 0xd8, 0x2e, 0x30, 0xdb, 0xb3, 0x93, 0x01, 0x44, 0x4a,
+	0xf4, 0x1f, 0x1a, 0xd2, 0x67, 0xad, 0x5e, 0xa6, 0x13, 0xf4, 0xbe, 0xd7, 0x51, 0x9d, 0x87, 0xc4,
+	0x1f, 0xd1, 0x75, 0xf5, 0xa2, 0xe0, 0xfb, 0x4a, 0xc1, 0xe6, 0x5d, 0x31, 0xfd, 0xc1, 0xf9, 0x24,
+	0x71, 0x54, 0x73, 0xfd, 0xf3, 0xcf, 0xbf, 0x5f, 0x17, 0x74, 0xdc, 0x22, 0xa7, 0x77, 0x9b, 0xdf,
+	0x2e, 0xe2, 0x0a, 0x3a, 0xf6, 0x51, 0x43, 0x94, 0x12, 0xdf, 0x3d, 0xab, 0x58, 0xea, 0xb0, 0x6e,
+	0xcc, 0x5b, 0x96, 0x56, 0x1d, 0x6e, 0xd5, 0xc6, 0xb7, 0x55, 0x2b, 0xe6, 0x43, 0x02, 0x59, 0xf8,
+	0x6e, 0x08, 0x80, 0x5d, 0xd4, 0x10, 0x55, 0xaa, 0x3a, 0x95, 0x9a, 0x57, 0x75, 0x2a, 0x37, 0xd0,
+	0xd4, 0xb9, 0x53, 0x13, 0x63, 0xc5, 0xc9, 0x49, 0x5d, 0x6e, 0xf2, 0x09, 0xdd, 0x28, 0x7d, 0x74,
+	0x5c, 0x79, 0x4f, 0xb3, 0x1a, 0xa3, 0x3f, 0xfc, 0x0f, 0x4b, 0x3a, 0xdf, 0xe3, 0xce, 0x6b, 0xb8,
+	0xad, 0x38, 0x87, 0x05, 0x93, 0x07, 0x70, 0x50, 0x43, 0xcc, 0x9b, 0xea, 0x29, 0x4b, 0x83, 0xac,
+	0x7a, 0xca, 0xf2, 0x44, 0x33, 0xdb, 0xdc, 0x6b, 0x05, 0x2f, 0x93, 0xb3, 0x63, 0x19, 0x0f, 0xd1,
+	0xa2, 0x1c, 0x3c, 0xb8, 0xa2, 0x52, 0x9e, 0x6a, 0x7a, 0x67, 0xee, 0xfa, 0x39, 0x2f, 0x53, 0x0e,
+	0xb3, 0xfe, 0xcb, 0xa3, 0xb1, 0xa1, 0x1d, 0x8f, 0x0d, 0xed, 0xcf, 0xd8, 0xd0, 0xbe, 0x4c, 0x8c,
+	0xda, 0xf1, 0xc4, 0xa8, 0xfd, 0x9a, 0x18, 0xb5, 0xb7, 0x5d, 0xa5, 0xea, 0xbb, 0x41, 0xc4, 0x20,
+	0x79, 0x03, 0x76, 0x48, 0x42, 0x3f, 0x73, 0x7a, 0x24, 0xa4, 0x83, 0x6c, 0x04, 0xe4, 0x43, 0xae,
+	0xc8, 0x9b, 0xef, 0x34, 0xf8, 0xdf, 0xc6, 0xb3, 0x7f, 0x01, 0x00, 0x00, 0xff, 0xff, 0x9e, 0xe8,
+	0x6b, 0x98, 0xbd, 0x06, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -486,6 +566,7 @@ type QueryClient interface {
 	CurrentEpoch(ctx context.Context, in *QueryCurrentEpochRequest, opts ...grpc.CallOption) (*QueryCurrentEpochResponse, error)
 	EthFee(ctx context.Context, in *QueryEthFeeRequest, opts ...grpc.CallOption) (*QueryEthFeeResponse, error)
 	BscFee(ctx context.Context, in *QueryBscFeeRequest, opts ...grpc.CallOption) (*QueryBscFeeResponse, error)
+	MetagardenFee(ctx context.Context, in *QueryMetagardenFeeRequest, opts ...grpc.CallOption) (*QueryMetagardenFeeResponse, error)
 	Prices(ctx context.Context, in *QueryPricesRequest, opts ...grpc.CallOption) (*QueryPricesResponse, error)
 	Holders(ctx context.Context, in *QueryHoldersRequest, opts ...grpc.CallOption) (*QueryHoldersResponse, error)
 }
@@ -525,6 +606,15 @@ func (c *queryClient) BscFee(ctx context.Context, in *QueryBscFeeRequest, opts .
 	return out, nil
 }
 
+func (c *queryClient) MetagardenFee(ctx context.Context, in *QueryMetagardenFeeRequest, opts ...grpc.CallOption) (*QueryMetagardenFeeResponse, error) {
+	out := new(QueryMetagardenFeeResponse)
+	err := c.cc.Invoke(ctx, "/oracle.v1.Query/MetagardenFee", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *queryClient) Prices(ctx context.Context, in *QueryPricesRequest, opts ...grpc.CallOption) (*QueryPricesResponse, error) {
 	out := new(QueryPricesResponse)
 	err := c.cc.Invoke(ctx, "/oracle.v1.Query/Prices", in, out, opts...)
@@ -548,6 +638,7 @@ type QueryServer interface {
 	CurrentEpoch(context.Context, *QueryCurrentEpochRequest) (*QueryCurrentEpochResponse, error)
 	EthFee(context.Context, *QueryEthFeeRequest) (*QueryEthFeeResponse, error)
 	BscFee(context.Context, *QueryBscFeeRequest) (*QueryBscFeeResponse, error)
+	MetagardenFee(context.Context, *QueryMetagardenFeeRequest) (*QueryMetagardenFeeResponse, error)
 	Prices(context.Context, *QueryPricesRequest) (*QueryPricesResponse, error)
 	Holders(context.Context, *QueryHoldersRequest) (*QueryHoldersResponse, error)
 }
@@ -564,6 +655,9 @@ func (*UnimplementedQueryServer) EthFee(ctx context.Context, req *QueryEthFeeReq
 }
 func (*UnimplementedQueryServer) BscFee(ctx context.Context, req *QueryBscFeeRequest) (*QueryBscFeeResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method BscFee not implemented")
+}
+func (*UnimplementedQueryServer) MetagardenFee(ctx context.Context, req *QueryMetagardenFeeRequest) (*QueryMetagardenFeeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method MetagardenFee not implemented")
 }
 func (*UnimplementedQueryServer) Prices(ctx context.Context, req *QueryPricesRequest) (*QueryPricesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Prices not implemented")
@@ -630,6 +724,24 @@ func _Query_BscFee_Handler(srv interface{}, ctx context.Context, dec func(interf
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Query_MetagardenFee_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryMetagardenFeeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).MetagardenFee(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/oracle.v1.Query/MetagardenFee",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).MetagardenFee(ctx, req.(*QueryMetagardenFeeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Query_Prices_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(QueryPricesRequest)
 	if err := dec(in); err != nil {
@@ -681,6 +793,10 @@ var _Query_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "BscFee",
 			Handler:    _Query_BscFee_Handler,
+		},
+		{
+			MethodName: "MetagardenFee",
+			Handler:    _Query_MetagardenFee_Handler,
 		},
 		{
 			MethodName: "Prices",
@@ -1001,6 +1117,72 @@ func (m *QueryBscFeeResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *QueryMetagardenFeeRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryMetagardenFeeRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryMetagardenFeeRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryMetagardenFeeResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryMetagardenFeeResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryMetagardenFeeResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	{
+		size := m.Fast.Size()
+		i -= size
+		if _, err := m.Fast.MarshalTo(dAtA[i:]); err != nil {
+			return 0, err
+		}
+		i = encodeVarintQuery(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x12
+	{
+		size := m.Min.Size()
+		i -= size
+		if _, err := m.Min.MarshalTo(dAtA[i:]); err != nil {
+			return 0, err
+		}
+		i = encodeVarintQuery(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0xa
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintQuery(dAtA []byte, offset int, v uint64) int {
 	offset -= sovQuery(v)
 	base := offset
@@ -1122,6 +1304,28 @@ func (m *QueryBscFeeResponse) Size() (n int) {
 	return n
 }
 
+func (m *QueryMetagardenFeeRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *QueryMetagardenFeeResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.Min.Size()
+	n += 1 + l + sovQuery(uint64(l))
+	l = m.Fast.Size()
+	n += 1 + l + sovQuery(uint64(l))
+	return n
+}
+
 func sovQuery(x uint64) (n int) {
 	return (math_bits.Len64(x|1) + 6) / 7
 }
@@ -1163,10 +1367,7 @@ func (m *QueryCurrentEpochRequest) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthQuery
 			}
 			if (iNdEx + skippy) > l {
@@ -1252,10 +1453,7 @@ func (m *QueryCurrentEpochResponse) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthQuery
 			}
 			if (iNdEx + skippy) > l {
@@ -1305,10 +1503,7 @@ func (m *QueryPricesRequest) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthQuery
 			}
 			if (iNdEx + skippy) > l {
@@ -1394,10 +1589,7 @@ func (m *QueryPricesResponse) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthQuery
 			}
 			if (iNdEx + skippy) > l {
@@ -1447,10 +1639,7 @@ func (m *QueryHoldersRequest) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthQuery
 			}
 			if (iNdEx + skippy) > l {
@@ -1536,10 +1725,7 @@ func (m *QueryHoldersResponse) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthQuery
 			}
 			if (iNdEx + skippy) > l {
@@ -1589,10 +1775,7 @@ func (m *QueryEthFeeRequest) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthQuery
 			}
 			if (iNdEx + skippy) > l {
@@ -1710,10 +1893,7 @@ func (m *QueryEthFeeResponse) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthQuery
 			}
 			if (iNdEx + skippy) > l {
@@ -1763,10 +1943,7 @@ func (m *QueryBscFeeRequest) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthQuery
 			}
 			if (iNdEx + skippy) > l {
@@ -1884,10 +2061,175 @@ func (m *QueryBscFeeResponse) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthQuery
 			}
-			if (iNdEx + skippy) < 0 {
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryMetagardenFeeRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryMetagardenFeeRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryMetagardenFeeRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryMetagardenFeeResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryMetagardenFeeResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryMetagardenFeeResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Min", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Min.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Fast", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Fast.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthQuery
 			}
 			if (iNdEx + skippy) > l {

@@ -96,3 +96,22 @@ func (k Keeper) BscFee(context context.Context, _ *types.QueryBscFeeRequest) (*t
 		Fast: gasPrice.Mul(bnbPrice).MulInt64(200000).QuoInt64(gweiInEth),
 	}, nil
 }
+
+func (k Keeper) MetagardenFee(context context.Context, _ *types.QueryMetagardenFeeRequest) (*types.QueryMetagardenFeeResponse, error) {
+	ctx := sdk.UnwrapSDKContext(context)
+
+	gasPrice, err := k.GetTokenPrice(ctx, "metagarden/gas")
+	if err != nil {
+		return nil, sdkerrors.Wrap(err, "gas price")
+	}
+
+	metagardenPrice, err := k.GetTokenPrice(ctx, "metagarden")
+	if err != nil {
+		return nil, sdkerrors.Wrap(err, "metagarden price")
+	}
+
+	return &types.QueryMetagardenFeeResponse{
+		Min:  gasPrice.Mul(metagardenPrice).MulInt64(100000).QuoInt64(gweiInEth),
+		Fast: gasPrice.Mul(metagardenPrice).MulInt64(200000).QuoInt64(gweiInEth),
+	}, nil
+}

@@ -19,6 +19,9 @@ service Query {
     rpc BscFee(QueryBscFeeRequest) returns(QueryBscFeeResponse) {
         option (google.api.http).get = "/oracle/v1/bsc_fee";
     }
+    rpc MetagardenFee(QueryMetagardenFeeRequest) returns(QueryMetagardenFeeResponse) {
+      option (google.api.http).get = "/oracle/v1/metagarden_fee";
+    }
     rpc Prices(QueryPricesRequest) returns(QueryPricesResponse) {
         option (google.api.http).get = "/oracle/v1/prices";
     }
@@ -58,4 +61,16 @@ message QueryBscFeeResponse {
         (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
         (gogoproto.nullable) = false
     ];
+}
+
+message QueryMetagardenFeeRequest {}
+message QueryMetagardenFeeResponse {
+  string min = 1 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable) = false
+  ];
+  string fast = 2 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable) = false
+  ];
 }
