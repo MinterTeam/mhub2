@@ -60,7 +60,7 @@ pub async fn send_eth_transaction_batch(
     let gas_limit = web3.eth_estimate_gas(TransactionRequest {
         from: Some(eth_address),
         to: gravity_contract_address,
-        nonce: None,
+        nonce: Some(web30::types::UnpaddedHex(nonce.clone())),
         gas_price: None,
         gas: None,
         value: Some(numUint256::from(0u32).into()),
