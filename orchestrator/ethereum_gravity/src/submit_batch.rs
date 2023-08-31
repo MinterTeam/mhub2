@@ -7,8 +7,9 @@ use mhub2_utils::message_signatures::encode_tx_batch_confirm_hashed;
 use mhub2_utils::types::*;
 use std::collections::HashMap;
 use std::{cmp::min, time::Duration};
-use web30::types::SendTxOption::Nonce;
+use web30::types::SendTxOption::{GasLimit, Nonce};
 use web30::{client::Web3, types::TransactionRequest};
+use num256::Uint256 as numUint256;
 
 /// this function generates an appropriate Ethereum transaction
 /// to submit the provided transaction batch
@@ -56,6 +57,17 @@ pub async fn send_eth_transaction_batch(
 
     let payload = encode_batch_payload(current_valset, &batch, confirms, gravity_id)?;
 
+    let gas_limit = web3.eth_estimate_gas(TransactionRequest {
+        from: Some(eth_address),
+        to: gravity_contract_address,
+        nonce: None,
+        gas_price: None,
+        gas: None,
+        value: Some(numUint256::from(0u32).into()),
+        data: Some(payload.clone().into()),
+    })
+        .await?;
+
     let tx = web3
         .send_transaction(
             gravity_contract_address,
@@ -63,7 +75,7 @@ pub async fn send_eth_transaction_batch(
             0u32.into(),
             eth_address,
             our_eth_key,
-            vec![Nonce(nonce)],
+            vec![Nonce(nonce), GasLimit(gas_limit)],
         )
         .await?;
     info!("Sent batch update with txid {:#066x}", tx);
