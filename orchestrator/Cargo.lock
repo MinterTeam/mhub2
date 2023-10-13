@@ -863,7 +863,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ef8749bcae70d65c0705636ee675020490f35e05cf4ec2d4b78455aeca2194f7"
 dependencies = [
  "lazy_static",
- "num-bigint 0.4.0",
+ "num-bigint 0.4.4",
  "num-traits",
  "num256",
  "secp256k1 0.20.1",
@@ -1149,7 +1149,7 @@ dependencies = [
  "cosmos-sdk-proto",
  "hmac 0.11.0",
  "log",
- "num-bigint 0.4.0",
+ "num-bigint 0.4.4",
  "num-traits",
  "num256",
  "pbkdf2 0.8.0",
@@ -2048,7 +2048,7 @@ dependencies = [
  "deep_space 2.4.3",
  "log",
  "mhub2_proto",
- "num-bigint 0.4.0",
+ "num-bigint 0.4.4",
  "num256",
  "rand 0.8.3",
  "serde",
@@ -2204,7 +2204,7 @@ version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "43db66d1170d347f9a065114077f7dccb00c1b9478c89384490a3425279a4606"
 dependencies = [
- "num-bigint 0.4.0",
+ "num-bigint 0.4.4",
  "num-complex 0.4.0",
  "num-integer",
  "num-iter",
@@ -2236,9 +2236,9 @@ dependencies = [
 
 [[package]]
 name = "num-bigint"
-version = "0.4.0"
+version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4e0d047c1062aa51e256408c560894e5251f08925980e53cf1aa5bd00eec6512"
+checksum = "608e7659b5c3d7cba262d894801b9ec9d00de989e8a82bd4bef91d08da45cdc0"
 dependencies = [
  "autocfg",
  "num-integer",
@@ -2316,7 +2316,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d41702bd167c2df5520b384281bc111a4b5efcf7fbc4c9c222c815b07e0a6a6a"
 dependencies = [
  "autocfg",
- "num-bigint 0.4.0",
+ "num-bigint 0.4.4",
  "num-integer",
  "num-traits",
 ]
