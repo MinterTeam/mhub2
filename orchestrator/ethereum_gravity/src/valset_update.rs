@@ -5,6 +5,8 @@ use mhub2_utils::types::*;
 use mhub2_utils::{error::GravityError, message_signatures::encode_valset_confirm_hashed};
 use std::{cmp::min, time::Duration};
 use web30::{client::Web3, types::TransactionRequest};
+use web30::types::SendTxOption::{GasLimit, Nonce};
+use num256::Uint256 as numUint256;
 
 /// this function generates an appropriate Ethereum transaction
 /// to submit the provided validator set and signatures.
@@ -38,6 +40,19 @@ pub async fn send_eth_valset_update(
 
     let payload = encode_valset_payload(new_valset, old_valset, confirms, gravity_id)?;
 
+    let nonce = web3.eth_get_transaction_count(eth_address).await?;
+
+    let gas_limit = web3.eth_estimate_gas(TransactionRequest {
+        from: Some(eth_address),
+        to: gravity_contract_address,
+        nonce: Some(web30::types::UnpaddedHex(nonce.clone())),
+        gas_price: None,
+        gas: None,
+        value: Some(numUint256::from(0u32).into()),
+        data: Some(payload.clone().into()),
+    })
+        .await?;
+
     let tx = web3
         .send_transaction(
             gravity_contract_address,
@@ -45,9 +60,10 @@ pub async fn send_eth_valset_update(
             0u32.into(),
             eth_address,
             our_eth_key,
-            vec![],
+            vec![Nonce(nonce), GasLimit(gas_limit)],
         )
         .await?;
+
     info!("Sent valset update with txid {:#066x}", tx);
 
     web3.wait_for_transaction(tx, timeout, None).await?;
