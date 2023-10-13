@@ -9,7 +9,6 @@ use std::collections::HashMap;
 use std::{cmp::min, time::Duration};
 use web30::types::SendTxOption::{GasLimit, Nonce};
 use web30::{client::Web3, types::TransactionRequest};
-use num256::Uint256 as numUint256;
 
 /// this function generates an appropriate Ethereum transaction
 /// to submit the provided transaction batch
@@ -63,7 +62,7 @@ pub async fn send_eth_transaction_batch(
         nonce: Some(web30::types::UnpaddedHex(nonce.clone())),
         gas_price: None,
         gas: None,
-        value: Some(numUint256::from(0u32).into()),
+        value: Some(0u64.into()),
         data: Some(payload.clone().into()),
     })
         .await?;

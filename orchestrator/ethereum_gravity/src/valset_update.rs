@@ -6,7 +6,6 @@ use mhub2_utils::{error::GravityError, message_signatures::encode_valset_confirm
 use std::{cmp::min, time::Duration};
 use web30::{client::Web3, types::TransactionRequest};
 use web30::types::SendTxOption::{GasLimit, Nonce};
-use num256::Uint256 as numUint256;
 
 /// this function generates an appropriate Ethereum transaction
 /// to submit the provided validator set and signatures.
@@ -48,7 +47,7 @@ pub async fn send_eth_valset_update(
         nonce: Some(web30::types::UnpaddedHex(nonce.clone())),
         gas_price: None,
         gas: None,
-        value: Some(numUint256::from(0u32).into()),
+        value: Some(0u64.into()),
         data: Some(payload.clone().into()),
     })
         .await?;
