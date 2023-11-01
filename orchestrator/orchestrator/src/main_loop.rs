@@ -28,6 +28,7 @@ use std::{
     net,
     time::{Duration, Instant},
 };
+use std::str::FromStr;
 use tokio::time::sleep as delay_for;
 use tonic::transport::Channel;
 use web30::client::Web3;
@@ -109,7 +110,7 @@ pub async fn eth_oracle_main_loop(
 ) {
     let long_timeout_web30 = Web3::new(&web3.get_url(), Duration::from_secs(120));
     let mut last_checked_block: Uint256 = if let Some(block) = last_block {
-        block.parse().unwrap()
+        Uint256::from_str(&block).unwrap()
     } else {
         get_last_checked_block(
             grpc_client.clone(),
