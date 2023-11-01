@@ -45,16 +45,18 @@ struct Args {
     flag_metrics_listen: String,
     flag_committer_grpc: Option<String>,
     flag_eth_fee_calculator_url: Option<String>,
+    flag_last_block: Option<String>,
 }
 
 lazy_static! {
     pub static ref USAGE: String = format!(
-    "Usage: {} [--eth-fee-calculator-url=<furl>] [--committer-grpc=<url>] --chain-id=<id> --ethereum-key=<key> --cosmos-grpc=<url> --ethereum-rpc=<url> --contract-address=<addr> --metrics-listen=<addr>
+    "Usage: {} [--eth-fee-calculator-url=<furl>] [--committer-grpc=<url>] [--last-block=<height>] --chain-id=<id> --ethereum-key=<key> --cosmos-grpc=<url> --ethereum-rpc=<url> --contract-address=<addr> --metrics-listen=<addr>
     Options:
         -h --help                           Show this screen.
         --ethereum-key=<ekey>               The Ethereum private key of the validator
         --cosmos-grpc=<gurl>                The Cosmos gRPC url, usually the validator
         --committer-grpc=<gurl>             The Committer gRPC url [default: http://localhost:7070]
+        --last-block=<height>               The Committer gRPC url [default: \"\"]
         --address-prefix=<prefix>           The prefix for addresses on this Cosmos chain
         --ethereum-rpc=<eurl>               The Ethereum RPC url, should be a self hosted node
         --contract-address=<addr>           The Ethereum contract address for Gravity, this is temporary
@@ -94,6 +96,7 @@ async fn main() {
         .expect("Invalid metrics listen address!");
 
     let chain_id = args.flag_chain_id;
+    let last_block = args.flag_last_block;
     let eth_fee_calculator_url = args.flag_eth_fee_calculator_url;
 
     let timeout = min(
@@ -167,6 +170,7 @@ async fn main() {
         &connections.grpc_committer.unwrap(),
         contract_address,
         chain_id.clone(),
+        last_block.clone(),
         eth_fee_calculator_url.clone(),
         &metrics_listen,
     )

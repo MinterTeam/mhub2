@@ -52,6 +52,7 @@ pub async fn orchestrator_main_loop(
     grpc_tx_committer_client: &TxCommitterClient<Channel>,
     gravity_contract_address: EthAddress,
     chain_id: String,
+    last_block: Option<String>,
     eth_fee_calculator_url: Option<String>,
     metrics_listen: &net::SocketAddr,
 ) {
@@ -63,6 +64,7 @@ pub async fn orchestrator_main_loop(
         gravity_contract_address,
         &grpc_tx_committer_client,
         chain_id.clone(),
+        last_block.clone(),
     );
 
     let b = eth_signer_main_loop(
@@ -103,16 +105,21 @@ pub async fn eth_oracle_main_loop(
     gravity_contract_address: EthAddress,
     tx_committer_client: &TxCommitterClient<Channel>,
     chain_id: String,
+    last_block: Option<String>,
 ) {
     let long_timeout_web30 = Web3::new(&web3.get_url(), Duration::from_secs(120));
-    let mut last_checked_block: Uint256 = get_last_checked_block(
-        grpc_client.clone(),
-        our_cosmos_address,
-        gravity_contract_address,
-        &long_timeout_web30,
-        chain_id.clone(),
-    )
-    .await;
+    let mut last_checked_block: Uint256 = if let Some(block) = last_block {
+        block.parse().unwrap()
+    } else {
+        get_last_checked_block(
+            grpc_client.clone(),
+            our_cosmos_address,
+            gravity_contract_address,
+            &long_timeout_web30,
+            chain_id.clone(),
+        )
+            .await
+    };
     info!("Oracle resync complete, Oracle now operational");
     let mut grpc_client = grpc_client;
 
