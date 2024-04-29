@@ -124,15 +124,6 @@ func ExportGenesis(ctx sdk.Context, k Keeper) types.GenesisState {
 			lastoutgoingbatchnonce = k.getLastOutgoingBatchNonce(ctx, chainId)
 		)
 
-		if chainId == "minter" {
-			lastobserved = 0
-			lastoutgoingbatchnonce = 0
-		}
-
-		for i := range nonces {
-			nonces[i].LastEventNonce = lastobserved
-		}
-
 		state.ExternalStates = append(state.ExternalStates, &types.ExternalState{
 			ChainId:                  chainId.String(),
 			DelegateKeys:             delegates,
