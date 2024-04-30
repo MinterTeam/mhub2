@@ -14,12 +14,12 @@ import (
 const BatchTxSize = 100
 
 // BuildBatchTx starts the following process chain:
-// - find bridged denominator for given voucher type
-// - determine if a an unexecuted batch is already waiting for this token type, if so confirm the new batch would
-//   have a higher total fees. If not exit withtout creating a batch
-// - select available transactions from the outgoing transaction pool sorted by fee desc
-// - persist an outgoing batch object with an incrementing ID = nonce
-// - emit an event
+//   - find bridged denominator for given voucher type
+//   - determine if a an unexecuted batch is already waiting for this token type, if so confirm the new batch would
+//     have a higher total fees. If not exit withtout creating a batch
+//   - select available transactions from the outgoing transaction pool sorted by fee desc
+//   - persist an outgoing batch object with an incrementing ID = nonce
+//   - emit an event
 func (k Keeper) BuildBatchTx(ctx sdk.Context, chainId types.ChainID, externalTokenId string, maxElements int) *types.BatchTx {
 	// if there is a more profitable batch for this token type do not create a new batch
 	if lastBatch := k.getLastOutgoingBatchByTokenType(ctx, chainId, externalTokenId); lastBatch != nil {
@@ -90,6 +90,9 @@ func (k Keeper) getBatchTimeoutHeight(ctx sdk.Context, chainId types.ChainID) ui
 // It deletes all the transactions in the batch, then cancels all earlier batches
 func (k Keeper) batchTxExecuted(ctx sdk.Context, chainId types.ChainID, externalTokenId string, nonce uint64, txHash string, feePaid sdk.Int, feePayer string) {
 	otx := k.GetOutgoingTx(ctx, chainId, types.MakeBatchTxKey(chainId, externalTokenId, nonce))
+	if otx == nil {
+		return
+	}
 	batchTx, _ := otx.(*types.BatchTx)
 	if chainId != "minter" {
 		k.IterateOutgoingTxsByType(ctx, chainId, types.BatchTxPrefixByte, func(key []byte, otx types.OutgoingTx) bool {
