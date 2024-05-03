@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 
 	paramsproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	ibcclient "github.com/cosmos/ibc-go/modules/core/02-client"
@@ -625,6 +626,40 @@ func NewMhub2App(
 
 	app.ScopedIBCKeeper = scopedIBCKeeper
 	app.ScopedTransferKeeper = scopedTransferKeeper
+
+	app.upgradeKeeper.SetUpgradeHandler("fix", func(ctx sdk.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
+		const batchNonceDiff = 14
+		const correctValsetNonce = 205
+
+		latestNonce := uint64(0)
+
+		var btxs []*mhub2types.BatchTx
+		app.mhub2Keeper.IterateOutgoingTxsByType(ctx, "minter", mhub2types.BatchTxPrefixByte, func(key []byte, otx mhub2types.OutgoingTx) bool {
+			btx, _ := otx.(*mhub2types.BatchTx)
+			btxs = append(btxs, btx)
+
+			return false
+		})
+
+		sort.Slice(btxs, func(i, j int) bool {
+			return btxs[i].BatchNonce < btxs[j].BatchNonce
+		})
+
+		app.mhub2Keeper.DeleteOutgoingTx(ctx, "minter", btxs[0].GetStoreIndex("minter"))
+
+		for _, btx := range btxs[1:] {
+			app.mhub2Keeper.DeleteOutgoingTx(ctx, "minter", btx.GetStoreIndex("minter"))
+			btx.BatchNonce -= batchNonceDiff
+			app.mhub2Keeper.SetOutgoingTx(ctx, "minter", btx)
+			latestNonce = btx.BatchNonce
+		}
+
+		app.mhub2Keeper.SetLastOutgoingBatchNonce(ctx, "minter", latestNonce)
+		app.mhub2Keeper.SetLatestSignerSetTxNonce(ctx, "bsc", correctValsetNonce)
+		app.mhub2Keeper.SetLatestSignerSetTxNonce(ctx, "ethereum", correctValsetNonce)
+
+		return fromVM, nil
+	})
 
 	return app
 }

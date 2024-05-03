@@ -95,6 +95,10 @@ func (k Keeper) incrementLatestSignerSetTxNonce(ctx sdk.Context, chainId types.C
 	return next
 }
 
+func (k Keeper) SetLatestSignerSetTxNonce(ctx sdk.Context, chainId types.ChainID, nonce uint64) {
+	ctx.KVStore(k.storeKey).Set(append([]byte{types.LatestSignerSetTxNonceKey}, chainId.Bytes()...), sdk.Uint64ToBigEndian(nonce))
+}
+
 // GetLatestSignerSetTxNonce returns the latest valset nonce
 func (k Keeper) GetLatestSignerSetTxNonce(ctx sdk.Context, chainId types.ChainID) uint64 {
 	if bz := ctx.KVStore(k.storeKey).Get(append([]byte{types.LatestSignerSetTxNonceKey}, chainId.Bytes()...)); bz != nil {

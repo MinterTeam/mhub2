@@ -334,6 +334,10 @@ func (k Keeper) setLastOutgoingBatchNonce(ctx sdk.Context, chainId types.ChainID
 	store.Set(key, sdk.Uint64ToBigEndian(nonce))
 }
 
+func (k Keeper) SetLastOutgoingBatchNonce(ctx sdk.Context, chainId types.ChainID, nonce uint64) {
+	k.setLastOutgoingBatchNonce(ctx, chainId, nonce)
+}
+
 func (k Keeper) getLastOutgoingBatchNonce(ctx sdk.Context, chainId types.ChainID) uint64 {
 	store := ctx.KVStore(k.storeKey)
 	key := append([]byte{types.LastOutgoingBatchNonceKey}, chainId.Bytes()...)
