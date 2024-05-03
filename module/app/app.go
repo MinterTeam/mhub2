@@ -661,6 +661,35 @@ func NewMhub2App(
 		return fromVM, nil
 	})
 
+	app.upgradeKeeper.SetUpgradeHandler("fix2", func(ctx sdk.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
+		const batchNonceDiff = 1
+
+		latestNonce := uint64(0)
+
+		var btxs []*mhub2types.BatchTx
+		app.mhub2Keeper.IterateOutgoingTxsByType(ctx, "minter", mhub2types.BatchTxPrefixByte, func(key []byte, otx mhub2types.OutgoingTx) bool {
+			btx, _ := otx.(*mhub2types.BatchTx)
+			btxs = append(btxs, btx)
+
+			return false
+		})
+
+		sort.Slice(btxs, func(i, j int) bool {
+			return btxs[i].BatchNonce < btxs[j].BatchNonce
+		})
+
+		for _, btx := range btxs {
+			app.mhub2Keeper.DeleteOutgoingTx(ctx, "minter", btx.GetStoreIndex("minter"))
+			btx.BatchNonce -= batchNonceDiff
+			app.mhub2Keeper.SetOutgoingTx(ctx, "minter", btx)
+			latestNonce = btx.BatchNonce
+		}
+
+		app.mhub2Keeper.SetLastOutgoingBatchNonce(ctx, "minter", latestNonce)
+
+		return fromVM, nil
+	})
+
 	return app
 }
 
