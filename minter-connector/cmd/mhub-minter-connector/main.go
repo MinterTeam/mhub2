@@ -16,6 +16,7 @@ import (
 	"github.com/MinterTeam/minter-go-sdk/v2/transaction"
 	"github.com/MinterTeam/minter-go-sdk/v2/wallet"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/query"
 	"github.com/tendermint/tendermint/libs/json"
 	"github.com/tendermint/tendermint/libs/log"
 	"google.golang.org/grpc"
@@ -151,6 +152,9 @@ func relayBatches(ctx context.Context) {
 
 	latestBatches, err := cosmosClient.BatchTxs(c.Background(), &types.BatchTxsRequest{
 		ChainId: "minter",
+		Pagination: &query.PageRequest{
+			Limit: 1000,
+		},
 	})
 	if err != nil {
 		ctx.Logger.Error("Error getting last batches", "err", err.Error())
