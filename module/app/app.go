@@ -663,11 +663,27 @@ func NewMhub2App(
 
 	app.upgradeKeeper.SetUpgradeHandler("fix2", func(ctx sdk.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
 		const batchNonceDiff = 1
+		const correctMinterSequence = 116426
+		const minterChainId = "minter"
 
-		latestNonce := uint64(0)
+		app.mhub2Keeper.IterateOutgoingTxsByType(ctx, minterChainId, mhub2types.SignerSetTxPrefixByte, func(key []byte, otx mhub2types.OutgoingTx) bool {
+			stx, _ := otx.(*mhub2types.SignerSetTx)
+			app.mhub2Keeper.DeleteOutgoingTx(ctx, minterChainId, otx.GetStoreIndex(minterChainId))
+			app.mhub2Keeper.IterateExternalSignatures(ctx, minterChainId, otx.GetStoreIndex(minterChainId), func(val sdk.ValAddress, sig []byte) bool {
+				app.mhub2Keeper.DeleteExternalSignature(ctx, minterChainId, &mhub2types.SignerSetTxConfirmation{
+					SignerSetNonce: stx.Nonce,
+					ExternalSigner: sdk.AccAddress(val).String(),
+					Signature:      sig,
+				}, val)
+
+				return false
+			})
+
+			return false
+		})
 
 		var btxs []*mhub2types.BatchTx
-		app.mhub2Keeper.IterateOutgoingTxsByType(ctx, "minter", mhub2types.BatchTxPrefixByte, func(key []byte, otx mhub2types.OutgoingTx) bool {
+		app.mhub2Keeper.IterateOutgoingTxsByType(ctx, minterChainId, mhub2types.BatchTxPrefixByte, func(key []byte, otx mhub2types.OutgoingTx) bool {
 			btx, _ := otx.(*mhub2types.BatchTx)
 			btxs = append(btxs, btx)
 
@@ -678,14 +694,28 @@ func NewMhub2App(
 			return btxs[i].BatchNonce < btxs[j].BatchNonce
 		})
 
+		app.mhub2Keeper.SetOutgoingSequence(ctx, minterChainId, correctMinterSequence)
+
+		latestNonce := uint64(0)
 		for _, btx := range btxs {
-			app.mhub2Keeper.DeleteOutgoingTx(ctx, "minter", btx.GetStoreIndex("minter"))
-			btx.BatchNonce -= batchNonceDiff
-			app.mhub2Keeper.SetOutgoingTx(ctx, "minter", btx)
+			app.mhub2Keeper.IterateExternalSignatures(ctx, minterChainId, btx.GetStoreIndex(minterChainId), func(val sdk.ValAddress, sig []byte) bool {
+				app.mhub2Keeper.DeleteExternalSignature(ctx, minterChainId, &mhub2types.BatchTxConfirmation{
+					ExternalTokenId: btx.ExternalTokenId,
+					BatchNonce:      btx.BatchNonce,
+					Signature:       sig,
+					ExternalSigner:  sdk.AccAddress(val).String(),
+				}, val)
+
+				return false
+			})
+
+			app.mhub2Keeper.DeleteOutgoingTx(ctx, minterChainId, btx.GetStoreIndex(minterChainId))
+			btx.BatchNonce += batchNonceDiff
+			app.mhub2Keeper.SetOutgoingTx(ctx, minterChainId, btx)
 			latestNonce = btx.BatchNonce
 		}
 
-		app.mhub2Keeper.SetLastOutgoingBatchNonce(ctx, "minter", latestNonce)
+		app.mhub2Keeper.SetLastOutgoingBatchNonce(ctx, minterChainId, latestNonce)
 
 		return fromVM, nil
 	})

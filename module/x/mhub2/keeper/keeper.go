@@ -149,6 +149,11 @@ func (k Keeper) SetExternalSignature(ctx sdk.Context, chainId types.ChainID, sig
 	return key
 }
 
+// DeleteExternalSignature deletes a valset confirmation
+func (k Keeper) DeleteExternalSignature(ctx sdk.Context, chainId types.ChainID, sig types.ExternalTxConfirmation, val sdk.ValAddress) {
+	ctx.KVStore(k.storeKey).Delete(types.MakeExternalSignatureKey(chainId, sig.GetStoreIndex(chainId), val))
+}
+
 // GetExternalSignatures returns all external signatures for a given outgoing tx by store index
 func (k Keeper) GetExternalSignatures(ctx sdk.Context, chainId types.ChainID, storeIndex []byte) map[string][]byte {
 	var signatures = make(map[string][]byte)
@@ -171,6 +176,11 @@ func (k Keeper) iterateExternalSignatures(ctx sdk.Context, chainId types.ChainID
 			break
 		}
 	}
+}
+
+// IterateExternalSignatures iterates through all valset confirms by nonce in ASC order
+func (k Keeper) IterateExternalSignatures(ctx sdk.Context, chainId types.ChainID, storeIndex []byte, cb func(sdk.ValAddress, []byte) bool) {
+	k.iterateExternalSignatures(ctx, chainId, storeIndex, cb)
 }
 
 /////////////////////////
@@ -680,6 +690,10 @@ func (k Keeper) setOutgoingSequence(ctx sdk.Context, chainId types.ChainID, sequ
 	key := append([]byte{types.OutgoingSequence}, chainId.Bytes()...)
 	bz := sdk.Uint64ToBigEndian(sequence)
 	store.Set(key, bz)
+}
+
+func (k Keeper) SetOutgoingSequence(ctx sdk.Context, chainId types.ChainID, sequence uint64) {
+	k.setOutgoingSequence(ctx, chainId, sequence)
 }
 
 func (k Keeper) incrementOutgoingSequence(ctx sdk.Context, chainId types.ChainID) uint64 {
