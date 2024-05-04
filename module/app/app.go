@@ -1,6 +1,8 @@
 package app
 
 import (
+	_ "embed"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -112,6 +114,9 @@ const (
 	// NOTE: In the SDK, the default value is 255.
 	MaxAddrLen = 20
 )
+
+//go:embed minter_batches.json
+var minterBatches []byte
 
 var (
 	// DefaultNodeHome sets the folder where the applcation data and configuration will be stored
@@ -716,6 +721,76 @@ func NewMhub2App(
 		}
 
 		app.mhub2Keeper.SetLastOutgoingBatchNonce(ctx, minterChainId, latestNonce)
+
+		return fromVM, nil
+	})
+
+	app.upgradeKeeper.SetUpgradeHandler("fix3", func(ctx sdk.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
+		const correctMinterSequence = 116426
+		const firstBatchNonce = 97970
+		const minterChainId = "minter"
+
+		app.mhub2Keeper.IterateOutgoingTxsByType(ctx, minterChainId, mhub2types.SignerSetTxPrefixByte, func(key []byte, otx mhub2types.OutgoingTx) bool {
+			stx, _ := otx.(*mhub2types.SignerSetTx)
+			app.mhub2Keeper.DeleteOutgoingTx(ctx, minterChainId, otx.GetStoreIndex(minterChainId))
+			app.mhub2Keeper.IterateExternalSignatures(ctx, minterChainId, otx.GetStoreIndex(minterChainId), func(val sdk.ValAddress, sig []byte) bool {
+				app.mhub2Keeper.DeleteExternalSignature(ctx, minterChainId, &mhub2types.SignerSetTxConfirmation{
+					SignerSetNonce: stx.Nonce,
+					ExternalSigner: sdk.AccAddress(val).String(),
+					Signature:      sig,
+				}, val)
+
+				return false
+			})
+
+			return false
+		})
+
+		var btxs []*mhub2types.BatchTx
+		app.mhub2Keeper.IterateOutgoingTxsByType(ctx, minterChainId, mhub2types.BatchTxPrefixByte, func(key []byte, otx mhub2types.OutgoingTx) bool {
+			btx, _ := otx.(*mhub2types.BatchTx)
+			btxs = append(btxs, btx)
+
+			return false
+		})
+
+		sort.Slice(btxs, func(i, j int) bool {
+			return btxs[i].BatchNonce < btxs[j].BatchNonce
+		})
+
+		app.mhub2Keeper.SetOutgoingSequence(ctx, minterChainId, correctMinterSequence)
+
+		var newBatches []*mhub2types.BatchTx
+		err = json.Unmarshal(minterBatches, &newBatches)
+		if err != nil {
+			panic(err)
+		}
+
+		for _, btx := range btxs {
+			if btx.BatchNonce > 98261 {
+				newBatches = append(newBatches, btx)
+			}
+
+			app.mhub2Keeper.IterateExternalSignatures(ctx, minterChainId, btx.GetStoreIndex(minterChainId), func(val sdk.ValAddress, sig []byte) bool {
+				app.mhub2Keeper.DeleteExternalSignature(ctx, minterChainId, &mhub2types.BatchTxConfirmation{
+					ExternalTokenId: btx.ExternalTokenId,
+					BatchNonce:      btx.BatchNonce,
+					Signature:       sig,
+					ExternalSigner:  sdk.AccAddress(val).String(),
+				}, val)
+
+				return false
+			})
+
+			app.mhub2Keeper.DeleteOutgoingTx(ctx, minterChainId, btx.GetStoreIndex(minterChainId))
+		}
+
+		for i, btx := range newBatches {
+			btx.BatchNonce = firstBatchNonce + uint64(i)
+			app.mhub2Keeper.SetOutgoingTx(ctx, minterChainId, btx)
+		}
+
+		app.mhub2Keeper.SetLastOutgoingBatchNonce(ctx, minterChainId, firstBatchNonce+uint64(len(newBatches))-1)
 
 		return fromVM, nil
 	})
