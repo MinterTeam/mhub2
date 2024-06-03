@@ -164,7 +164,7 @@ func DefaultGenesisState() *GenesisState {
 				Id:               5,
 				Denom:            "eth",
 				ChainId:          "ethereum",
-				ExternalTokenId:  "0x0a180A76e4466bF68A7F86fB029BEd3cCcFaAac5",
+				ExternalTokenId:  "0xc778417E063141139Fce010982780140Aa0cD5Ab",
 				ExternalDecimals: 18,
 				Commission:       sdk.NewDec(1).QuoInt64(100),
 			},
